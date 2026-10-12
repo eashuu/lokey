@@ -1,0 +1,67 @@
+<Window
+    x:Class="Hitodama.Shell.IslandWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Hitodama">
+
+    <Grid x:Name="Root" Background="Transparent">
+        <Canvas x:Name="SurfaceHost" />
+
+        <!-- expanded panel: tabs + pages. EdgeSurface sizes, clips and slides it. -->
+        <Grid x:Name="Panel" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid x:Name="Header" HorizontalAlignment="Center" Background="Transparent">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid x:Name="TabRow" />
+                <Canvas x:Name="IndicatorHost" Grid.Row="1" Height="3" />
+                <Border Grid.Row="1" Height="1" VerticalAlignment="Bottom" Background="{StaticResource OutlineVariant}" Margin="0,3,0,0" />
+            </Grid>
+            <Grid x:Name="PageHost" Grid.Row="1" />
+        </Grid>
+
+        <!-- collapsed: a tiny live pill -->
+        <StackPanel x:Name="Pill" HorizontalAlignment="Center" VerticalAlignment="Top"
+                    Orientation="Horizontal" Spacing="{StaticResource SpSm}" IsHitTestVisible="False">
+            <Ellipse x:Name="Dot" Fill="{StaticResource Primary}" VerticalAlignment="Center" />
+            <TextBlock x:Name="PillClock" Style="{StaticResource Body}" FontFamily="{StaticResource Rubik}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Border x:Name="PillArt" CornerRadius="4" VerticalAlignment="Center" Visibility="Collapsed">
+                <Border.Background><ImageBrush x:Name="PillArtBrush" Stretch="UniformToFill" /></Border.Background>
+            </Border>
+            <StackPanel x:Name="PillBars" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Visibility="Collapsed" />
+            <TextBlock x:Name="PillTimer" Style="{StaticResource Body}" FontFamily="{StaticResource Rubik}" FontWeight="SemiBold"
+                       Foreground="{StaticResource Tertiary}" VerticalAlignment="Center" Visibility="Collapsed" />
+        </StackPanel>
+
+        <!-- peek: OSD and "now playing" -->
+        <Grid x:Name="Peek" HorizontalAlignment="Center" VerticalAlignment="Top" ColumnSpacing="{StaticResource SpMd}"
+              IsHitTestVisible="False">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border x:Name="PeekArt" CornerRadius="{StaticResource RoundSm}" Background="{StaticResource SecondaryContainer}">
+                <Grid>
+                    <FontIcon x:Name="PeekGlyph" Style="{StaticResource Glyph}" Foreground="{StaticResource OnSecondaryContainer}" />
+                    <Border CornerRadius="{StaticResource RoundSm}"><Border.Background><ImageBrush x:Name="PeekArtBrush" Stretch="UniformToFill" /></Border.Background></Border>
+                </Grid>
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="{StaticResource SpXS}">
+                <Grid>
+                    <TextBlock x:Name="PeekTitle" Style="{StaticResource Body}" FontWeight="SemiBold" Margin="0,0,36,0" />
+                    <TextBlock x:Name="PeekValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{StaticResource OnSurfaceVariant}" />
+                </Grid>
+                <TextBlock x:Name="PeekSubtitle" Style="{StaticResource Body}" FontSize="{StaticResource FontSm}" Foreground="{StaticResource OnSurfaceVariant}" />
+                <Grid x:Name="PeekBar" Height="5">
+                    <Border Background="{StaticResource SurfaceContainerHighest}" CornerRadius="2.5" />
+                    <Border x:Name="PeekFill" Background="{StaticResource Primary}" CornerRadius="2.5" HorizontalAlignment="Left" />
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,35 @@
+<Window
+    x:Class="Hitodama.Shell.LauncherWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Hitodama Launcher">
+
+    <Grid x:Name="Root" Background="Transparent">
+        <Canvas x:Name="SurfaceHost" />
+        <Grid x:Name="Panel" Visibility="Collapsed">
+            <Grid x:Name="Inner" VerticalAlignment="Bottom" HorizontalAlignment="Center" RowSpacing="{StaticResource SpMd}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid x:Name="Results">
+                    <StackPanel x:Name="List" Spacing="{StaticResource SpXS}" />
+                    <Grid x:Name="Carousel" Visibility="Collapsed">
+                        <StackPanel x:Name="Strip" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBlock x:Name="Empty" Style="{StaticResource Body}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{StaticResource OnSurfaceVariant}" Visibility="Collapsed" />
+                </Grid>
+                <Grid x:Name="SearchBox" Grid.Row="1" Background="{StaticResource SurfaceContainer}" CornerRadius="{StaticResource RoundFull}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon x:Name="SearchIcon" Style="{StaticResource Glyph}" Glyph="search" Foreground="{StaticResource OnSurfaceVariant}" />
+                    <TextBox x:Name="Search" Grid.Column="1" BorderThickness="0" Background="Transparent" VerticalAlignment="Center"
+                             PlaceholderText="Type &quot;&gt;&quot; for commands" />
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

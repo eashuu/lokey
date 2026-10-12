@@ -1,0 +1,12 @@
+<Window
+    x:Class="Hitodama.Shell.BarWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Hitodama Bar">
+
+    <Grid x:Name="Root" Background="Transparent">
+        <Canvas x:Name="SurfaceHost" />
+        <!-- the entries; EdgeSurface sizes, clips and slides it -->
+        <Grid x:Name="Panel" />
+    </Grid>
+</Window>

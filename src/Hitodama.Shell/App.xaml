@@ -1,0 +1,214 @@
+<Application
+    x:Class="Hitodama.Shell.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Material You roles. Theme.cs mutates .Color at runtime so everything restyles live. -->
+            <SolidColorBrush x:Key="Surface" Color="#191114" />
+            <SolidColorBrush x:Key="SurfaceContainerLowest" Color="#140C0F" />
+            <SolidColorBrush x:Key="SurfaceContainerLow" Color="#21191C" />
+            <SolidColorBrush x:Key="SurfaceContainer" Color="#261D20" />
+            <SolidColorBrush x:Key="SurfaceContainerHigh" Color="#31282A" />
+            <SolidColorBrush x:Key="SurfaceContainerHighest" Color="#3C3235" />
+            <SolidColorBrush x:Key="OnSurface" Color="#EFDFE2" />
+            <SolidColorBrush x:Key="OnSurfaceVariant" Color="#D5C2C6" />
+            <SolidColorBrush x:Key="Primary" Color="#FFB0CA" />
+            <SolidColorBrush x:Key="OnPrimary" Color="#541D33" />
+            <SolidColorBrush x:Key="PrimaryContainer" Color="#6F3349" />
+            <SolidColorBrush x:Key="OnPrimaryContainer" Color="#FFD9E3" />
+            <SolidColorBrush x:Key="Secondary" Color="#E2BDC7" />
+            <SolidColorBrush x:Key="SecondaryContainer" Color="#5A3F48" />
+            <SolidColorBrush x:Key="OnSecondaryContainer" Color="#FFD9E3" />
+            <SolidColorBrush x:Key="Tertiary" Color="#F0BC95" />
+            <SolidColorBrush x:Key="TertiaryContainer" Color="#6B4021" />
+            <SolidColorBrush x:Key="OnTertiaryContainer" Color="#FFDCC4" />
+            <SolidColorBrush x:Key="Outline" Color="#9E8C90" />
+            <SolidColorBrush x:Key="OutlineVariant" Color="#514347" />
+            <SolidColorBrush x:Key="Error" Color="#FFB4AB" />
+            <SolidColorBrush x:Key="OnError" Color="#690005" />
+            <SolidColorBrush x:Key="Hover" Color="#14FFFFFF" />
+
+            <!-- Point WinUI's accent-driven controls (slider, checkbox, text box) at our roles. -->
+            <StaticResource x:Key="AccentFillColorDefaultBrush" ResourceKey="Primary" />
+            <StaticResource x:Key="AccentFillColorSecondaryBrush" ResourceKey="Primary" />
+            <StaticResource x:Key="AccentFillColorTertiaryBrush" ResourceKey="Primary" />
+            <StaticResource x:Key="TextOnAccentFillColorPrimaryBrush" ResourceKey="OnPrimary" />
+            <StaticResource x:Key="SliderTrackValueFill" ResourceKey="Primary" />
+            <StaticResource x:Key="SliderTrackValueFillPointerOver" ResourceKey="Primary" />
+            <StaticResource x:Key="SliderTrackValueFillPressed" ResourceKey="Primary" />
+            <StaticResource x:Key="SliderThumbBackground" ResourceKey="Primary" />
+            <StaticResource x:Key="SliderThumbBackgroundPointerOver" ResourceKey="Primary" />
+            <StaticResource x:Key="SliderThumbBackgroundPressed" ResourceKey="Primary" />
+            <StaticResource x:Key="SliderTrackFill" ResourceKey="SurfaceContainerHighest" />
+            <StaticResource x:Key="SliderTrackFillPointerOver" ResourceKey="SurfaceContainerHighest" />
+            <StaticResource x:Key="SliderTrackFillPressed" ResourceKey="SurfaceContainerHighest" />
+            <StaticResource x:Key="TextControlBackground" ResourceKey="SurfaceContainerHigh" />
+            <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SurfaceContainerHighest" />
+            <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SurfaceContainerHighest" />
+            <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Primary" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+            <x:Double x:Key="SliderTrackThemeHeight">6</x:Double>
+            <!-- toggle switch and check box in the role colours -->
+            <StaticResource x:Key="ToggleSwitchFillOn" ResourceKey="Primary" />
+            <StaticResource x:Key="ToggleSwitchFillOnPointerOver" ResourceKey="Primary" />
+            <StaticResource x:Key="ToggleSwitchFillOnPressed" ResourceKey="Primary" />
+            <StaticResource x:Key="ToggleSwitchStrokeOn" ResourceKey="Primary" />
+            <StaticResource x:Key="ToggleSwitchStrokeOnPointerOver" ResourceKey="Primary" />
+            <StaticResource x:Key="ToggleSwitchStrokeOnPressed" ResourceKey="Primary" />
+            <StaticResource x:Key="ToggleSwitchKnobFillOn" ResourceKey="OnPrimary" />
+            <StaticResource x:Key="ToggleSwitchKnobFillOnPointerOver" ResourceKey="OnPrimary" />
+            <StaticResource x:Key="ToggleSwitchKnobFillOnPressed" ResourceKey="OnPrimary" />
+            <StaticResource x:Key="ToggleSwitchFillOff" ResourceKey="SurfaceContainerHighest" />
+            <StaticResource x:Key="ToggleSwitchFillOffPointerOver" ResourceKey="SurfaceContainerHighest" />
+            <StaticResource x:Key="ToggleSwitchStrokeOff" ResourceKey="Outline" />
+            <StaticResource x:Key="ToggleSwitchStrokeOffPointerOver" ResourceKey="Outline" />
+            <StaticResource x:Key="ToggleSwitchKnobFillOff" ResourceKey="Outline" />
+            <StaticResource x:Key="ToggleSwitchKnobFillOffPointerOver" ResourceKey="OnSurfaceVariant" />
+            <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="Primary" />
+            <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="Primary" />
+            <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="Primary" />
+            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeChecked" ResourceKey="Primary" />
+            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="Primary" />
+            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="Primary" />
+            <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="OnPrimary" />
+            <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="OnPrimary" />
+            <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="OnPrimary" />
+            <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="SecondaryContainer" />
+            <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="SecondaryContainer" />
+            <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="SecondaryContainer" />
+            <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="OnSecondaryContainer" />
+            <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="OnSecondaryContainer" />
+            <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="OnSecondaryContainer" />
+            <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="SurfaceContainerHighest" />
+            <StaticResource x:Key="ToggleButtonForegroundPointerOver" ResourceKey="OnSurface" />
+
+            <!-- Caelestia token scale. These are 1x defaults; Tokens.Init() overwrites them (and the style
+                 setters below) with screen-scaled values before any window is created. -->
+            <CornerRadius x:Key="RoundXS">4</CornerRadius>
+            <CornerRadius x:Key="RoundSm">12</CornerRadius>
+            <CornerRadius x:Key="RoundMd">16</CornerRadius>
+            <CornerRadius x:Key="RoundLg">20</CornerRadius>
+            <CornerRadius x:Key="RoundXl">28</CornerRadius>
+            <CornerRadius x:Key="RoundFull">999</CornerRadius>
+            <x:Double x:Key="SpXS">4</x:Double>
+            <x:Double x:Key="SpSm">8</x:Double>
+            <x:Double x:Key="SpMd">12</x:Double>
+            <x:Double x:Key="SpLg">16</x:Double>
+            <x:Double x:Key="SpXl">20</x:Double>
+            <x:Double x:Key="SpXxl">28</x:Double>
+            <Thickness x:Key="PadXS">4</Thickness>
+            <Thickness x:Key="PadSm">8</Thickness>
+            <Thickness x:Key="PadMd">12</Thickness>
+            <Thickness x:Key="PadLg">16</Thickness>
+            <Thickness x:Key="PadXl">20</Thickness>
+            <Thickness x:Key="PadXxl">28</Thickness>
+            <x:Double x:Key="FontXS">11</x:Double>
+            <x:Double x:Key="FontSm">12</x:Double>
+            <x:Double x:Key="FontMd">13</x:Double>
+            <x:Double x:Key="FontLg">15</x:Double>
+            <x:Double x:Key="FontXl">18</x:Double>
+            <x:Double x:Key="FontXxl">28</x:Double>
+            <x:Double x:Key="IconSize">16</x:Double>
+
+            <!-- Bundled fonts (Assets/Fonts, all open licences). Icons are written by ligature name, like Caelestia's
+                 MaterialIcon: the outlined Symbols face, and the filled Material Icons face for selected states. -->
+            <FontFamily x:Key="Sans">ms-appx:///Assets/Fonts/GoogleSansFlex.ttf#Google Sans Flex, Segoe UI Variable Display, Segoe UI</FontFamily>
+            <FontFamily x:Key="Rubik">ms-appx:///Assets/Fonts/Rubik.ttf#Rubik, Segoe UI Variable Display</FontFamily>
+            <FontFamily x:Key="Icons">ms-appx:///Assets/Fonts/MaterialSymbolsRounded.ttf#Material Symbols Rounded</FontFamily>
+            <FontFamily x:Key="IconsFilled">ms-appx:///Assets/Fonts/MaterialIconsRound-Regular.otf#Material Icons Round</FontFamily>
+            <FontFamily x:Key="Mono">Cascadia Mono, Consolas</FontFamily>
+
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{StaticResource SurfaceContainer}" />
+                <Setter Property="CornerRadius" Value="{StaticResource RoundLg}" />
+                <Setter Property="Padding" Value="16" />
+            </Style>
+            <Style x:Key="Label" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource Sans}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="CharacterSpacing" Value="80" />
+                <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariant}" />
+            </Style>
+            <Style x:Key="Body" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource Sans}" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="{StaticResource OnSurface}" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+            <Style x:Key="Glyph" TargetType="FontIcon">
+                <Setter Property="FontFamily" Value="{StaticResource Icons}" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="Foreground" Value="{StaticResource OnSurface}" />
+            </Style>
+            <!-- Every button: Material state layer (foreground at 8% hover / 16% press), like Caelestia's StateLayer.qml -->
+            <Style x:Key="StateButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Foreground" Value="{StaticResource OnSurface}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="12,6" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="FontFamily" Value="{StaticResource Sans}" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters><Setter Target="Layer.Opacity" Value="0.08" /></VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters><Setter Target="Layer.Opacity" Value="0.16" /></VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters><Setter Target="Root.Opacity" Value="0.38" /></VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="Layer" Background="{TemplateBinding Foreground}" Opacity="0">
+                                    <Border.OpacityTransition><ScalarTransition Duration="0:0:0.15" /></Border.OpacityTransition>
+                                </Border>
+                                <ContentPresenter Padding="{TemplateBinding Padding}" Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  Foreground="{TemplateBinding Foreground}"
+                                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style TargetType="Button" BasedOn="{StaticResource StateButton}" />
+            <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource StateButton}">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Width" Value="40" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="CornerRadius" Value="{StaticResource RoundFull}" />
+                <Setter Property="FontFamily" Value="{StaticResource Icons}" />
+                <Setter Property="FontSize" Value="16" />
+            </Style>
+            <Style x:Key="Chip" TargetType="ToggleButton">
+                <Setter Property="Background" Value="{StaticResource SurfaceContainerHigh}" />
+                <Setter Property="Foreground" Value="{StaticResource OnSurface}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="12,5" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontFamily" Value="{StaticResource Sans}" />
+                <Setter Property="CornerRadius" Value="{StaticResource RoundFull}" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
