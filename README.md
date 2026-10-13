@@ -156,7 +156,7 @@ The island's face is a 3D character drawn by a small WebGL2 raymarcher: no model
 
 ### Option 1: download the app (recommended)
 
-1. Open the **[Releases page](https://github.com/eashuu/lokey/releases/latest)** and download `Lokey-<version>-win-x64.zip`.
+1. Open the **[Releases page](https://github.com/eashuu/lokey/releases)** and download `Lokey-<version>-win-x64.zip`.
 2. Unzip it anywhere (no installer, no admin rights, nothing is written outside your user folders).
 3. Run **`Lokey.exe`**. A tray icon appears and the thin bar shows at the top of your screen.
 
