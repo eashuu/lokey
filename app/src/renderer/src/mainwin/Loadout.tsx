@@ -210,7 +210,7 @@ export function Loadout() {
       <canvas ref={cv} aria-hidden style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
       {/* the spirit inside a soft ring; opaque inside so rope ends emerge from its edge */}
       <div style={{ position: 'absolute', left: '50%', top: 'calc(50% + 6px)', width: 176, height: 176, marginLeft: -88, marginTop: -88, borderRadius: '50%', display: 'grid', placeItems: 'center', pointerEvents: 'none',
-        boxSizing: 'border-box', border: '2px solid rgba(255,255,255,.1)', background: `radial-gradient(circle, ${palette.glow}38 0%, ${palette.glow}14 55%, transparent 100%), #0d0f14` }}>
+        boxSizing: 'border-box', border: '2px solid rgb(var(--ov) / .1)', background: `radial-gradient(circle, ${palette.glow}38 0%, ${palette.glow}14 55%, transparent 100%), var(--s1)` }}>
         <Soul width={150} height={150} mode={soulMode} active={visible} palette={palette} />
       </div>
       {SLOTS.map((s, i) => (
@@ -219,7 +219,7 @@ export function Loadout() {
           onPointerEnter={() => { hov.current[i] = true }} onPointerLeave={() => { hov.current[i] = false }}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPicker(s.id) } }}
           style={{ position: 'absolute', left: 0, top: 0, width: CARD_W, height: CARD_H, opacity: 0, borderRadius: 12, boxSizing: 'border-box', padding: '0 12px', display: 'flex', alignItems: 'center', gap: 10,
-            background: 'linear-gradient(rgba(255,255,255,.063), rgba(255,255,255,.063)), #12151c' }}>
+            background: 'linear-gradient(rgb(var(--ov) / .063), rgb(var(--ov) / .063)), var(--s2)' }}>
           <s.icon size={16} color={s.color} style={{ flex: 'none' }} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{values[s.id]}</div>

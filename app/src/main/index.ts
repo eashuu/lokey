@@ -283,6 +283,10 @@ function wireSidecar() {
 // ---- lifecycle ---------------------------------------------------------------------------------------------
 app.whenReady().then(async () => {
   settings.load()
+  // dev/QA overrides, in memory only: --theme dark|light|auto, --accent #rrggbb
+  const ti = argv.indexOf('--theme'), ai = argv.indexOf('--accent')
+  if (ti >= 0 && ['dark', 'light', 'auto'].includes(argv[ti + 1])) settings.value.appearance.theme = argv[ti + 1] as 'dark' | 'light' | 'auto'
+  if (ai >= 0 && /^#[0-9a-fA-F]{6}$/.test(argv[ai + 1] ?? '')) settings.value.appearance.accent = argv[ai + 1]
   if (labDir) { registerIpc(); await runLab(labDir, labQuery, labPage); return }
   if (selfCheck) {
     const out: string[] = []

@@ -52,10 +52,10 @@ export const ClipRow = memo(function ClipRow({ item, top, sel, picked, onSelect,
       onDoubleClick={() => onPaste(item.id)}
       style={{ position: 'absolute', left: 0, top, width: 366, height: 36, borderRadius: 10, cursor: 'pointer', background: sel ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : picked ? 'color-mix(in srgb, var(--accent) 11%, transparent)' : undefined }}
     >
-      <span style={{ position: 'absolute', left: 8, top: 5, width: 26, height: 26, borderRadius: 7, display: 'grid', placeItems: 'center', background: sel ? 'color-mix(in srgb, var(--accent) 28%, transparent)' : 'rgba(255,255,255,.07)', color: sel ? 'var(--accent)' : 'var(--muted)' }}>
+      <span style={{ position: 'absolute', left: 8, top: 5, width: 26, height: 26, borderRadius: 7, display: 'grid', placeItems: 'center', background: sel ? 'color-mix(in srgb, var(--accent) 28%, transparent)' : 'rgb(var(--ov) / .07)', color: sel ? 'var(--accent)' : 'var(--muted)' }}>
         <Icon size={16} />
       </span>
-      <span style={{ position: 'absolute', left: 44, right: 52, top: 0, height: 36, lineHeight: '36px', fontSize: 13, fontWeight: sel ? 500 : 400, color: sel ? 'var(--text)' : '#D3D9E3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <span style={{ position: 'absolute', left: 44, right: 52, top: 0, height: 36, lineHeight: '36px', fontSize: 13, fontWeight: sel ? 500 : 400, color: sel ? 'var(--text)' : 'var(--t2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {clipTitle(item)}
       </span>
       <span className="group-hover:opacity-0" style={{ position: 'absolute', right: 8, top: 0, height: 36, lineHeight: '36px', fontSize: 11, color: 'var(--muted)' }}>{short(item.at)}</span>

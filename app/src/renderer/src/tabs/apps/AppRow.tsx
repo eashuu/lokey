@@ -25,7 +25,7 @@ export const AppRow = memo(function AppRow({ e, i, top, sel, onOpen, onStar }: {
   return (
     <Shell i={i} top={top} sel={sel} onOpen={onOpen} tail={kindLabel[e.kind]}>
       <AppIcon id={e.id} name={e.name} />
-      <span style={{ position: 'absolute', left: 50, top: 0, width: 480, height: 42, lineHeight: '42px', fontSize: 14, color: sel ? '#F4F5F8' : '#D3D9E3', ...ell }}>{e.name}</span>
+      <span style={{ position: 'absolute', left: 50, top: 0, width: 480, height: 42, lineHeight: '42px', fontSize: 14, color: sel ? 'var(--t1)' : 'var(--t2)', ...ell }}>{e.name}</span>
       <button
         aria-label={e.starred ? 'Unstar' : 'Star'}
         title={e.starred ? 'Unstar' : 'Star'}
@@ -42,8 +42,8 @@ export const AppRow = memo(function AppRow({ e, i, top, sel, onOpen, onStar }: {
 export const FileRow = memo(function FileRow({ name, path, i, top, sel, onOpen }: { name: string; path: string; i: number; top: number; sel: boolean; onOpen: (i: number) => void }) {
   return (
     <Shell i={i} top={top} sel={sel} onOpen={onOpen} tail="File">
-      <div style={{ position: 'absolute', left: 10, top: 7, width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,.102)', display: 'grid', placeItems: 'center', color: 'var(--soft)' }}><FileText size={15} /></div>
-      <span style={{ position: 'absolute', left: 50, top: 0, width: 240, height: 42, lineHeight: '42px', fontSize: 14, color: sel ? '#F4F5F8' : '#D3D9E3', ...ell }}>{name}</span>
+      <div style={{ position: 'absolute', left: 10, top: 7, width: 28, height: 28, borderRadius: 8, background: 'rgb(var(--ov) / .102)', display: 'grid', placeItems: 'center', color: 'var(--soft)' }}><FileText size={15} /></div>
+      <span style={{ position: 'absolute', left: 50, top: 0, width: 240, height: 42, lineHeight: '42px', fontSize: 14, color: sel ? 'var(--t1)' : 'var(--t2)', ...ell }}>{name}</span>
       <span title={path} style={{ position: 'absolute', left: 300, top: 0, width: 230, height: 42, lineHeight: '42px', fontSize: 11, color: 'var(--muted)', direction: 'rtl', textAlign: 'left', ...ell }}>{path}</span>
     </Shell>
   )

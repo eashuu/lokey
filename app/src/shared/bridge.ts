@@ -60,7 +60,7 @@ export const defaultSettings: Settings = {
     rest: 'sleep',
     tabHotkeys: { controls: '', today: '', stats: '', clipboard: 'Ctrl+Alt+C', apps: 'Ctrl+Alt+A', wallpaper: '', power: '' },
   },
-  appearance: { theme: 'dark', accent: 'wallpaper', scale: 1, animSpeed: 1, reduceMotion: false },
+  appearance: { theme: 'auto', accent: 'wallpaper', scale: 1, animSpeed: 1, reduceMotion: false },
   wallpaper: { folder: null },
   loadout: { soul: 'drop', personality: 'chad', voice: 'Charon', abilities: [], personalities: [{ id: 'chad', name: 'True Chad', prompt: 'Confident, direct, a little cheeky. Short answers. Gets things done.' }] },
   voice: {

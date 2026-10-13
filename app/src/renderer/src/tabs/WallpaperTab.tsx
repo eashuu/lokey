@@ -15,7 +15,7 @@ function Pill({ left, on, onClick, children }: { left: number; on: boolean; onCl
     <button
       onClick={onClick}
       className={`transition duration-100 ease-linear active:scale-[.96] ${on ? '' : 'hover:bg-[var(--fill-3)]'}`}
-      style={{ position: 'absolute', left, top: 3, height: 28, padding: '0 14px', borderRadius: 14, fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', background: on ? 'var(--accent)' : 'rgba(255,255,255,.055)', color: on ? 'var(--accent-ink)' : 'var(--soft)' }}
+      style={{ position: 'absolute', left, top: 3, height: 28, padding: '0 14px', borderRadius: 14, fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', background: on ? 'var(--accent)' : 'rgb(var(--ov) / .055)', color: on ? 'var(--accent-ink)' : 'var(--soft)' }}
     >
       {children}
     </button>

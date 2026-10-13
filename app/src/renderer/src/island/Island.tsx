@@ -178,7 +178,8 @@ export function Island() {
             <stop offset="1" stopColor="#000000" />
           </linearGradient>
         </defs>
-        <motion.path d={path} fill={inMenu ? 'var(--panel)' : 'url(#lk-glass)'} stroke={inMenu ? 'rgba(255,255,255,.10)' : 'none'} strokeWidth={1} />
+        <motion.path d={path} fill="url(#lk-glass)" />
+        <motion.path d={path} className={inMenu ? 'lk-panel-path on' : 'lk-panel-path'} strokeWidth={1} />
       </svg>
 
       <motion.div

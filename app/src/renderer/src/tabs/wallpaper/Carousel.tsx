@@ -46,7 +46,7 @@ function Card({ i, n, pos, it, thumb, active, onClick }: { i: number; n: number;
         )}
       </motion.div>
       <motion.div style={{ position: 'absolute', inset: 0, background: '#000', opacity: dim, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', inset: 0, borderRadius: 12, boxShadow: active ? 'inset 0 0 0 2.2px var(--accent)' : 'inset 0 0 0 1px rgba(255,255,255,.118)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 12, boxShadow: active ? 'inset 0 0 0 2.2px var(--accent)' : 'inset 0 0 0 1px rgb(var(--ov) / .118)', pointerEvents: 'none' }} />
     </motion.div>
   )
 }

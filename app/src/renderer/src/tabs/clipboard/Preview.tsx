@@ -18,7 +18,7 @@ function Meta({ top, k, v }: { top: number; k: string; v: string }) {
   return (
     <>
       <span style={{ position: 'absolute', left: 18, top, height: 20, lineHeight: '20px', fontSize: 12, color: 'var(--muted)' }}>{k}</span>
-      <span style={{ position: 'absolute', left: 92, right: 18, top, height: 20, lineHeight: '20px', fontSize: 12, color: '#D3D9E3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</span>
+      <span style={{ position: 'absolute', left: 92, right: 18, top, height: 20, lineHeight: '20px', fontSize: 12, color: 'var(--t2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</span>
     </>
   )
 }
@@ -41,14 +41,14 @@ export function Preview({ item }: { item: ClipItem | undefined }) {
         <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 13, color: 'var(--muted)' }}>Nothing to preview</div>
       ) : (
         <>
-          <div className="scroll-y" onWheel={e => e.stopPropagation()} style={{ position: 'absolute', left: 18, top: 16, width: 424, height: 174, overflowX: 'hidden', fontSize: 14, lineHeight: 1.5, color: '#E3E8F0', whiteSpace: 'pre-wrap', wordBreak: 'break-word', userSelect: 'text' }}>
+          <div className="scroll-y" onWheel={e => e.stopPropagation()} style={{ position: 'absolute', left: 18, top: 16, width: 424, height: 174, overflowX: 'hidden', fontSize: 14, lineHeight: 1.5, color: 'var(--t2)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', userSelect: 'text' }}>
             {item.kind === 'image' && (mine?.image ?? item.image) ? (
               <img src={mine?.image ?? item.image ?? ''} alt="" draggable={false} style={{ display: 'block', maxWidth: '100%', borderRadius: 10, objectFit: 'contain' }} />
             ) : (
               mine?.text ?? (item.preview || (item.kind === 'image' ? 'Image' : '(empty)'))
             )}
           </div>
-          <div style={{ position: 'absolute', left: 18, right: 18, top: 198, height: 1, background: 'rgba(255,255,255,.086)' }} />
+          <div style={{ position: 'absolute', left: 18, right: 18, top: 198, height: 1, background: 'rgb(var(--ov) / .086)' }} />
           <Meta top={208} k="Type" v={KIND[item.kind]} />
           <Meta top={228} k="Size" v={stats(item, mine?.text ?? null)} />
           <Meta top={248} k="Copied" v={`${dayLabel(item.at)}, ${new Date(item.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}${item.source ? ` · ${item.source}` : ''}`} />

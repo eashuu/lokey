@@ -57,7 +57,7 @@ export async function runBench() {
     is().setView('controls')
     phases.push(await record(`controls#${round}`, 700))
     await trace(`controls${round}`)
-    if (round === 0) { await sleep(500); await b.capture('10-open-controls') }
+    if (round === 0) { await sleep(500); await b.capture('10-open-controls'); { const el = document.querySelector('.lk-panel-path'); const c = getComputedStyle(document.documentElement); bridge.app.log('bench theme: ' + JSON.stringify({ theme: document.documentElement.dataset.theme, panelVar: c.getPropertyValue('--panel'), fill: el && getComputedStyle(el).fill, op: el && getComputedStyle(el).opacity })) } }
     for (const t of tabsOrder.slice(1)) {
       is().setView(t)
       phases.push(await record(`tab:${t}#${round}`, 600))

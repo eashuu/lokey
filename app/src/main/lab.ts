@@ -23,6 +23,7 @@ export async function runLab(dir: string, query: string, page = 'lab') {
     if (done === null) await new Promise(r => setTimeout(r, 100))
   }
   await new Promise(r => setTimeout(r, 300))
+  if (process.env.LOKEY_LAB_EVAL) log.push('eval: ' + JSON.stringify(await win.webContents.executeJavaScript(process.env.LOKEY_LAB_EVAL).catch(e => String(e))))
   const size = await win.webContents.executeJavaScript('({ w: document.querySelector("canvas")?.width ?? 0, h: document.querySelector("canvas")?.height ?? 0 })').catch(() => ({ w: 0, h: 0 }))
   if (page === 'lab') win.setContentSize(Math.max(200, size.w), Math.max(200, size.h))
   await new Promise(r => setTimeout(r, 400))

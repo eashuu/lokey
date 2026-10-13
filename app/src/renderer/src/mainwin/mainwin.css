@@ -3,7 +3,7 @@
 .lk-slot:hover { filter: brightness(1.18); }
 .lk-slot:active { cursor: grabbing; }
 .lk-nav { display: flex; align-items: center; gap: 2px; height: 36px; padding: 0 3px; border-radius: 18px; background: var(--fill-1); }
-.lk-nav-btn { display: flex; align-items: center; height: 30px; padding: 0 8px; border-radius: 15px; color: #8c8791; font-size: 12px; font-weight: 600; overflow: hidden; transition: color 0.2s, background-color 0.2s; }
+.lk-nav-btn { display: flex; align-items: center; height: 30px; padding: 0 8px; border-radius: 15px; color: var(--muted); font-size: 12px; font-weight: 600; overflow: hidden; transition: color 0.2s, background-color 0.2s; }
 .lk-nav-btn:hover { color: var(--text); }
 .lk-nav-btn[data-on="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
 .lk-nav-btn span { display: block; max-width: 0; margin-left: 0; white-space: nowrap; opacity: 0; transition: max-width 0.2s, margin-left 0.2s, opacity 0.2s; }

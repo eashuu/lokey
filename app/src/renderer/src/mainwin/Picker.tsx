@@ -60,7 +60,7 @@ export function Picker({ slot, onClose }: { slot: SlotId; onClose: () => void })
         initial={{ opacity: 0, y: 14, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: dur(0.26), ease: EASE } }}
         exit={{ opacity: 0, y: 14, scale: 0.97, transition: { duration: dur(0.18), ease: EASE } }}
         onClick={e => e.stopPropagation()}
-        style={{ width: 'min(640px, 100%)', maxHeight: '100%', display: 'flex', flexDirection: 'column', borderRadius: 18, background: 'linear-gradient(rgba(255,255,255,.047), rgba(255,255,255,.047)), #10131a', overflow: 'hidden' }}
+        style={{ width: 'min(640px, 100%)', maxHeight: '100%', display: 'flex', flexDirection: 'column', borderRadius: 18, background: 'linear-gradient(rgb(var(--ov) / .047), rgb(var(--ov) / .047)), var(--s1)', overflow: 'hidden' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px 10px' }}>
           <meta.icon size={16} color={meta.color} />
@@ -177,7 +177,7 @@ function PersonalityList({ lo }: { lo: Loadout }) {
           </div>
         </div>
       ) : (
-        <button className="lk-opt" onClick={() => setForm({ id: null, name: '', prompt: '' })} style={{ ...optStyle, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--soft)', border: '1px dashed rgba(255,255,255,.14)' }}>
+        <button className="lk-opt" onClick={() => setForm({ id: null, name: '', prompt: '' })} style={{ ...optStyle, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--soft)', border: '1px dashed rgb(var(--ov) / .14)' }}>
           <Plus size={14} /> New personality
         </button>
       )}

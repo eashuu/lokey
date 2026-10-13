@@ -30,7 +30,7 @@ function dayPrefix(due: number, now: Date) {
 export function NextUp({ now }: { now: Date }) {
   const next = useTodos(s => s.items.filter(t => !t.done && t.due !== null && t.due > now.getTime()).sort((a, b) => a.due! - b.due!)[0])
   return (
-    <div style={{ position: 'absolute', left: 12, top: 112, width: 330, height: 58, borderRadius: 14, background: 'rgba(255,255,255,.055)' }}>
+    <div style={{ position: 'absolute', left: 12, top: 112, width: 330, height: 58, borderRadius: 14, background: 'rgb(var(--ov) / .055)' }}>
       <span style={{ position: 'absolute', left: 12, top: 13, width: 5, height: 32, borderRadius: 2.5, background: '#F28BB6' }} />
       <div style={{ position: 'absolute', left: 28, right: 12, top: 9, height: 18, lineHeight: '18px', fontSize: 13, fontWeight: 500, ...ellipsis }}>{next ? `Next · ${dayPrefix(next.due!, now)}${t12(next.due!)}` : 'Nothing scheduled'}</div>
       <div style={{ position: 'absolute', left: 28, right: 12, top: 29, height: 16, lineHeight: '16px', fontSize: 12, color: 'var(--muted)', ...ellipsis }}>{next ? next.text : 'Add a task with @18:30'}</div>
@@ -42,7 +42,7 @@ export function NextUp({ now }: { now: Date }) {
 function TimeBox({ left, value, unit, editable, onChange }: { left: number; value: number; unit: string; editable: boolean; onChange: (n: number) => void }) {
   const ref = useRef<HTMLInputElement>(null)
   return (
-    <div style={{ position: 'absolute', left, top: 16, width: 103, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.055)' }}>
+    <div style={{ position: 'absolute', left, top: 16, width: 103, height: 36, borderRadius: 10, background: 'rgb(var(--ov) / .055)' }}>
       <input
         ref={ref} readOnly={!editable} value={unit === 'h' ? String(value) : p2(value)} inputMode="numeric"
         onMouseDown={() => editable && pinThen(() => ref.current?.select())}
@@ -69,7 +69,7 @@ export function FocusCard() {
   return (
     <div style={card(188, 194, 354, 174)}>
       <div style={{ position: 'absolute', left: 20, top: 45 }}>
-        <Ring value={done ? 100 : total ? (left / total) * 100 : 0} size={84} stroke={5} track="rgba(255,255,255,.102)" color={done ? 'var(--ok)' : AMBER}>
+        <Ring value={done ? 100 : total ? (left / total) * 100 : 0} size={84} stroke={5} track="rgb(var(--ov) / .102)" color={done ? 'var(--ok)' : AMBER}>
           <span style={{ fontSize: done ? 14 : 17, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{done ? 'Done' : clock(left)}</span>
         </Ring>
       </div>
@@ -78,11 +78,11 @@ export function FocusCard() {
       {PRESETS.map((m, t) => {
         const on = idle ? m === sel : m * 60_000 === f.totalMs
         return (
-          <button key={m} disabled={!idle} onClick={() => setSel(m)} style={{ position: 'absolute', left: 126 + 44 * t, top: 62, width: 38, height: 28, borderRadius: 14, fontSize: 11, fontWeight: 500, background: on ? 'rgba(245,165,36,.2)' : 'rgba(255,255,255,.047)', color: on ? AMBER : '#A3AAB8', transition: 'background-color 140ms, color 140ms' }}>{m}m</button>
+          <button key={m} disabled={!idle} onClick={() => setSel(m)} style={{ position: 'absolute', left: 126 + 44 * t, top: 62, width: 38, height: 28, borderRadius: 14, fontSize: 11, fontWeight: 500, background: on ? 'rgba(245,165,36,.2)' : 'rgb(var(--ov) / .047)', color: on ? AMBER : 'var(--soft)', transition: 'background-color 140ms, color 140ms' }}>{m}m</button>
         )
       })}
       <button onClick={() => (running ? f.pause() : f.start(sel))} style={{ position: 'absolute', left: 126, top: 100, width: 103, height: 36, borderRadius: 11, background: AMBER, color: '#2A1800', fontSize: 13, fontWeight: 500 }}>{label}</button>
-      <button onClick={f.reset} style={{ position: 'absolute', left: 237, top: 100, width: 103, height: 36, borderRadius: 11, background: 'rgba(255,255,255,.07)', fontSize: 13, fontWeight: 500 }}>Reset</button>
+      <button onClick={f.reset} style={{ position: 'absolute', left: 237, top: 100, width: 103, height: 36, borderRadius: 11, background: 'rgb(var(--ov) / .07)', fontSize: 13, fontWeight: 500 }}>Reset</button>
     </div>
   )
 }
@@ -90,7 +90,7 @@ export function FocusCard() {
 function CountRing({ done, total }: { done: number; total: number }) {
   const r = 13, c = 2 * Math.PI * r
   return (
-    <div style={{ position: 'absolute', left: 244, top: 11, width: 30, height: 30, borderRadius: 15, background: 'rgba(255,255,255,.086)' }}>
+    <div style={{ position: 'absolute', left: 244, top: 11, width: 30, height: 30, borderRadius: 15, background: 'rgb(var(--ov) / .086)' }}>
       <span style={{ position: 'absolute', left: 5, top: 5, width: 20, height: 20, borderRadius: 10, background: 'rgb(7,9,13)' }} />
       <svg width={30} height={30} style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}>
         <circle cx={15} cy={15} r={r} fill="none" stroke="#8ED92F" strokeWidth={4} strokeDasharray={c} strokeDashoffset={c * (1 - (total ? done / total : 0))} style={{ transition: 'stroke-dashoffset 600ms cubic-bezier(.33,1,.68,1)' }} />
@@ -117,7 +117,7 @@ export function TodoCard({ now }: { now: Date }) {
         {sorted.length === 0 && <div style={{ fontSize: 12, color: 'var(--muted)', padding: '6px 4px' }}>All clear.</div>}
         {sorted.map(t => <Row key={t.id} t={t} now={now} onToggle={() => toggle(t.id)} onDelete={() => remove(t.id)} />)}
       </div>
-      <div style={{ position: 'absolute', left: 12, top: 312, width: 266, height: 44, borderRadius: 12, border: '1.2px dashed rgba(255,255,255,.157)', boxSizing: 'border-box' }}>
+      <div style={{ position: 'absolute', left: 12, top: 312, width: 266, height: 44, borderRadius: 12, border: '1.2px dashed rgb(var(--ov) / .157)', boxSizing: 'border-box' }}>
         <Plus size={16} color="var(--muted)" style={{ position: 'absolute', left: 12 - 1.2, top: 14 - 1.2 }} />
         <input
           ref={input} value={text} placeholder={mode === 'hover' ? 'Click the island to type…' : 'Add a to-do…'}
@@ -137,8 +137,8 @@ function Row({ t, now, onToggle, onDelete }: { t: Todo; now: Date; onToggle: () 
   const late = !t.done && t.due !== null && t.due < now.getTime()
   const [hover, setHover] = useState(false)
   return (
-    <div onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)} style={{ position: 'relative', width: 266, height: 40, flex: 'none', borderRadius: 12, background: hover ? 'rgba(255,255,255,.086)' : 'rgba(255,255,255,.047)', transition: 'background-color .1s linear' }}>
-      <button onClick={onToggle} aria-label={t.done ? 'Mark not done' : 'Mark done'} style={{ position: 'absolute', left: 11, top: 11, width: 18, height: 18, borderRadius: 9, display: 'grid', placeItems: 'center', boxSizing: 'border-box', border: t.done ? 0 : '1.5px solid rgba(255,255,255,.25)', background: t.done ? 'var(--accent)' : 'transparent', color: 'var(--accent-ink)', transition: 'background-color 140ms' }}>
+    <div onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)} style={{ position: 'relative', width: 266, height: 40, flex: 'none', borderRadius: 12, background: hover ? 'rgb(var(--ov) / .086)' : 'rgb(var(--ov) / .047)', transition: 'background-color .1s linear' }}>
+      <button onClick={onToggle} aria-label={t.done ? 'Mark not done' : 'Mark done'} style={{ position: 'absolute', left: 11, top: 11, width: 18, height: 18, borderRadius: 9, display: 'grid', placeItems: 'center', boxSizing: 'border-box', border: t.done ? 0 : '1.5px solid rgb(var(--ov) / .25)', background: t.done ? 'var(--accent)' : 'transparent', color: 'var(--accent-ink)', transition: 'background-color 140ms' }}>
         {t.done && <Check size={11} strokeWidth={3} />}
       </button>
       <span style={{ position: 'absolute', left: 38, right: hover ? 30 : t.due !== null ? 56 : 12, top: 0, height: 40, lineHeight: '40px', fontSize: 13, color: t.done ? 'var(--muted)' : 'var(--text)', textDecoration: t.done ? 'line-through' : 'none', ...ellipsis }}>{t.text}</span>

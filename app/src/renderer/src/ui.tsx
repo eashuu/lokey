@@ -109,7 +109,7 @@ export function Chip({ children, on, onClick }: { children: ReactNode; on?: bool
 
 export function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd style={{ display: 'inline-grid', placeItems: 'center', height: 20, lineHeight: 1, padding: '0 7px', marginRight: 6, borderRadius: 6, background: 'rgba(255,255,255,.094)', font: '500 11px var(--font-island)', color: 'var(--soft)' }}>
+    <kbd style={{ display: 'inline-grid', placeItems: 'center', height: 20, lineHeight: 1, padding: '0 7px', marginRight: 6, borderRadius: 6, background: 'rgb(var(--ov) / .094)', font: '500 11px var(--font-island)', color: 'var(--soft)' }}>
       {children}
     </kbd>
   )
@@ -121,9 +121,9 @@ export function Tile({ icon, title, sub, on, disabled, onClick, style }: { icon:
     <button
       onClick={onClick}
       disabled={disabled}
-      style={{ position: 'relative', height: 58, borderRadius: 16, textAlign: 'left', background: on ? 'var(--accent)' : 'rgba(255,255,255,.078)', color: on ? 'var(--accent-ink)' : 'var(--text)', transition: 'background-color 180ms cubic-bezier(.33,1,.68,1)', opacity: disabled ? 0.45 : 1, ...style }}
+      style={{ position: 'relative', height: 58, borderRadius: 16, textAlign: 'left', background: on ? 'var(--accent)' : 'rgb(var(--ov) / .078)', color: on ? 'var(--accent-ink)' : 'var(--text)', transition: 'background-color 180ms cubic-bezier(.33,1,.68,1)', opacity: disabled ? 0.45 : 1, ...style }}
     >
-      <span style={{ position: 'absolute', left: 12, top: 12, width: 34, height: 34, borderRadius: 17, display: 'grid', placeItems: 'center', background: on ? 'color-mix(in srgb, var(--accent-ink) 14%, transparent)' : 'rgba(255,255,255,.07)' }}>{icon}</span>
+      <span style={{ position: 'absolute', left: 12, top: 12, width: 34, height: 34, borderRadius: 17, display: 'grid', placeItems: 'center', background: on ? 'color-mix(in srgb, var(--accent-ink) 14%, transparent)' : 'rgb(var(--ov) / .07)' }}>{icon}</span>
       <span style={{ position: 'absolute', left: 56, right: 12, top: sub ? 11 : 20, height: 19, lineHeight: '19px', fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
       {sub && <span style={{ position: 'absolute', left: 56, right: 12, top: 30, height: 16, lineHeight: '16px', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: on ? 'color-mix(in srgb, var(--accent-ink) 62%, transparent)' : 'var(--muted)' }}>{sub}</span>}
     </button>
@@ -148,7 +148,7 @@ export function PillSlider({ value, onChange, onCommit, label, icon, text }: { v
       onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); onChange(at(e)) }}
       onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(at(e)) }}
       onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit?.(at(e)) }}
-      style={{ position: 'relative', height: 38, borderRadius: 19, background: 'rgba(255,255,255,.063)', overflow: 'hidden', touchAction: 'none', cursor: 'pointer' }}
+      style={{ position: 'relative', height: 38, borderRadius: 19, background: 'rgb(var(--ov) / .063)', overflow: 'hidden', touchAction: 'none', cursor: 'pointer' }}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${value * 100}%`, borderRadius: 19, background: 'var(--accent)' }} />
       {icon && <span style={{ position: 'absolute', left: 14, top: 0, height: 38, display: 'grid', placeItems: 'center', color: 'var(--accent-ink)', mixBlendMode: 'normal' }}>{icon}</span>}

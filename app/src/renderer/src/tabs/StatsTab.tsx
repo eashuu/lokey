@@ -12,7 +12,7 @@ const ellipsis = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'elli
 const abs = (left: number, top: number, width: number, height: number, extra?: CSSProperties): CSSProperties => ({ position: 'absolute', left, top, width, height, ...extra })
 
 function Chip({ children }: { children: ReactNode }) {
-  return <span style={{ height: 22, lineHeight: '22px', padding: '0 8px', borderRadius: 7, background: 'rgba(255,255,255,.07)', color: '#C8CFDB', fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{children}</span>
+  return <span style={{ height: 22, lineHeight: '22px', padding: '0 8px', borderRadius: 7, background: 'rgb(var(--ov) / .07)', color: 'var(--t3)', fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{children}</span>
 }
 
 function Dial({ x, label, value, color, sub, chips }: { x: number; label: string; value: number | null; color: string; sub: string; chips: ReactNode[] }) {
@@ -75,10 +75,10 @@ function TopApps({ top }: { top: StatsTick['top'] | null }) {
         const l = 34 + 24 * i
         return (
           <div key={r.name}>
-            <div style={abs(14, l, 22, 22, { borderRadius: 6, display: 'grid', placeItems: 'center', fontSize: 11, background: 'rgba(255,255,255,.118)' })}>{r.name[0]?.toUpperCase()}</div>
+            <div style={abs(14, l, 22, 22, { borderRadius: 6, display: 'grid', placeItems: 'center', fontSize: 11, background: 'rgb(var(--ov) / .118)' })}>{r.name[0]?.toUpperCase()}</div>
             <div style={abs(44, l - 2, 148, 16, { lineHeight: '16px', fontSize: 12, ...ellipsis })}>{r.name}</div>
             <div style={abs(184, l - 2, 64, 16, { lineHeight: '16px', textAlign: 'right', fontSize: 11, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' })}>{by === 'ram' ? (r.ramBytes >= GB ? `${gb(r.ramBytes)} GB` : `${Math.round(r.ramBytes / 2 ** 20)} MB`) : `${r.cpuPct.toFixed(0)}%`}</div>
-            <div style={abs(44, l + 16, 204, 4, { borderRadius: 2, background: 'rgba(255,255,255,.086)', overflow: 'hidden' })}>
+            <div style={abs(44, l + 16, 204, 4, { borderRadius: 2, background: 'rgb(var(--ov) / .086)', overflow: 'hidden' })}>
               <div style={{ height: '100%', width: `${Math.max(4, (r.v / max) * 100)}%`, background: '#8ED92F', borderRadius: 2, transition: 'width 600ms cubic-bezier(.33,1,.68,1)' }} />
             </div>
           </div>

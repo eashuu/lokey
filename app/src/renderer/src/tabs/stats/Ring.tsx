@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 /** Full-circle gauge starting at 12 o'clock, clockwise (the reference look). `value` 0..100. */
-export function FullRing({ value, size, stroke, color, track = 'rgba(255,255,255,.086)', children }: { value: number; size: number; stroke: number; color: string; track?: string; children?: ReactNode }) {
+export function FullRing({ value, size, stroke, color, track = 'rgb(var(--ov) / .086)', children }: { value: number; size: number; stroke: number; color: string; track?: string; children?: ReactNode }) {
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
   const v = Math.min(100, Math.max(0, value))
