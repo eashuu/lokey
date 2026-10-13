@@ -25,8 +25,9 @@ export const POSES: Record<string, Pose> = {
   sleep: {
     emote: 'sleep',
     f: t => ({
-      pitch: 0.38, squash: 0.14 + s(t * 0.9) * 0.035, roll: 0.07, tip: -0.7, eyeL: 0, eyeR: 0, gazeX: 0, gazeY: -0.4,
-      smile: 0.15, aLr: 0, aRr: 0, aLb: 0.3, aRb: 0.3, blush: 0.2, yaw: 0, hop: 0,
+      // lying on its side, breathing slowly
+      roll: 1.22, lower: 0.5, feet: 0.4, pitch: 0.1, squash: 0.06 + s(t * 0.9) * 0.03, puff: 0.1 + 0.07 * s(t * 0.9), tip: -0.5, eyeL: 0, eyeR: 0, gazeX: 0, gazeY: -0.4,
+      smile: 0.2, aLr: 0.1, aRr: 0.2, aLb: 0.6, aRb: 0.6, blush: 0.25, yaw: 0, hop: 0,
     }),
   },
   hear: {
@@ -227,6 +228,57 @@ export const POSES: Record<string, Pose> = {
       return { yaw: a * 0.7, gazeX: a * 0.9, gazeY: 0.1 * s(t * 4), roll: -a * 0.06, tip: a * 0.8 }
     },
   },
+  // ---- postures ------------------------------------------------------------------------------------------------
+  stand: {
+    dur: 2.8,
+    f: t => {
+      const b = clamp01(t / 0.35) * clamp01((2.8 - t) / 0.45)
+      return { squash: -0.09 * b, puff: 0.28 * b, hop: 0.05 * b, feet: -0.15 * b, lower: 0, aLr: 0.02, aRr: 0.02, aLb: 0, aRb: 0, tip: 0.5 * b, eyeL: 1.1, eyeR: 1.1, smile: 0.8, browL: 0.3 * b, browR: 0.3 * b, blush: 0.35 }
+    },
+  },
+  sit: {
+    dur: 6,
+    f: t => {
+      const b = clamp01(t / 0.55) * clamp01((6 - t) / 0.7)
+      return {
+        lower: 0.85 * b, feet: 1 * b, squash: 0.08 * b + s(t * 1.6) * 0.012, pitch: -0.05 * b, aLr: 0.06, aRr: 0.06, aLf: 0.9 * b, aRf: 0.9 * b, aLb: 0.6 * b, aRb: 0.6 * b,
+        smile: 0.7, happy: 0.25 * b, blush: 0.4, tip: s(t * 1.3) * 0.5, gazeY: 0.1 * b, eyeL: 0.9, eyeR: 0.9,
+      }
+    },
+  },
+  lie: {
+    dur: 7,
+    f: t => {
+      const b = clamp01(t / 0.9) * clamp01((7 - t) / 0.9)
+      const asleep = clamp01((t - 1.4) / 1) * clamp01((6 - t) / 0.6)
+      return {
+        roll: 1.22 * b, lower: 0.5 * b, feet: 0.4 * b, squash: 0.06 * b, pitch: 0.1 * b, tip: -0.4 * b, aLr: 0.1, aRr: 0.2, aLb: 0.6, aRb: 0.6,
+        eyeL: 1 - 0.95 * asleep, eyeR: 1 - 0.95 * asleep, smile: 0.4, blush: 0.4, puff: 0.1 + 0.06 * s(t * 1.1) * b,
+      }
+    },
+    emote: 'sleep',
+  },
+  crouch: {
+    dur: 0.8,
+    f: t => {
+      const b = bell(t, 0.8)
+      return { lower: 0.55 * b, squash: 0.2 * b, feet: 0.25 * b, aLr: 0, aRr: 0, aLb: 0.4, aRb: 0.4, eyeL: 0.8, eyeR: 0.8, smile: 0.5 }
+    },
+  },
+  jump: {
+    dur: 1.5,
+    f: t => {
+      // crouch -> launch -> hang with feet tucked -> land -> settle
+      const crouch = clamp01(t / 0.28) * (1 - clamp01((t - 0.28) / 0.08))
+      const air = clamp01((t - 0.3) / 0.12) * (1 - clamp01((t - 0.98) / 0.12))
+      const arc = air * Math.sin(Math.PI * clamp01((t - 0.3) / 0.7))
+      const land = clamp01((t - 1.0) / 0.1) * (1 - clamp01((t - 1.1) / 0.35))
+      return {
+        hop: 1.1 * arc, lower: 0.6 * crouch + 0.4 * land, squash: 0.22 * crouch - 0.1 * air * arc + 0.2 * land, feet: 0.3 * crouch - 1 * air * arc + 0.3 * land,
+        aLr: 0.95 * air, aRr: 0.95 * air, aLo: air, aRo: air, aLb: 0.1, aRb: 0.1, happy: 0.8 * air, smile: 1, mouthOpen: 0.5 * air, eyeL: 1 - 0.35 * crouch, eyeR: 1 - 0.35 * crouch, tip: 1.2 * air, blush: 0.5,
+      }
+    },
+  },
   inhale: {
     dur: 2.4,
     f: t => {
@@ -280,4 +332,5 @@ export const GALLERY: { name: string; label: string }[] = [
   { name: 'peek', label: 'Peek' }, { name: 'spin', label: 'Spin' }, { name: 'stretch', label: 'Stretch' }, { name: 'tilt', label: 'Curious' },
   { name: 'lookaround', label: 'Look around' }, { name: 'bounce', label: 'Bounce' }, { name: 'yawn', label: 'Yawn' }, { name: 'alert', label: 'Alert' },
   { name: 'inhale', label: 'Inhale' }, { name: 'waddle', label: 'Waddle' }, { name: 'roll', label: 'Roll' }, { name: 'belly', label: 'Belly bounce' },
+  { name: 'jump', label: 'Jump' }, { name: 'stand', label: 'Stand tall' }, { name: 'sit', label: 'Sit' }, { name: 'lie', label: 'Lie down' }, { name: 'crouch', label: 'Crouch' },
 ]

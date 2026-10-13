@@ -11,7 +11,7 @@ export const KEYS = [
   'smile', 'mouthOpen', 'mouthRound', 'wobble', // mouth: -1 frown .. 1 grin, open 0..1, O shape 0..1, trembling 0..1
   'blush',
   'puff',                                       // inflate 0..1 (the round body swells; used by inhale / celebrate)
-  'jx', 'jy',                                  // jelly: sideways shear and extra squash, driven by the body's own acceleration
+  'lower', 'feet',                             // posture: body sinks toward the floor 0..1; feet 0 = standing, +1 = stretched out in front (sitting), -1 = tucked up (jumping)
 ] as const
 export type Key = (typeof KEYS)[number]
 export type Params = Record<Key, number>
@@ -23,7 +23,7 @@ export const NEUTRAL: Params = {
   browL: 0, browR: 0, browAng: 0, happy: 0,
   smile: 0.45, mouthOpen: 0, mouthRound: 0, wobble: 0,
   blush: 0.25,
-  puff: 0.1, jx: 0, jy: 0,
+  puff: 0.1, lower: 0, feet: 0,
 }
 
 // [angular frequency, damping ratio]; < 1 overshoots (bouncy), 1 settles without overshoot
@@ -32,7 +32,7 @@ const SPRING: Partial<Record<Key, [number, number]>> = {
   hop: [40, 0.42], squash: [32, 0.45], scale: [30, 0.55], tip: [20, 0.4],
   eyeL: [46, 1], eyeR: [46, 1], mouthOpen: [36, 0.85], mouthRound: [30, 0.9], smile: [28, 0.8],
   gazeX: [22, 0.9], gazeY: [22, 0.9], happy: [30, 0.9], blush: [10, 1], wobble: [20, 1],
-  puff: [20, 0.45], jx: [15, 0.13], jy: [17, 0.12],
+  puff: [20, 0.45], lower: [22, 0.7], feet: [26, 0.6],
   aLr: [30, 0.55], aRr: [30, 0.55], aLb: [32, 0.6], aRb: [32, 0.6],
 }
 

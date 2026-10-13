@@ -22,7 +22,7 @@ float sdCap(vec3 p, vec3 a, vec3 b, float r){ vec3 pa = p - a, ba = b - a; float
 float ell(vec2 p, vec2 r){ return (length(p / r) - 1.) * min(r.x, r.y); }
 
 mat3 BR; vec3 BC; float SQ; float SC;
-float FORM; float PUFF; vec2 JEL;
+float FORM; float PUFF; float LOWER; float FEET;
 float G_dBody, G_dFoot;
 
 // body: u8.x = form (0 water drop .. 1 round puffball), u1.w = tuft sway
@@ -56,17 +56,18 @@ float arm(vec3 q, float side, vec4 a){
   d = smin(d, sdCap(q, e, h, mix(.075, .095, FORM)), .06);
   return smin(d, length(q - h) - (mix(.115, .135, FORM) + a.w * .03), .05);
 }
-// two oval feet under the puffball (they lift a little when it hops)
+// two oval feet under the puffball: they lift when it hops, tuck up in a jump (FEET < 0) and stretch out in front when it sits (FEET > 0)
 float feet(vec3 q){
-  float lift = clamp(u1.y, 0., 1.) * .07;
-  vec3 r = vec3(.17, .1, .21);
-  vec3 a = (q - vec3(-.2, -.53 + lift, .1)) / r, b = (q - vec3(.2, -.53 + lift, .1)) / r;
+  float sit = max(FEET, 0.), tuck = max(-FEET, 0.);
+  float lift = clamp(u1.y, 0., 1.) * .07 + tuck * .17 + sit * .13;
+  vec3 r = vec3(.17, .1, .21 + sit * .05);
+  vec3 c = vec3(.2 + sit * .09, -.53 + lift, .1 + sit * .3 - tuck * .05);
+  vec3 a = (q - vec3(-c.x, c.y, c.z)) / r, b = (q - c) / r;
   return (min(length(a), length(b)) - 1.) * .1;
 }
 vec3 toLocal(vec3 p){
   vec3 q = transpose(BR) * (p - BC);
-  float sq = clamp(SQ + JEL.y, -.45, .5);
-  q.x += q.y * JEL.x * .6;             // jelly shear
+  float sq = clamp(SQ + LOWER * .1, -.45, .5);
   q.y /= (1. - sq); q.xz /= (1. + sq * .5); q /= SC;
   return q;
 }
@@ -90,9 +91,9 @@ void main(){
   float asp = uRes.x / uRes.y;
   vec2 uv = (gl_FragCoord.xy / uRes.y - vec2(asp * .5, .5)) * 2.;
   BR = rotZ(u0.z) * rotX(u0.y) * rotY(u0.x);
-  BC = vec3(u1.x * .12, u1.y * .24, 0.);
+  BC = vec3(u1.x * .12, u1.y * .24 - u8.z * .2, 0.);
   SQ = u0.w; SC = max(.2, u1.z);
-  FORM = u8.x; PUFF = u8.y; JEL = u8.zw;
+  FORM = u8.x; PUFF = u8.y; LOWER = u8.z; FEET = u8.w;
 
   vec3 ro = vec3(0., 0., 5.);
   vec3 tp = vec3(uv.x * hh, uv.y * hh, 0.);
@@ -276,7 +277,7 @@ export class MascotGL {
     gl.uniform4f(u.u5, P.browL, P.browR, P.browAng, P.happy)
     gl.uniform4f(u.u6, P.smile, P.mouthOpen, P.mouthRound, P.wobble)
     gl.uniform4f(u.u7, P.blush, halo, time, frame)
-    gl.uniform4f(u.u8, c.form, P.puff, P.jx, P.jy)
+    gl.uniform4f(u.u8, c.form, P.puff, P.lower, P.feet)
     gl.uniform3fv(u.cFoot, hex(c.foot))
     gl.uniform3fv(u.cTop, hex(c.top))
     gl.uniform3fv(u.cBot, hex(c.bottom))

@@ -31,7 +31,8 @@ export class Brain {
   private glance = { x: 0, y: 0, until: 0 }
   private lastMode = ''
   private out: Params = { ...NEUTRAL }
-  private pv = { hop: 0, leanX: 0, yaw: 0, squash: 0 }
+  private gz = { x: 0, y: 0 }
+  private idleFor = 0
 
   constructor(private emit: (k: EmoteKind) => void) { this.rig.snap(NEUTRAL) }
 
@@ -84,17 +85,24 @@ export class Brain {
       gx = this.glance.x; gy = this.glance.y
     }
 
+    this.gz.x += (gx - this.gz.x) * Math.min(1, dt * 4)
+    this.gz.y += (gy - this.gz.y) * Math.min(1, dt * 4)
+    gx = this.gz.x; gy = this.gz.y
+
     const fresh = performance.now() - mascot.levelAt < 300
     const level = this.state === 'hear' ? (fresh ? mascot.level : 0) : this.state === 'talk' ? (fresh ? mascot.level : 0.25 + 0.4 * Math.abs(Math.sin(this.t * 7.3)) * (0.6 + 0.4 * Math.sin(this.t * 2.1))) : 0
     const ctx: Ctx = { gx, gy, level }
 
-    // idle fidgets
+    // idle fidgets; a long quiet spell ends with sitting down and, much later, lying down
+    if (this.one || this.state !== 'idle') this.idleFor = 0
+    else this.idleFor += dt
     if (!inp.calm && inp.awake && !this.one && this.state === 'idle') {
       this.nextFidget -= dt
       if (this.nextFidget <= 0) {
-        const pick = ['lookaround', 'tilt', 'stretch', 'bounce', 'spin', 'peek', 'belly', 'waddle', 'inhale']
+        const long = this.idleFor > 70
+        const pick = long ? ['sit', 'lie'] : this.idleFor > 25 ? ['sit', 'stand', 'jump', 'lookaround'] : ['lookaround', 'tilt', 'stretch', 'jump', 'peek', 'stand', 'waddle', 'inhale']
         this.play(pick[Math.floor(Math.random() * pick.length)])
-        this.nextFidget = rand(7, 14)
+        this.nextFidget = rand(8, 15)
       }
     }
     if (this.state === 'sleep') {
@@ -105,19 +113,10 @@ export class Brain {
     // compose the target: neutral + eye contact + state pose + one-shot (which wins where it speaks)
     const pose = this.one ? POSES[this.one.name] : POSES[this.state]
     const lt = this.one ? this.t - this.one.t0 : this.stateT
-    const tgt: Params = { ...NEUTRAL, yaw: gx * 0.32, pitch: -gy * 0.14, gazeX: gx, gazeY: gy }
+    const tgt: Params = { ...NEUTRAL, yaw: gx * 0.2, pitch: -gy * 0.1, gazeX: gx, gazeY: gy }
     Object.assign(tgt, POSES[this.state].f(this.stateT, ctx))
     if (this.one) Object.assign(tgt, pose.f(lt, ctx))
     if (inp.calm) { tgt.hop *= 0.3; tgt.tip *= 0.3 }
-    // jelly: the body lags behind its own acceleration (lands -> squashes wide, takes off -> stretches, swings -> shears)
-    const v = this.rig.vel
-    const k = 1 / Math.max(dt, 0.004)
-    const ha = (v.hop - this.pv.hop) * k, la = (v.leanX - this.pv.leanX) * k, ya = (v.yaw - this.pv.yaw) * k, sa = (v.squash - this.pv.squash) * k
-    this.pv = { hop: v.hop, leanX: v.leanX, yaw: v.yaw, squash: v.squash }
-    const clamp = (x: number, m: number) => Math.max(-m, Math.min(m, x))
-    const amp = inp.calm ? 0.3 : 1
-    tgt.jy = clamp(-ha * 0.0016 + sa * 0.0008, 0.3) * amp
-    tgt.jx = clamp(-la * 0.004 - ya * 0.012, 0.4) * amp
     this.rig.step(tgt, dt)
 
     // blinking sits on top of the springs (instant); never while the pose keeps the eyes shut
