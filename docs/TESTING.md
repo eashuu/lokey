@@ -17,5 +17,15 @@ Developer check without touching your input: `Lokey.exe --uitest <dir>` injects 
 9. **Edge glow**: Settings -> Appearance -> "Preview screen glow" (Thinking / Speaking / Off).
 10. **Settings** (tray menu): island size, trigger, resting shape, accent.
 
+## Voice, dictation, circle to ask and the 3D spirit (new)
+Setup once: tray menu -> Settings -> Voice. Paste a Google AI Studio key (free from aistudio.google.com) and press Save. It is stored encrypted on this PC and only sent to Google. Windows must allow microphone access for desktop apps (Settings -> Privacy -> Microphone).
+Without a key you can still look at everything: `Lokey.exe --demo schedule`, `--demo dictation`, `--demo lasso` replay the three reference scenarios with scripted text (no microphone, no network, no app launched; overlays are click-through and take no focus). `Lokey.exe --lab <folder>` renders every pose of the spirit into `<folder>\lab.png`.
+
+11. **Spirit (3D)**: hover the notch (it waves), watch it idle, glance at the pointer and fidget. Tray -> Open lokey -> Soul: the state chips (Idle, Asleep, Listening, Thinking, Talking, Writing, Looking) and the action chips (Wave, Celebrate, Shrug, Spin...) preview everything. Tell me which poses look wrong.
+12. **Talk**: hold `Ctrl+Alt+V`, say "open Visual Studio Code, then open Netflix an hour later", release. Expect: the notch opens with the spirit listening, a white "YOU" pill at the bottom of the screen streams your words, then a black pill says "Scheduled: I will open Netflix today at ...", VS Code opens, and an hour later (try "in two minutes" first) Netflix opens with "Opening Netflix.". Desk page lists the scheduled task (Run now / Cancel). Typing instead: Settings -> Voice -> "Try it by typing".
+13. **Dictation**: click into any text box (Notepad, a browser field, a chat), hold `Ctrl+Win`, talk badly ("let's meet at 6, ah no, make it 7"), release. Expect a black pill with blue bars on the field's bottom edge, a bubble streaming the raw words, the bubble rewriting itself, a check mark, and the clean sentence typed into the field. Password fields are refused on purpose.
+14. **Circle to ask**: hold `Ctrl+Shift` for a moment (a quick tap does nothing), draw a loop with the mouse around something on screen, ask out loud ("open the store page of this game"), release the keys. Expect a glowing loop, the question in the pill and the answer or the action.
+For each failure send: what you did, what happened, `%LocalAppData%\Lokey\main.log` (last 30 lines). Known unverifiable by me: real microphone audio, the real Gemini conversation, the exact caret position in every app.
+
 ## What to send back
 For each failure: what you did, what you expected, what happened, plus the last ~30 lines of `main.log` and `host.log`. For hangs: whether the pointer froze system-wide or only the island, and for how long.
