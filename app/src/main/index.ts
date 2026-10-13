@@ -13,6 +13,7 @@ import { runDemo } from './agent/demo'
 import { Scheduler } from './agent/scheduler'
 import { readMemory, toolsSelfCheck, writeMemory } from './agent/tools'
 import { Agent } from './agent/agent'
+import { Dictation } from './agent/dictation'
 import type { VoiceEvent } from '@shared/voice'
 
 // ---- args -----------------------------------------------------------------------------------------
@@ -80,6 +81,7 @@ const sidecar = new Sidecar()
 sidecar.setMaxListeners(64)
 initEffects(sidecar)
 const agent = new Agent(sidecar, (e: VoiceEvent) => { for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('lokey:voice', e) })
+const dictation = new Dictation(sidecar, agent.audio, (t, tone) => agent.notice(t, tone))
 agent.on('tasks', t => { for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('lokey:voice:tasks', t) })
 const eventCounts: Record<string, number> = {}
 sidecar.on('log', log)
@@ -209,6 +211,7 @@ const FWD: EventName[] = [
 ]
 const HOTKEY_ISLAND = 1
 const HOLD_TALK = 2
+const HOLD_DICT = 3
 
 async function registerHotkeys() {
   if (!sidecar.ready) return
@@ -221,13 +224,23 @@ async function registerHotkeys() {
   if (v.enabled) {
     const r = await sidecar.call('hotkey.registerHold', { id: HOLD_TALK, combo: v.pushToTalk }).catch(() => ({ ok: false, reason: 'call failed' }))
     if (!r.ok) log(`push-to-talk chord failed: ${r.reason}`)
+    if (v.dictation) {
+      const d = await sidecar.call('hotkey.registerHold', { id: HOLD_DICT, combo: v.dictationKey }).catch(() => ({ ok: false, reason: 'call failed' }))
+      if (!d.ok) log(`dictation chord failed: ${d.reason}`)
+    }
   }
 }
 
 function wireSidecar() {
   for (const name of FWD) sidecar.onEvent(name, data => { eventCounts[name] = (eventCounts[name] ?? 0) + 1; overlay?.webContents.send('lokey:event', name, data) })
-  sidecar.onEvent('hotkey.down', ({ id }) => { if (id === HOLD_TALK) void agent.begin('assistant') })
-  sidecar.onEvent('hotkey.up', ({ id }) => { if (id === HOLD_TALK) void agent.end() })
+  sidecar.onEvent('hotkey.down', ({ id }) => {
+    if (id === HOLD_TALK && !dictation.active) void agent.begin('assistant')
+    else if (id === HOLD_DICT && !agent.busy) void dictation.begin()
+  })
+  sidecar.onEvent('hotkey.up', ({ id }) => {
+    if (id === HOLD_TALK) void agent.end()
+    else if (id === HOLD_DICT) void dictation.end()
+  })
   sidecar.onEvent('hotkey.pressed', ({ id }) => { if (id === HOTKEY_ISLAND) send({ type: 'toggle-island' }) })
   sidecar.onEvent('fullscreen.changed', ({ full }) => {
     if (!overlay || overlay.isDestroyed()) return

@@ -46,6 +46,9 @@ export class Agent extends EventEmitter {
 
   private turnDone = false
 
+  /** a turn is in progress (dictation and the assistant never overlap) */
+  get busy() { return this.state !== 'idle' }
+
   info(): VoiceInfo { return { hasKey: hasKey(), state: this.state, tasks: this.scheduler.list() } }
   setKey(k: string) { const ok = setKey(k); this.emit('info'); return ok }
   clearKey() { clearKey(); this.closeSession(); this.emit('info') }

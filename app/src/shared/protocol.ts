@@ -171,6 +171,10 @@ export interface Methods {
 
   'power.do': [{ action: PowerAction }, {}]
   'foreground.get': [{}, ForegroundInfo]
+
+  // dictation: where the focused text field is (physical screen px), and typing into it
+  'text.focusRect': [{}, { x: number; y: number; w: number; h: number; source: 'uia' | 'focus' | 'caret' | 'window' | 'screen'; password: boolean; hwnd: number }]
+  'text.insert': [{ text: string; hwnd?: number }, { ok: boolean; reason?: string }]
 }
 
 // ---- events: name -> data ---------------------------------------------------------------------

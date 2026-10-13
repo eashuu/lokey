@@ -9,6 +9,7 @@ import { MainApp } from './mainwin/MainApp'
 import { Lab } from './mascot/Lab'
 import { AgentApp } from './agent/AgentApp'
 import { CaptionApp } from './agent/CaptionApp'
+import { DictationApp } from './agent/DictationApp'
 
 function route() {
   const h = location.hash.split('?')[0]
@@ -19,6 +20,7 @@ function route() {
   if (h === '#lab') return <Lab />
   if (h === '#agent') return <AgentApp />
   if (h === '#caption') return <CaptionApp />
+  if (h === '#dictation') return <DictationApp />
   return <App />
 }
 

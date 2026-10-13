@@ -25,6 +25,7 @@ internal static class Boot
         Wallpaper.Register();
         Desktops.Register();
         Foreground.Register();
+        TextInput.Register();
     }
 
     static async Task Step(string name, Func<Task> f)

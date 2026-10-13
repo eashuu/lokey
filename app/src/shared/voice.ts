@@ -41,10 +41,11 @@ export interface VoiceInfo {
 
 /** Dictation overlay window input: where the focused field is and what to show. */
 export interface DictationEvent {
-  type: 'start' | 'raw' | 'clean' | 'done' | 'cancel'
-  /** field rectangle in screen DIPs; the bar sits at its bottom edge */
+  type: 'start' | 'raw' | 'clean' | 'done' | 'cancel' | 'level' | 'error'
+  /** field rectangle in DIPs relative to the overlay (= the display); the bar sits at its bottom edge */
   rect?: { x: number; y: number; w: number; h: number }
   text?: string
+  v?: number
 }
 
 /** Lasso overlay window input. */
