@@ -86,7 +86,7 @@ function SoulGrid({ lo }: { lo: Loadout }) {
     <div style={grid(170)}>
       {Object.entries(SOUL_SKINS).map(([id, s]) => (
         <div key={id} className="lk-opt" onClick={() => write({ soul: id })} style={{ ...optStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-          <Soul width={96} height={96} mode="LISTENING" active palette={s.palette} />
+          <Soul width={96} height={96} mode="LISTENING" active quiet palette={s.palette} />
           <div style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</div>
           <UseBtn on={lo.soul === id} onClick={() => write({ soul: id })} />
         </div>

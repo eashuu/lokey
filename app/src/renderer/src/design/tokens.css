@@ -144,6 +144,7 @@ button {
 .row-hover { transition: background-color 120ms; border-radius: 0.625rem; }
 .row-hover:hover, .row-hover[data-sel="true"] { background: var(--fill-2); }
 .scroll-y { overflow-y: auto; overscroll-behavior: contain; }
+.scroll-x { overflow-x: auto; overscroll-behavior: contain; scrollbar-width: none; }
 input.field { background: var(--s2); border: 1px solid var(--line); border-radius: 0.75rem; color: var(--text); padding: 0.5rem 0.75rem; font: inherit; font-size: 0.8125rem; outline: none; user-select: text; width: 100%; }
 input.field:focus { border-color: var(--accent); }
 

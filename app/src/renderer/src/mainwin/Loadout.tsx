@@ -4,7 +4,9 @@ import { useData } from '@/lib/data'
 import { clamp } from '@/lib/format'
 import { Soul } from '@/island/Soul'
 import { SOUL_SKINS } from '@/island/skins'
+import type { SoulMode } from '@/island/store'
 import { Picker } from './Picker'
+import { PoseBar } from './PoseBar'
 import { SLOTS, type SlotId } from './slots'
 
 const N = 19                       // rope points
@@ -31,6 +33,7 @@ export function Loadout() {
   const reduce = useData(s => s.settings.appearance.reduceMotion)
   const visible = useVisible()
   const [picker, setPicker] = useState<SlotId | null>(null)
+  const [soulMode, setSoulMode] = useState<SoulMode>('LISTENING')
 
   const stage = useRef<HTMLDivElement>(null)
   const cv = useRef<HTMLCanvasElement>(null)
@@ -208,7 +211,7 @@ export function Loadout() {
       {/* the spirit inside a soft ring; opaque inside so rope ends emerge from its edge */}
       <div style={{ position: 'absolute', left: '50%', top: 'calc(50% + 6px)', width: 176, height: 176, marginLeft: -88, marginTop: -88, borderRadius: '50%', display: 'grid', placeItems: 'center', pointerEvents: 'none',
         boxSizing: 'border-box', border: '2px solid rgba(255,255,255,.1)', background: `radial-gradient(circle, ${palette.glow}38 0%, ${palette.glow}14 55%, transparent 100%), #0d0f14` }}>
-        <Soul width={128} height={128} mode="LISTENING" active={visible} palette={palette} />
+        <Soul width={150} height={150} mode={soulMode} active={visible} palette={palette} />
       </div>
       {SLOTS.map((s, i) => (
         <div key={s.id} ref={el => { els.current[i] = el }} className="lk-slot" role="button" tabIndex={0} aria-label={`${s.title}: ${values[s.id]}`}
@@ -224,6 +227,7 @@ export function Loadout() {
           </div>
         </div>
       ))}
+      <div style={{ position: 'absolute', left: 28, right: 28, bottom: 8 }}><PoseBar mode={soulMode} onMode={setSoulMode} /></div>
       <AnimatePresence>{picker && <Picker key="picker" slot={picker} onClose={() => setPicker(null)} />}</AnimatePresence>
     </div>
   )

@@ -8,12 +8,16 @@ import { dataDir, settings } from './settings'
 import { createTray, openMain, openSettings } from './windows'
 import { initEffects, revealWallpaper, setGlow, setGlowSuppressed } from './effects'
 import { runUiTest } from './uitest'
+import { runLab } from './lab'
 
 // ---- args -----------------------------------------------------------------------------------------
 const argv = process.argv.slice(1)
 const useMock = argv.includes('--mock')
 const uiTestIdx = argv.indexOf('--uitest')
 const uiTestDir = uiTestIdx >= 0 ? (argv[uiTestIdx + 1] && !argv[uiTestIdx + 1].startsWith('--') ? argv[uiTestIdx + 1] : join(dataDir, 'uitest')) : null
+const labIdx = argv.indexOf('--lab')
+const labDir = labIdx >= 0 ? argv[labIdx + 1] : null
+const labQuery = argv.indexOf('--lab-query') >= 0 ? argv[argv.indexOf('--lab-query') + 1] : ''
 const benchIdx = argv.indexOf('--bench')
 const benchDir = benchIdx >= 0 ? (argv[benchIdx + 1] && !argv[benchIdx + 1].startsWith('--') ? argv[benchIdx + 1] : join(dataDir, 'bench')) : null
 
@@ -27,7 +31,7 @@ process.on('uncaughtException', e => log(`uncaught ${e.stack ?? e}`))
 process.on('unhandledRejection', e => log(`unhandled ${e}`))
 
 // ---- single instance (a second launch opens Settings in the first) --------------------------------
-if (!benchDir && !uiTestDir && !app.requestSingleInstanceLock()) { app.quit() }
+if (!benchDir && !uiTestDir && !labDir && !app.requestSingleInstanceLock()) { app.quit() }
 app.on('second-instance', () => openSettings())
 
 // Compositor-friendly defaults for a transparent always-on-top overlay.
@@ -215,6 +219,7 @@ function wireSidecar() {
 // ---- lifecycle ---------------------------------------------------------------------------------------------
 app.whenReady().then(async () => {
   settings.load()
+  if (labDir) { await runLab(labDir, labQuery); return }
   registerIpc()
   wireSidecar()
   if (benchDir || argv.includes('--diag')) startLagMonitor()

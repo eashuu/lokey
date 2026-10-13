@@ -3,7 +3,7 @@ import type { TabId } from '@shared/bridge'
 import type { Shape, View } from './shapes'
 
 export type OpenMode = 'hover' | 'pinned'
-export type SoulMode = 'MUTED' | 'LISTENING' | 'THINKING' | 'TALKING' | 'YAWNING'
+export type SoulMode = 'MUTED' | 'LISTENING' | 'HEARING' | 'THINKING' | 'TALKING' | 'YAWNING' | 'WRITING' | 'LOOKING'
 export type HeldPhase = 'listening' | 'thinking' | 'done'
 export interface Caption { kind: 'said' | 'reply'; text: string }
 export interface Peek { icon: string; label: string; value: number | null; text: string }
