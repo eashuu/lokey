@@ -10,6 +10,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "package": "node scripts/package.mjs",
     "sidecar": "dotnet build ../native/Lokey.Host -c Release"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "electron": "^44.7.0",
     "electron-vite": "^5.0.0",
+    "rcedit": "^5.0.2",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.3",
     "vite": "^7.3.7"

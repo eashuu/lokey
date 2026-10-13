@@ -8,3 +8,4 @@ out/
 dist/
 .serena/
 *.log
+release/
