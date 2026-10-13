@@ -27,5 +27,13 @@ Without a key you can still look at everything: `Lokey.exe --demo schedule`, `--
 14. **Circle to ask**: hold `Ctrl+Shift` for a moment (a quick tap does nothing), draw a loop with the mouse around something on screen, ask out loud ("open the store page of this game"), release the keys. Expect a glowing loop, the question in the pill and the answer or the action.
 For each failure send: what you did, what happened, `%LocalAppData%\Lokey\main.log` (last 30 lines). Known unverifiable by me: real microphone audio, the real Gemini conversation, the exact caret position in every app.
 
+## Round 5 checks (shadows, themes, spirit, clicks, shortcuts, clipboard)
+15. **Shadows and glows**: hover the notch on a light and on a dark window: the shadow under the island must fade out smoothly with no straight cut lines or boxes; the spirit's glow in the notch has no box around it. Settings -> Appearance -> "Preview screen glow": a soft glow around the whole screen edge, rounded corners, no visible bands.
+16. **Themes**: Settings -> Appearance -> Theme: Dark, Light, Follow Windows. In Follow Windows, flip Windows' app mode (the Controls "Dark mode" tile does it) and the island, Settings and the Loadout window should follow within a second. The panel takes a tint from the wallpaper accent (dark: near-black tint, light: near-white tint). Tell me any text that is hard to read in light mode.
+17. **Spirit**: it is a pink puffball now (Loadout -> Soul lists Puff, Bloom, Sunny, Minty, Sky and the old droplet skins). Try the Inhale, Waddle, Roll and Belly bounce chips in the Loadout pose bar.
+18. **Clicks**: the notch opens on press now. If a click ever does nothing, send `main.log`: lines starting with `input:` explain what the window saw (a press with no release, a cancelled pointer).
+19. **Clipboard**: copy a long text (several paragraphs) and select it in the Clipboard tab: the preview shows all of it and scrolls.
+20. **Shortcuts**: Settings -> Shortcuts: every tab can have its own global shortcut (defaults `Ctrl+Alt+A` Apps, `Ctrl+Alt+C` Clipboard); pressing it again closes the island. A row warns "Taken by another app" when Windows or another program owns the combination.
+
 ## What to send back
 For each failure: what you did, what you expected, what happened, plus the last ~30 lines of `main.log` and `host.log`. For hangs: whether the pointer froze system-wide or only the island, and for how long.
