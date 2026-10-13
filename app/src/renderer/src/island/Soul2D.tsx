@@ -4,8 +4,8 @@ import type { SoulMode } from './store'
 // The island's mascot: a glowing water-drop spirit with a face and two little hands (original artwork).
 // It only runs a render loop while `active`; when the island sleeps or the menu is open nothing is scheduled.
 
-export interface SoulPalette { top: string; bottom: string; glow: string; ink: string }
-export const DEFAULT_PALETTE: SoulPalette = { top: '#F4FCFF', bottom: '#8CCBFF', glow: '#54A8FF', ink: '#0E2A55' }
+export interface SoulPalette { top: string; bottom: string; glow: string; ink: string; foot?: string; /** 0 = water drop, 1 = round puffball */ form?: number }
+export const DEFAULT_PALETTE: SoulPalette = { top: '#FFE3EF', bottom: '#FFA6CD', glow: '#FF7FB8', ink: '#2A1740', foot: '#E5457A', form: 1 }
 
 const rgba = (hex: string, a: number) => {
   const n = parseInt(hex.slice(1), 16)

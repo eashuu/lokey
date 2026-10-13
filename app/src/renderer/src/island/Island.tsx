@@ -11,7 +11,7 @@ import { Caption } from './Caption'
 import { Held } from './Held'
 import { PeekRow } from './Peek'
 import { Soul } from './Soul'
-import { SOUL_SKINS } from './skins'
+import { skinPalette } from './skins'
 import { useIsland } from './store'
 
 /**
@@ -219,7 +219,7 @@ export function Island() {
       <Caption top={(NOTCH_BASE * 75 + 26) * k} scale={k} />
 
       <motion.div style={{ position: 'absolute', left: cx - soulW / 2, top: 0, y: soulY, width: soulW, height: soulH, opacity: soulOn ? 1 : 0, transition: 'opacity 300ms linear', pointerEvents: 'none' }}>
-        <Soul width={soulW} height={soulH} mode={soulMode} active={soulOn} palette={SOUL_SKINS[skin ?? '']?.palette} />
+        <Soul width={soulW} height={soulH} mode={soulMode} active={soulOn} palette={skinPalette(skin)} />
       </motion.div>
     </div>
   )

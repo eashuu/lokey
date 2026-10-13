@@ -3,7 +3,7 @@ import { AnimatePresence } from 'motion/react'
 import { useData } from '@/lib/data'
 import { clamp } from '@/lib/format'
 import { Soul } from '@/island/Soul'
-import { SOUL_SKINS } from '@/island/skins'
+import { SOUL_SKINS, skinPalette } from '@/island/skins'
 import type { SoulMode } from '@/island/store'
 import { Picker } from './Picker'
 import { PoseBar } from './PoseBar'
@@ -199,7 +199,7 @@ export function Loadout() {
     voice: loadout.voice,
     abilities: loadout.abilities.length ? `${loadout.abilities.length} on` : '—',
   }
-  const palette = (SOUL_SKINS[loadout.soul] ?? SOUL_SKINS.drop).palette
+  const palette = skinPalette(loadout.soul)
 
   return (
     <div ref={stage} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>

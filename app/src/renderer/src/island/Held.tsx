@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import { useData } from '@/lib/data'
 import { mascot } from '@/mascot/bus'
 import { Soul } from './Soul'
+import { skinPalette } from './skins'
 import { voiceLevel } from './voice'
 import type { HeldPhase } from './store'
 
@@ -16,6 +17,7 @@ const SHAPE = [0.35, 0.62, 0.85, 1, 0.85, 0.62, 0.35]
 export function Held({ width, height, phase, level }: { width: number; height: number; phase: HeldPhase; level?: () => number }) {
   const bars = useRef<(HTMLSpanElement | null)[]>([])
   const dots = useRef<(HTMLSpanElement | null)[]>([])
+  const skin = useData(s => s.settings.loadout?.soul)
   useEffect(() => { if (phase === 'done') mascot.play('celebrate') }, [phase])
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function Held({ width, height, phase, level }: { width: number; height: n
 
   return (
     <div style={{ position: 'absolute', inset: 0, width, height, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-      <Soul width={height * 0.95} height={height * 0.95} mode={phase === 'thinking' ? 'THINKING' : phase === 'listening' ? 'HEARING' : 'LISTENING'} active />
+      <Soul width={height * 0.95} height={height * 0.95} mode={phase === 'thinking' ? 'THINKING' : phase === 'listening' ? 'HEARING' : 'LISTENING'} active palette={skinPalette(skin)} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: width * 0.34, height: '100%', gap: 3 }}>
         {phase === 'listening' && SHAPE.map((_, i) => (
           <span key={i} ref={el => { bars.current[i] = el }} style={{ display: 'block', width: 4.8, height: 4.8, margin: '0 1px', borderRadius: '50%', background: '#fff' }} />

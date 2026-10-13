@@ -18,7 +18,7 @@ export const POSES: Record<string, Pose> = {
   // ---- states (loop until the app state changes) -----------------------------------------------------------
   idle: {
     f: (t, c) => ({
-      squash: s(t * 1.9) * 0.028, roll: s(t * 0.8) * 0.035 + c.gx * -0.05, tip: s(t * 1.5) * 0.5,
+      squash: s(t * 1.9) * 0.028, puff: 0.12 + 0.1 * s(t * 1.9), roll: s(t * 0.8) * 0.035 + c.gx * -0.05, tip: s(t * 1.5) * 0.5,
       aLr: 0.06 + s(t * 1.7) * 0.035, aRr: 0.06 + s(t * 1.7 + 1) * 0.035, smile: 0.5, blush: 0.28,
     }),
   },
@@ -227,6 +227,40 @@ export const POSES: Record<string, Pose> = {
       return { yaw: a * 0.7, gazeX: a * 0.9, gazeY: 0.1 * s(t * 4), roll: -a * 0.06, tip: a * 0.8 }
     },
   },
+  inhale: {
+    dur: 2.4,
+    f: t => {
+      const up = clamp01(t / 0.7)
+      const out = clamp01((t - 1.3) / 0.35)
+      const e = up * up * (3 - 2 * up)
+      return {
+        puff: 1.0 * e * (1 - out), squash: -0.1 * e + 0.2 * out * (1 - clamp01((t - 1.65) / 0.4)), aLr: 0.55 * e, aRr: 0.55 * e, aLb: 0, aRb: 0, aLo: e, aRo: e,
+        mouthOpen: 0.85 * e * (1 - out), mouthRound: 0.4, eyeL: 1.15, eyeR: 1.15, browL: 0.3, browR: 0.3, smile: 0.2, hop: 0.15 * out, tip: -0.8 * e, blush: 0.5,
+      }
+    },
+  },
+  waddle: {
+    dur: 2.2,
+    f: t => ({
+      roll: s(t * 7) * 0.2, yaw: s(t * 3.5) * 0.28, hop: Math.abs(s(t * 7)) * 0.1, leanX: s(t * 3.5) * 0.4, squash: s(t * 14) * 0.04,
+      aLr: 0.2 + s(t * 7) * 0.18, aRr: 0.2 - s(t * 7) * 0.18, smile: 1, happy: 0.35, blush: 0.6, tip: s(t * 7) * 0.9,
+    }),
+  },
+  roll: {
+    dur: 1.3,
+    f: t => {
+      const u = clamp01(t / 1.1)
+      const e = u * u * (3 - 2 * u)
+      return { roll: -e * TAU, leanX: s(u * Math.PI) * 0.8, hop: s(u * Math.PI) * 0.12, squash: 0.06, aLr: 0.3, aRr: 0.3, happy: 0.7, smile: 1, mouthOpen: 0.25 }
+    },
+  },
+  belly: {
+    dur: 1.6,
+    f: t => ({
+      hop: Math.abs(s(t * 6.5)) * 0.32 * decay(t, 0.9), squash: -s(t * 13) * 0.1 * decay(t, 1.2), aLr: 0.7, aRr: 0.7, aLb: 0.2, aRb: 0.2, aLo: 1, aRo: 1,
+      happy: 1, smile: 1, mouthOpen: 0.45, blush: 0.8, puff: 0.35 + 0.2 * s(t * 6.5),
+    }),
+  },
   bounce: {
     dur: 0.9,
     f: t => ({ hop: Math.abs(s(t * 7)) * 0.5 * decay(t, 2), squash: -s(t * 14) * 0.08 * decay(t, 2.5), happy: 0.6, smile: 1, aLr: 0.3, aRr: 0.3, aLb: 0.4, aRb: 0.4 }),
@@ -245,4 +279,5 @@ export const GALLERY: { name: string; label: string }[] = [
   { name: 'sad', label: 'Sad' }, { name: 'startled', label: 'Startled' }, { name: 'love', label: 'Love' }, { name: 'sweat', label: 'Nervous' },
   { name: 'peek', label: 'Peek' }, { name: 'spin', label: 'Spin' }, { name: 'stretch', label: 'Stretch' }, { name: 'tilt', label: 'Curious' },
   { name: 'lookaround', label: 'Look around' }, { name: 'bounce', label: 'Bounce' }, { name: 'yawn', label: 'Yawn' }, { name: 'alert', label: 'Alert' },
+  { name: 'inhale', label: 'Inhale' }, { name: 'waddle', label: 'Waddle' }, { name: 'roll', label: 'Roll' }, { name: 'belly', label: 'Belly bounce' },
 ]

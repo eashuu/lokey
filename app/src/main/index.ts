@@ -287,6 +287,8 @@ app.whenReady().then(async () => {
   const ti = argv.indexOf('--theme'), ai = argv.indexOf('--accent')
   if (ti >= 0 && ['dark', 'light', 'auto'].includes(argv[ti + 1])) settings.value.appearance.theme = argv[ti + 1] as 'dark' | 'light' | 'auto'
   if (ai >= 0 && /^#[0-9a-fA-F]{6}$/.test(argv[ai + 1] ?? '')) settings.value.appearance.accent = argv[ai + 1]
+  const si = argv.indexOf('--soul')
+  if (si >= 0 && argv[si + 1]) settings.value.loadout.soul = argv[si + 1]
   if (labDir) { registerIpc(); await runLab(labDir, labQuery, labPage); return }
   if (selfCheck) {
     const out: string[] = []

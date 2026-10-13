@@ -31,7 +31,7 @@ const to2d = (m: SoulMode) => (m === 'HEARING' ? 'LISTENING' : m === 'WRITING' |
 
 export function Soul(props: SoulProps) {
   const [failed, setFailed] = useState(glFailed)
-  if (failed || Math.min(props.width, props.height) < 28) return <Soul2D {...props} mode={to2d(props.mode)} />
+  if (failed || Math.min(props.width, props.height) < 18) return <Soul2D {...props} mode={to2d(props.mode)} />
   return <Soul3D {...props} onFail={() => { glFailed = true; setFailed(true) }} />
 }
 
@@ -102,7 +102,7 @@ function Soul3D({ width, height, mode, active, palette = DEFAULT_PALETTE, quiet,
       const m = modeRef.current
       const P = b.update(dt, { mode: m, awake: m !== 'MUTED', music: music.current, calm: calm.current || !!quiet })
       const p = palRef.current
-      gl.draw(P, { top: p.top, bottom: p.bottom, glow: p.glow, ink: p.ink }, (now - t0) / 1000, 1, fr)
+      gl.draw(P, { top: p.top, bottom: p.bottom, glow: p.glow, ink: p.ink, foot: p.foot ?? p.bottom, form: p.form ?? 0 }, (now - t0) / 1000, 1, fr)
       if (cv.style.opacity !== '1') cv.style.opacity = '1'
     }
     raf = requestAnimationFrame(draw)

@@ -31,6 +31,7 @@ export class Brain {
   private glance = { x: 0, y: 0, until: 0 }
   private lastMode = ''
   private out: Params = { ...NEUTRAL }
+  private pv = { hop: 0, leanX: 0, yaw: 0, squash: 0 }
 
   constructor(private emit: (k: EmoteKind) => void) { this.rig.snap(NEUTRAL) }
 
@@ -91,7 +92,7 @@ export class Brain {
     if (!inp.calm && inp.awake && !this.one && this.state === 'idle') {
       this.nextFidget -= dt
       if (this.nextFidget <= 0) {
-        const pick = ['lookaround', 'tilt', 'stretch', 'bounce', 'spin', 'peek']
+        const pick = ['lookaround', 'tilt', 'stretch', 'bounce', 'spin', 'peek', 'belly', 'waddle', 'inhale']
         this.play(pick[Math.floor(Math.random() * pick.length)])
         this.nextFidget = rand(7, 14)
       }
@@ -108,6 +109,15 @@ export class Brain {
     Object.assign(tgt, POSES[this.state].f(this.stateT, ctx))
     if (this.one) Object.assign(tgt, pose.f(lt, ctx))
     if (inp.calm) { tgt.hop *= 0.3; tgt.tip *= 0.3 }
+    // jelly: the body lags behind its own acceleration (lands -> squashes wide, takes off -> stretches, swings -> shears)
+    const v = this.rig.vel
+    const k = 1 / Math.max(dt, 0.004)
+    const ha = (v.hop - this.pv.hop) * k, la = (v.leanX - this.pv.leanX) * k, ya = (v.yaw - this.pv.yaw) * k, sa = (v.squash - this.pv.squash) * k
+    this.pv = { hop: v.hop, leanX: v.leanX, yaw: v.yaw, squash: v.squash }
+    const clamp = (x: number, m: number) => Math.max(-m, Math.min(m, x))
+    const amp = inp.calm ? 0.3 : 1
+    tgt.jy = clamp(-ha * 0.0016 + sa * 0.0008, 0.3) * amp
+    tgt.jx = clamp(-la * 0.004 - ya * 0.012, 0.4) * amp
     this.rig.step(tgt, dt)
 
     // blinking sits on top of the springs (instant); never while the pose keeps the eyes shut

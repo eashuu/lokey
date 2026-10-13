@@ -39,7 +39,7 @@ export function Lab() {
     const names = q.get('names')?.split(',') ?? [...STATES, ...GALLERY.map(g => g.name)]
     const size = Number(q.get('size') ?? 200)
     const cols = Number(q.get('cols') ?? 6)
-    const skin = SOUL_SKINS[q.get('skin') ?? 'drop']?.palette ?? SOUL_SKINS.drop.palette
+    const skin = SOUL_SKINS[q.get('skin') ?? 'puff']?.palette ?? SOUL_SKINS.puff.palette
     const at = q.get('at')
     const rows = Math.ceil(names.length / cols)
     const cv = ref.current!
@@ -63,7 +63,7 @@ export function Lab() {
         if (!p) { log.push('unknown pose ' + n); return }
         const t = at ? Number(at) : (p.dur ?? 1.5) * 0.4
         const P: Params = { ...NEUTRAL, ...p.f(t, { gx: 0, gy: 0, level: 0.7 }) }
-        gl.draw(P, { top: skin.top, bottom: skin.bottom, glow: skin.glow, ink: skin.ink }, t, 1, 1.08)
+        gl.draw(P, { top: skin.top, bottom: skin.bottom, glow: skin.glow, ink: skin.ink, foot: skin.foot ?? skin.bottom, form: skin.form ?? 0 }, t, 1, 1.08)
         g.drawImage(off, x, y + 22)
         g.fillStyle = '#9aa3b2'
         g.font = '13px Segoe UI, sans-serif'

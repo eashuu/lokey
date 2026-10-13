@@ -10,7 +10,7 @@ function css() {
   if (injected) return
   injected = true
   const el = document.createElement('style')
-  el.textContent = `@keyframes lk-emote { 0% { opacity: 0; transform: translate(0, 6px) scale(.2) } 14% { opacity: 1; transform: translate(0, 0) scale(1.18) } 26% { transform: translate(0, -2px) scale(1) } 78% { opacity: 1 } 100% { opacity: 0; transform: translate(var(--dx), -22px) scale(.9) } }`
+  el.textContent = `@keyframes lk-emote { 0% { opacity: 0; transform: translate(0, 6px) scale(.2) } 14% { opacity: 1; transform: translate(0, 0) scale(1.18) } 26% { transform: translate(0, -2px) scale(1) } 78% { opacity: 1 } 100% { opacity: 0; transform: translate(var(--dx), -7px) scale(.9) } }`
   document.head.appendChild(el)
 }
 
@@ -42,7 +42,7 @@ export function Emotes({ width, height }: { width: number; height: number }) {
         <span
           key={i.id}
           style={{
-            position: 'absolute', left: width / 2 + Math.min(width, height) * 0.3 + i.x, top: height * 0.02, fontSize: fs, lineHeight: 1,
+            position: 'absolute', left: width / 2 + Math.min(width, height) * 0.3 + i.x, top: height * 0.1, fontSize: fs, lineHeight: 1,
             fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", sans-serif', animation: 'lk-emote 1.4s cubic-bezier(.22,1,.36,1) forwards',
             ['--dx' as string]: `${i.dx}px`, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.35))',
           }}
