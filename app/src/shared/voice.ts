@@ -51,6 +51,6 @@ export interface DictationEvent {
 /** Lasso overlay window input. */
 export interface LassoEvent {
   type: 'start' | 'point' | 'end' | 'cancel'
-  x?: number
-  y?: number
+  /** pointer samples (overlay DIPs) since the last message */
+  pts?: { x: number; y: number }[]
 }

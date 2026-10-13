@@ -29,7 +29,7 @@ export class Agent extends EventEmitter {
   private pending: Buffer[] = []
   private idleTimer: ReturnType<typeof setTimeout> | null = null
   private clearTimer: ReturnType<typeof setTimeout> | null = null
-  private image: Buffer | null = null
+  private images: Buffer[] = []
   /** set by the demo runner: no network, no microphone */
   demo = false
 
@@ -91,7 +91,7 @@ export class Agent extends EventEmitter {
       `You are ${p?.name ?? 'Lokey'}, a voice assistant living in the notch of the user's Windows PC. ${p?.prompt ?? ''}`.trim(),
       'Speak in one or two short sentences. Do things with your tools instead of explaining how.',
       'If the user names a time or delay ("at 7", "in half an hour", "an hour later"), call schedule with the actions as steps instead of doing them now; do the parts that are meant to happen now immediately.',
-      'If the user circled something on screen, an image is attached: it shows the region they mean.',
+      'If the user circled something on screen, two images are attached: first the whole screen for context, then a zoomed crop of exactly the region they circled. Answer about, or act on, the circled thing (for example open its store page or search for it).',
       `It is ${now.toLocaleString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })} local time.`,
       mem.length ? `Facts you know about the user: ${mem.join('; ')}.` : '',
     ].filter(Boolean).join('\n')
@@ -141,7 +141,7 @@ export class Agent extends EventEmitter {
     this.kind = kind
     this.held = true
     this.heldAt = Date.now()
-    this.said = ''; this.reply = ''; this.sayShown = false; this.turnDone = false; this.image = null; this.pending = []
+    this.said = ''; this.reply = ''; this.sayShown = false; this.turnDone = false; this.images = []; this.pending = []
     if (this.clearTimer) { clearTimeout(this.clearTimer); this.clearTimer = null }
     this.setState('listening')
     try {
@@ -158,7 +158,8 @@ export class Agent extends EventEmitter {
     }
   }
 
-  setImage(jpeg: Buffer) { this.image = jpeg }
+  /** screenshots to attach to this turn (lasso): [whole screen, circled region] */
+  setImages(jpegs: Buffer[]) { this.images = jpegs }
 
   /** push-to-talk up */
   async end() {
@@ -168,7 +169,7 @@ export class Agent extends EventEmitter {
     const quick = Date.now() - this.heldAt < 350 && !this.said
     const s = this.session
     if (!s?.connected || quick) { this.setState('idle'); this.emit2({ type: 'clear' }); captionBar.send({ kind: 'clear' }); return }
-    if (this.image) { s.sendImage(this.image); this.image = null }
+    for (const im of this.images.splice(0)) s.sendImage(im)
     s.audioEnd()
     this.setState('thinking')
     this.touchIdle()
@@ -185,7 +186,7 @@ export class Agent extends EventEmitter {
     this.setState('thinking')
     try {
       const s = await this.ensureSession()
-      if (this.image) { s.sendImage(this.image); this.image = null }
+      for (const im of this.images.splice(0)) s.sendImage(im)
       s.sendText(t)
     } catch (e) { this.fail(`Couldn't reach Gemini: ${e instanceof Error ? e.message : String(e)}`) }
   }

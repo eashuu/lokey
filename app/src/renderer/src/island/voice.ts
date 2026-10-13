@@ -18,8 +18,8 @@ export function initVoiceBridge() {
       clearTimeout(flashTimer)
       const menu = is.shape === 'menu'
       // like the reference demos: the notch opens to its awake shape with the mascot reacting; the caption lives at the bottom
-      const awake = (soul: 'HEARING' | 'THINKING' | 'TALKING') => { if (!menu && is.shape !== 'awake') is.wake('pinned'); is.setSoul(soul) }
-      if (e.state === 'listening' || e.state === 'connecting') awake('HEARING')
+      const awake = (soul: 'HEARING' | 'LOOKING' | 'THINKING' | 'TALKING') => { if (!menu && is.shape !== 'awake') is.wake('pinned'); is.setSoul(soul) }
+      if (e.state === 'listening' || e.state === 'connecting') awake(e.kind === 'lasso' ? 'LOOKING' : 'HEARING')
       else if (e.state === 'thinking') awake('THINKING')
       else if (e.state === 'speaking') awake('TALKING')
       else { // idle / error

@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import type { BrowserWindow } from 'electron'
 import type { Agent } from './agent'
 import { screen } from 'electron'
-import { captionBar, dictationBar } from './overlays'
+import { captionBar, dictationBar, lassoCanvas } from './overlays'
+import { Lasso } from './lasso'
 
 // `--demo <name> [--capture <dir>]`: replays one of the reference scenarios with scripted text (no microphone, no
 // network, no apps launched) so the whole visual chain can be seen and screenshotted: island held/awake shapes, the
@@ -32,6 +33,8 @@ export async function runDemo(name: string, agent: Agent, overlay: BrowserWindow
     if (c) writeFileSync(join(captureDir, `${stamp}-caption.png`), c.toPNG())
     const dd = await dictationBar.capture().catch(() => null)
     if (dd) writeFileSync(join(captureDir, `${stamp}-dictation.png`), dd.toPNG())
+    const ll = await lassoCanvas.capture().catch(() => null)
+    if (ll) writeFileSync(join(captureDir, `${stamp}-lasso.png`), ll.toPNG())
   }
   await sleep(2500)
   if (name === 'schedule') {
@@ -76,6 +79,27 @@ export async function runDemo(name: string, agent: Agent, overlay: BrowserWindow
     await sleep(500)
     await snap('done')
     dictationBar.closeSoon(800)
+  } else if (name === 'lasso') {
+    const d = screen.getPrimaryDisplay().bounds
+    const loop = Lasso.demoLoop(Math.round(d.width * 0.3), Math.round(d.height * 0.45))
+    lassoCanvas.send({ type: 'start' })
+    agent.setState('listening')
+    for (let i = 0; i < loop.length; i += 4) { lassoCanvas.send({ type: 'point', pts: loop.slice(i, i + 4) }); await sleep(26) }
+    await snap('drawing')
+    await stream(agent, 'Can you please open the store page of this game?', 'said', 110)
+    lassoCanvas.send({ type: 'end' })
+    await sleep(350)
+    await snap('closed')
+    agent.setState('thinking')
+    await sleep(700)
+    agent.setState('speaking')
+    agent.emit2({ type: 'mascot', play: 'point', emote: 'search' })
+    agent.caption('reply', "Here's Ashfall's store page.")
+    await sleep(1500)
+    await snap('reply')
+    agent.setState('idle')
+    agent.clearSoon(300)
+    lassoCanvas.closeSoon(300)
   } else if (name === 'notice') {
     agent.notice('Add your Gemini key in Settings → Voice to talk to me.', 'error')
     await sleep(900)

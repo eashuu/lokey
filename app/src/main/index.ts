@@ -14,6 +14,7 @@ import { Scheduler } from './agent/scheduler'
 import { readMemory, toolsSelfCheck, writeMemory } from './agent/tools'
 import { Agent } from './agent/agent'
 import { Dictation } from './agent/dictation'
+import { Lasso } from './agent/lasso'
 import type { VoiceEvent } from '@shared/voice'
 
 // ---- args -----------------------------------------------------------------------------------------
@@ -82,6 +83,7 @@ sidecar.setMaxListeners(64)
 initEffects(sidecar)
 const agent = new Agent(sidecar, (e: VoiceEvent) => { for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('lokey:voice', e) })
 const dictation = new Dictation(sidecar, agent.audio, (t, tone) => agent.notice(t, tone))
+const lasso = new Lasso(agent)
 agent.on('tasks', t => { for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('lokey:voice:tasks', t) })
 const eventCounts: Record<string, number> = {}
 sidecar.on('log', log)
@@ -212,6 +214,7 @@ const FWD: EventName[] = [
 const HOTKEY_ISLAND = 1
 const HOLD_TALK = 2
 const HOLD_DICT = 3
+const HOLD_LASSO = 4
 
 async function registerHotkeys() {
   if (!sidecar.ready) return
@@ -228,6 +231,10 @@ async function registerHotkeys() {
       const d = await sidecar.call('hotkey.registerHold', { id: HOLD_DICT, combo: v.dictationKey }).catch(() => ({ ok: false, reason: 'call failed' }))
       if (!d.ok) log(`dictation chord failed: ${d.reason}`)
     }
+    if (v.lasso) {
+      const l = await sidecar.call('hotkey.registerHold', { id: HOLD_LASSO, combo: v.lassoKey }).catch(() => ({ ok: false, reason: 'call failed' }))
+      if (!l.ok) log(`lasso chord failed: ${l.reason}`)
+    }
   }
 }
 
@@ -236,10 +243,12 @@ function wireSidecar() {
   sidecar.onEvent('hotkey.down', ({ id }) => {
     if (id === HOLD_TALK && !dictation.active) void agent.begin('assistant')
     else if (id === HOLD_DICT && !agent.busy) void dictation.begin()
+    else if (id === HOLD_LASSO) lasso.down()
   })
   sidecar.onEvent('hotkey.up', ({ id }) => {
     if (id === HOLD_TALK) void agent.end()
     else if (id === HOLD_DICT) void dictation.end()
+    else if (id === HOLD_LASSO) void lasso.up()
   })
   sidecar.onEvent('hotkey.pressed', ({ id }) => { if (id === HOTKEY_ISLAND) send({ type: 'toggle-island' }) })
   sidecar.onEvent('fullscreen.changed', ({ full }) => {
