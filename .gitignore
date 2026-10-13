@@ -3,3 +3,8 @@ bin/
 obj/
 *.user
 .vs/
+node_modules/
+out/
+dist/
+.serena/
+*.log
