@@ -75,6 +75,21 @@ export async function runUiTest(win: BrowserWindow, dir: string, done: () => voi
     await sleep(1400)
     const closed = await state()
     check('leave -> closes', closed.shape !== 'menu', closed)
+
+    // click-to-open from the awake notch, several rhythms (a real click: move, short pause, down, tiny jitter, up)
+    for (const [i, [wait, hold]] of ([[700, 60], [250, 90], [1200, 40], [420, 140], [60, 160], [120, 100], [0, 80]] as const).entries()) {
+      move(cx, 4)
+      await sleep(wait)
+      wc.sendInputEvent({ type: 'mouseDown', x: cx, y: 4, button: 'left', clickCount: 1 })
+      await sleep(hold)
+      wc.sendInputEvent({ type: 'mouseMove', x: cx + 1, y: 5 })
+      wc.sendInputEvent({ type: 'mouseUp', x: cx + 1, y: 5, button: 'left', clickCount: 1 })
+      await sleep(700)
+      const st = await state()
+      check(`click notch #${i} (wait ${wait} ms) opens the menu`, st.shape === 'menu', st)
+      move(40, 700)
+      await sleep(1400)
+    }
   } catch (e) {
     check('exception', false, String(e))
   }

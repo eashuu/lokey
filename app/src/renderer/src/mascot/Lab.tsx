@@ -3,6 +3,7 @@ import { MascotGL } from './gl'
 import { NEUTRAL, type Params } from './rig'
 import { GALLERY, POSES } from './poses'
 import { SOUL_SKINS } from '@/island/skins'
+import { P as GLOW, paint as paintGlow } from '@/effects/GlowApp'
 
 // Visual QA sheet (`Lokey.exe --lab <dir>`): every pose rendered once at a representative moment, labelled, on one
 // canvas. Hash query: names=a,b,c  size=px  cols=n  skin=id  at=seconds (default: 40% of the pose length).
@@ -13,6 +14,28 @@ export function Lab() {
   useEffect(() => {
     void (async () => {
     const q = new URLSearchParams(location.hash.split('?')[1] ?? '')
+    if (q.get('fx') === 'glow') {
+      // the edge glow on a dark and a light background, 640x400 each, with the numeric alpha at the very border
+      const cvs = ref.current!
+      cvs.width = 1300; cvs.height = 420
+      const g2 = cvs.getContext('2d')!
+      const tile = document.createElement('canvas')
+      const out: string[] = []
+      ;(['thinking', 'speaking'] as const).forEach((st, i) => {
+        paint: {
+          paintGlow(tile, GLOW[st].reach, GLOW[st].color, { w: 640, h: 400 })
+          const d = tile.getContext('2d')!.getImageData(0, 0, 640, 400).data
+          out.push(st + ' alpha@edge=' + d[3 + 4 * 320] + ' @mid=' + d[3 + 4 * (200 * 640 + 320)] + ' @reach=' + d[3 + 4 * (200 * 640 + Math.round(Math.min(640, 400) * GLOW[st].reach))])
+          g2.fillStyle = i === 0 ? '#23262d' : '#e9e6df'
+          g2.fillRect(i * 650, 0, 640, 420)
+          g2.globalAlpha = GLOW[st].base * 2.2
+          g2.drawImage(tile, i * 650, 10)
+          g2.globalAlpha = 1
+        }
+      })
+      ;(window as unknown as { __labDone: string }).__labDone = JSON.stringify(out)
+      return
+    }
     const names = q.get('names')?.split(',') ?? [...STATES, ...GALLERY.map(g => g.name)]
     const size = Number(q.get('size') ?? 200)
     const cols = Number(q.get('cols') ?? 6)

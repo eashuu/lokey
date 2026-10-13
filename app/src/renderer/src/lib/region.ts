@@ -16,9 +16,37 @@ const union = (a: Rect, b: Rect): Rect => {
 }
 const same = (a: Rect | null, b: Rect | null) => !!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
 
-function push(r: Rect) {
+// Changing the window region (SetWindowRgn) while a mouse button is held can make Windows drop the button release, so
+// the click never happens. Region changes made during a press are held back until the release (400 ms at most).
+let pressed = false
+let want: Rect | null = null
+let flushTimer: ReturnType<typeof setTimeout> | undefined
+export const pointerState = { deferred: 0 }
+
+function send(r: Rect) {
   sent = r
   bridge.setRegion([r, ...extras].map(q => ({ x: Math.floor(q.x), y: Math.floor(q.y), w: Math.ceil(q.w), h: Math.ceil(q.h) })))
+}
+function flush() {
+  clearTimeout(flushTimer)
+  if (want && !same(sent, want)) send(want)
+  want = null
+}
+function push(r: Rect) {
+  want = r
+  if (!pressed) { flush(); return }
+  pointerState.deferred++
+  clearTimeout(flushTimer)
+  flushTimer = setTimeout(flush, 400)
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', () => { pressed = true }, true)
+  const up = () => { pressed = false; if (want) flush() }
+  window.addEventListener('pointerup', up, true)
+  window.addEventListener('pointercancel', up, true)
+  window.addEventListener('blur', up)
+  // a release that never arrived must not leave us in "pressed" for good
+  window.addEventListener('pointermove', e => { if (pressed && e.buttons === 0) up() }, true)
 }
 
 /** `shrinkAfterMs`: how long the current morph still runs. Extra rects (captions) are always included. */

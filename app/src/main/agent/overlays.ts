@@ -58,8 +58,8 @@ class Overlay {
 /** Bottom-centre speech pills ("YOU ..." / "LOKEY ..."), like the reference demo. */
 export const captionBar = new Overlay('caption', () => {
   const wa = screen.getPrimaryDisplay().workArea
-  const w = Math.min(820, wa.width), h = 190
-  return { x: wa.x + Math.round((wa.width - w) / 2), y: wa.y + wa.height - h - 28, width: w, height: h }
+  const w = Math.min(860, wa.width), h = 210 // room above/below the pill for its shadow to fade out inside the window
+  return { x: wa.x + Math.round((wa.width - w) / 2), y: wa.y + wa.height - h + 6, width: w, height: h }
 })
 
 /** Dictation: small window around the focused field (bubble above, bar at its bottom edge). */

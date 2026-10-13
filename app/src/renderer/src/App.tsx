@@ -7,6 +7,7 @@ import { Island } from '@/island/Island'
 import { useIsland } from '@/island/store'
 import { runBench } from '@/bench'
 import { initVoiceBridge } from '@/island/voice'
+import { initInputLog } from '@/lib/inputlog'
 
 export function App() {
   const appearance = useData(s => s.settings.appearance)
@@ -16,6 +17,7 @@ export function App() {
   useEffect(() => { void initData().then(async () => { if (await bridge.bench?.config()) void runBench() }) }, [])
 
   useEffect(() => initVoiceBridge(), [])
+  useEffect(() => initInputLog(), [])
 
   // screen-edge glow follows what the assistant is doing (voice mode drives `soul`; today only the preview does)
   useEffect(() => {

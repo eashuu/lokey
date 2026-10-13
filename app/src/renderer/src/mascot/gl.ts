@@ -78,7 +78,10 @@ void main(){
   }
   float px = 2. * hh / uRes.y;
   float cov = hit ? 1. : 1. - smoothstep(0., px * 1.2, dmin);
-  float halo = hit ? 0. : exp(-max(dmin, 0.) * 5.) * .3 * u7.y;
+  // the halo must be exactly 0 at the canvas border, or the canvas shows up as a box
+  vec2 nb = abs(gl_FragCoord.xy / uRes * 2. - 1.);
+  float vig = (1. - smoothstep(.45, 1., nb.x)) * (1. - smoothstep(.45, 1., nb.y));
+  float halo = hit ? 0. : exp(-max(dmin, 0.) * 5.) * .3 * u7.y * vig * vig;
 
   vec3 col = vec3(0.);
   if (cov > 0.){
@@ -152,6 +155,11 @@ void main(){
   }
   vec3 outc = col * cov + cGlow * halo * (1. - cov);
   float a = cov + halo * (1. - cov);
+  // triangular dither: smooth low-alpha gradients on 8-bit surfaces otherwise band into visible steps
+  float h1 = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  float h2 = fract(sin(dot(gl_FragCoord.xy + vec2(3.1, 7.7), vec2(12.9898, 78.233))) * 43758.5453);
+  float dn = (h1 + h2 - 1.) / 255.;
+  if (a > .0004) { a = clamp(a + dn, 0., 1.); outc = clamp(outc + dn, 0., a); }
   o = vec4(outc, a);
 }`
 

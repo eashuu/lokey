@@ -71,7 +71,7 @@ export function Island() {
   const caption = useIsland(s => s.caption)
   useEffect(() => {
     const p = peeking ? peekParams(k) : paramsFor(shape, view, k)
-    const m = 16 * k // room for the drop shadow and the ramps' anti-aliasing
+    const m = 26 * k // room for the drop shadow (fully faded before the region edge) and the ramps' anti-aliasing
     const rect = { x: cx - p.width / 2 - p.rampW - m, y: 0, w: p.width + 2 * (p.rampW + m), h: p.depth + m }
     const more = caption ? [{ x: cx - 320 * k, y: 0, w: 640 * k, h: (NOTCH_BASE * 75 + 26 + 90) * k }] : []
     const kind = peeking ? 'notch' : morphKind(prev.current, { shape, view })
@@ -123,8 +123,15 @@ export function Island() {
     }
   }, [isl.trigger, isl.scrollToOpen, isl.startTab])
 
-  // A click opens the menu from the notch; it never pins. Pinning (keyboard focus) is only for text fields.
+  // Pressing the notch opens the menu (on press, not release: a lost mouse-up can never swallow it); it never pins.
+  // Pinning (keyboard focus) is only for text fields. The click that follows finds the menu already open and does nothing.
   const onClick = useCallback(() => {
+    const s = st()
+    if (s.shape !== 'menu') s.openMenu(isl.startTab, 'hover')
+  }, [isl.startTab])
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.button !== 0) return
+    cancel()
     const s = st()
     if (s.shape !== 'menu') s.openMenu(isl.startTab, 'hover')
   }, [isl.startTab])
@@ -164,7 +171,7 @@ export function Island() {
 
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-      <svg width={size.w} height={size.h} viewBox={`0 -4 ${size.w} ${size.h}`} style={{ position: 'absolute', left: 0, top: -4, overflow: 'visible', filter: inMenu ? 'none' : 'drop-shadow(0 6px 14px rgba(0,0,0,.35))' }} aria-hidden>
+      <svg width={size.w} height={size.h} viewBox={`0 -4 ${size.w} ${size.h}`} style={{ position: 'absolute', left: 0, top: -4, overflow: 'visible', filter: inMenu ? 'none' : 'drop-shadow(0 4px 9px rgba(0,0,0,.30))' }} aria-hidden>
         <defs>
           <linearGradient id="lk-glass" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#101012" />
@@ -179,6 +186,7 @@ export function Island() {
         onPointerEnter={onEnter}
         onPointerLeave={onLeave}
         onWheel={onWheel}
+        onPointerDown={onPointerDown}
         onClick={onClick}
         style={{ position: 'absolute', inset: 0, clipPath: clip, pointerEvents: 'auto' }}
       >

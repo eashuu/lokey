@@ -26,7 +26,7 @@ export function CaptionApp() {
   const light = m?.kind === 'said'
   const words = (m?.text ?? '').split(' ').filter(Boolean)
   return (
-    <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 26, boxSizing: 'border-box', fontFamily: '"Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif' }}>
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 52, boxSizing: 'border-box', fontFamily: '"Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif' }}>
       <style>{CSS}</style>
       {m && (
         <div
@@ -34,7 +34,7 @@ export function CaptionApp() {
           style={{
             maxWidth: 560, padding: '10px 20px 11px', borderRadius: 22, fontSize: 13.5, lineHeight: 1.4, textAlign: 'left', opacity: show ? 1 : 0, transform: show ? 'none' : 'translateY(8px) scale(.98)',
             background: light ? 'rgba(255,255,255,.97)' : '#0a0a0b', color: light ? '#16181d' : '#fff', fontWeight: light ? 400 : 500,
-            boxShadow: light ? '0 14px 32px -8px rgba(15,23,42,.35), 0 1px 2px rgba(15,23,42,.18), inset 0 1.2px 0 #fff' : '0 12px 30px -8px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.08)',
+            boxShadow: light ? '0 10px 24px -8px rgba(15,23,42,.32), 0 1px 2px rgba(15,23,42,.16), inset 0 1.2px 0 #fff' : '0 10px 24px -8px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.08)',
             animation: 'lk-pill-in .4s cubic-bezier(.22,1,.36,1) both',
           }}
         >
