@@ -96,6 +96,9 @@ internal static class SelfTest
         }
         await Check("hotkeys.selfcheck", Services.Hotkeys.SelfCheck);
         await Check("visualiser.selfcheck", Services.Visualiser.SelfCheck);
+        // read-only: state + blob length only (never contents); the toggle check runs on in-memory copies. The registry is never written here.
+        await Check("nightlight.read", () => $"state={Services.NightLight.Get()?.ToString().ToLowerInvariant() ?? "null"} blobLength={Services.NightLight.BlobLength()?.ToString() ?? "none"}");
+        await Check("nightlight.selfcheck", Services.NightLight.SelfCheck);
         if (Environment.GetEnvironmentVariable("LOKEY_DATA_DIR") is { Length: > 0 }) await Check("clipboard.store.selfcheck", Services.Clipboard.SelfCheck);
 
         Boot.Shutdown();

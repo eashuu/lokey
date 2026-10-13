@@ -19,6 +19,7 @@ internal static class Boot
         Stats.Register();
         Status.Register();
         SystemControls.Register();
+        NightLight.Register();
         Apps.Register();
         Clipboard.Register();
         Wallpaper.Register();

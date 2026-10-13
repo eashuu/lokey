@@ -128,6 +128,7 @@ export interface Methods {
   'system.setBrightness': [{ level: number }, {}]
   'system.setKeepAwake': [{ on: boolean }, {}]
   'system.setDarkMode': [{ on: boolean }, {}]
+  'system.setNightLight': [{ on: boolean }, { ok: boolean; reason?: string }]   // only when `nightLight` is not null
   'wifi.get': [{}, WifiState]
   'wifi.scan': [{}, WifiNetwork[]]                                        // active scan, sorted: connected first, then by signal
   'wifi.setOn': [{ on: boolean }, {}]

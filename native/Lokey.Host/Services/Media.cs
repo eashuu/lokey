@@ -63,12 +63,26 @@ internal static class Media
     static void OnProps(GlobalSystemMediaTransportControlsSession s, object? _) { lock (Dirty) Dirty.Add(s.SourceAppUserModelId); Refresh.Poke(); }
     static void OnOther(GlobalSystemMediaTransportControlsSession s, object? _) => Refresh.Poke();
 
-    static GlobalSystemMediaTransportControlsSession? Pick()
+    // A session is worth showing when it is playing or has a title. Apps such as Snipping Tool register an empty
+    // session that Windows may still call "current"; those are ignored. Order: the user's pick, a playing session
+    // (Windows' current one first), Windows' current one, then any candidate.
+    static async Task<(GlobalSystemMediaTransportControlsSession? Pick, List<GlobalSystemMediaTransportControlsSession> Candidates)> PickAsync()
     {
-        if (_mgr is null) return null;
+        var cands = new List<GlobalSystemMediaTransportControlsSession>();
+        if (_mgr is null) return (null, cands);
         var all = _mgr.GetSessions();
-        if (_selected is not null && all.FirstOrDefault(s => s.SourceAppUserModelId == _selected) is { } sel) return sel;
-        return _mgr.GetCurrentSession() ?? all.FirstOrDefault();
+        foreach (var s in all)
+        {
+            if (IsPlaying(s) || (await PropsOf(s)).Title.Length > 0) cands.Add(s);
+        }
+        if (cands.Count == 0) return (null, cands);
+        var cur = _mgr.GetCurrentSession();
+        var pick = (_selected is not null ? cands.FirstOrDefault(s => s.SourceAppUserModelId == _selected) : null)
+            ?? (cur is not null && cands.Contains(cur) && IsPlaying(cur) ? cur : null)
+            ?? cands.FirstOrDefault(IsPlaying)
+            ?? (cur is not null && cands.Contains(cur) ? cur : null)
+            ?? cands[0];
+        return (pick, cands);
     }
 
     static async Task<Props> PropsOf(GlobalSystemMediaTransportControlsSession s)
@@ -108,9 +122,8 @@ internal static class Media
         await Gate.WaitAsync();
         try
         {
-            var all = _mgr.GetSessions();
-            var sessions = all.Select(s => new SessionInfo(s.SourceAppUserModelId, AppName(s.SourceAppUserModelId), IsPlaying(s))).ToArray();
-            var cur = Pick();
+            var (cur, cands) = await PickAsync();
+            var sessions = cands.Select(s => new SessionInfo(s.SourceAppUserModelId, AppName(s.SourceAppUserModelId), IsPlaying(s))).ToArray();
             if (cur is null) return Empty with { Sessions = sessions };
             var info = cur.GetPlaybackInfo();
             var tl = cur.GetTimelineProperties();
@@ -156,20 +169,28 @@ internal static class Media
 
     static async Task ControlAsync(string action, double? posMs)
     {
-        var s = Pick();
+        var (s, _) = await PickAsync();
         if (s is null) return;
+        bool ok = true;
         switch (action)
         {
-            case "play": await s.TryPlayAsync(); break;
-            case "pause": await s.TryPauseAsync(); break;
-            case "toggle": await s.TryTogglePlayPauseAsync(); break;
-            case "next": await s.TrySkipNextAsync(); break;
-            case "prev": await s.TrySkipPreviousAsync(); break;
+            case "play": ok = await s.TryPlayAsync(); break;
+            case "pause": ok = await s.TryPauseAsync(); break;
+            case "toggle":
+                ok = await s.TryTogglePlayPauseAsync();
+                // some players do not implement toggle; fall back to the explicit command for the state we see
+                if (!ok) ok = IsPlaying(s) ? await s.TryPauseAsync() : await s.TryPlayAsync();
+                break;
+            case "next": ok = await s.TrySkipNextAsync(); break;
+            case "prev": ok = await s.TrySkipPreviousAsync(); break;
             case "seek":
-                if (posMs is { } p) await s.TryChangePlaybackPositionAsync((long)(p * 10_000)); // ticks
+                if (posMs is { } p) ok = await s.TryChangePlaybackPositionAsync((long)(p * 10_000)); // ticks
                 break;
             default: throw new ArgumentException($"unknown media action '{action}'");
         }
+        if (!ok) Log.Info($"media {action}: the player refused the command");
+        // players report the new state late (or not at all): look again shortly and once more after a beat
+        _ = Task.Run(async () => { await Task.Delay(180); await RefreshAsync(); await Task.Delay(700); await RefreshAsync(); });
     }
 
     // "Spotify.exe" -> "Spotify"; "SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify" -> the part after '!' or the package name.

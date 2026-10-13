@@ -2,6 +2,7 @@ import { BrowserWindow, Menu, Tray, app, nativeImage } from 'electron'
 import { join } from 'node:path'
 
 let settingsWin: BrowserWindow | null = null
+let mainWin: BrowserWindow | null = null
 
 function load(win: BrowserWindow, hash: string) {
   const dev = process.env.ELECTRON_RENDERER_URL
@@ -37,10 +38,39 @@ export function createTray(handlers: { toggleIsland: () => void; quit: () => voi
   tray.setToolTip('lokey')
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Toggle island', click: handlers.toggleIsland },
+    { label: 'Open lokey', click: () => openMain() },
     { label: 'Settings', click: openSettings },
     { type: 'separator' },
     { label: 'Quit', click: handlers.quit },
   ]))
   tray.on('click', handlers.toggleIsland)
   return tray
+}
+
+/** The main app window (Home / Bond / Soul / Desk / Settings). Single instance; created on demand, destroyed on close. */
+export function openMain(page?: string) {
+  const hash = `main?page=${encodeURIComponent(page ?? 'soul')}`
+  if (mainWin && !mainWin.isDestroyed()) {
+    if (mainWin.isMinimized()) mainWin.restore()
+    mainWin.show(); mainWin.focus()
+    if (page) void mainWin.webContents.executeJavaScript(`location.hash=${JSON.stringify('#' + hash)}`)
+    return
+  }
+  mainWin = new BrowserWindow({
+    width: 940,
+    height: 640,
+    minWidth: 760,
+    minHeight: 540,
+    title: 'lokey',
+    backgroundMaterial: 'mica',
+    backgroundColor: '#00000000',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#00000000', symbolColor: '#e6e8ee', height: 44 },
+    icon: join(app.getAppPath(), 'resources', 'icon.png'),
+    autoHideMenuBar: true,
+    webPreferences: { preload: join(__dirname, '../preload/index.js'), contextIsolation: true, sandbox: true, devTools: !app.isPackaged },
+  })
+  mainWin.setMenu(null)
+  load(mainWin, hash)
+  mainWin.on('closed', () => { mainWin = null })
 }

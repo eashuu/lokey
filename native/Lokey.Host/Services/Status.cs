@@ -32,6 +32,7 @@ internal static class Status
         RefreshNetwork();
         RefreshBattery();
         SystemControls.InitBrightness();
+        NightLight.Watch();
         await WatchBluetoothAsync();
         lock (L) _lastJson = JsonSerializer.Serialize(Get(), Json.O);
     }
@@ -100,7 +101,7 @@ internal static class Status
         NetworkStat n; BatteryStat b;
         lock (L) { n = _net; b = _bat; }
         var bt = new BluetoothStat(_bt is not null, _bt?.State == RadioState.On);
-        return new SystemStatus(n, bt, b, Layout(), SystemControls.KeepAwake, SystemControls.Brightness, SystemControls.DarkMode, null);
+        return new SystemStatus(n, bt, b, Layout(), SystemControls.KeepAwake, SystemControls.Brightness, SystemControls.DarkMode, NightLight.Get());
     }
 
     static void EmitIfChanged()

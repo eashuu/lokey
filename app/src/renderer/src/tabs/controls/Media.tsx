@@ -3,8 +3,9 @@ import { Music, Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react
 import { bridge } from '@/bridge'
 import { useData, useBandsStream } from '@/lib/data'
 import { clamp, mmss } from '@/lib/format'
+import { mediaControl, mediaSeek } from '@/lib/media'
 
-const ctl = (action: 'toggle' | 'next' | 'prev') => () => void bridge.call('media.control', { action }).catch(() => undefined)
+const ctl = (action: 'toggle' | 'next' | 'prev') => () => mediaControl(action)
 
 /** 32 bars on one canvas, redrawn straight from the store (no React renders at ~30 Hz). */
 function Visualiser() {
@@ -135,7 +136,7 @@ export function MediaCard() {
         onChange={setDrag}
         onCommit={v => {
           const ms = Math.round(v * dur)
-          void bridge.call('media.control', { action: 'seek', positionMs: ms }).catch(() => undefined)
+          mediaSeek(ms)
           setSeek({ ms, at: Date.now() })
           setNow(Date.now())
           setDrag(null)

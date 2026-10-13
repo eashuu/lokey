@@ -61,9 +61,9 @@ export function WallpaperTab() {
     }
   }, [items, index])
 
-  const set = (path: string) => {
+  const set = (path: string, x: number, y: number) => {
     setApplying(path)
-    void bridge.call('wallpaper.set', { path })
+    void bridge.effects.revealWallpaper(path, x, y)
       .then(() => useData.setState({ wallpaper: path }))
       .catch(() => undefined)
       .finally(() => setApplying(a => (a === path ? null : a)))

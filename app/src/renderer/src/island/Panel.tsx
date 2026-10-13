@@ -33,7 +33,7 @@ function TabbedView({ view, w }: { view: TabId; w: number }) {
   return (
     <>
       <TabBar current={view} order={order} w={w} />
-      <motion.div key={view} initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: [0.33, 1, 0.68, 1] }} style={{ position: 'absolute', left: CONTENT_X, top: CONTENT_Y, width: w - CONTENT_X * 2 }}>
+      <motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.14, ease: 'linear' }} style={{ position: 'absolute', left: CONTENT_X, top: CONTENT_Y, width: w - CONTENT_X * 2 }}>
         <Active />
       </motion.div>
     </>

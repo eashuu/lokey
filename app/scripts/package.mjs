@@ -2,22 +2,17 @@
 // Usage: node scripts/package.mjs        (from the app/ folder, or via `pnpm package`)
 // No installer, no signing, no downloads: it reuses the Electron runtime already in node_modules.
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repo = resolve(app, '..')
-const out = join(app, 'release', 'Lokey')
+let out = join(app, 'release', 'Lokey')
 // paths contain spaces (C:\Users\Vtg User\...), so quote every argument for the Windows shell
 const q = a => (/[\s&()^%!]/.test(a) ? '"' + a + '"' : a)
 const run = (cmd, args, cwd) => execFileSync(q(cmd), args.map(q), { cwd, stdio: 'inherit', shell: process.platform === 'win32' })
 const step = msg => console.log(`\n== ${msg}`)
-
-step('stop running instances from this repo (they lock files)')
-try {
-  run('powershell', ['-NoProfile', '-Command', `Get-Process electron,Lokey,Lokey.Host -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith('${repo}', [StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force`])
-} catch { /* nothing running */ }
 
 step('build the app (electron-vite)')
 run('npx', ['electron-vite', 'build'], app)
@@ -28,7 +23,19 @@ rmSync(hostOut, { recursive: true, force: true })
 run('dotnet', ['publish', join(repo, 'native', 'Lokey.Host'), '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=true', '-o', hostOut], repo)
 
 step('assemble release/Lokey')
-rmSync(out, { recursive: true, force: true })
+// a running copy keeps its files locked: never kill it, build next to it instead
+try {
+  // renaming a folder fails while one of its executables is running, and (unlike deleting) leaves the files intact
+  if (existsSync(out)) {
+    const gone = out + '.old'
+    rmSync(gone, { recursive: true, force: true })
+    renameSync(out, gone)
+    rmSync(gone, { recursive: true, force: true })
+  }
+} catch {
+  out = join(app, 'release', 'Lokey-' + new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12))
+  console.log(`release/Lokey is in use (a copy is running): building ${out} instead`)
+}
 mkdirSync(out, { recursive: true })
 const electronDist = join(app, 'node_modules', 'electron', 'dist')
 if (!existsSync(join(electronDist, 'electron.exe'))) throw new Error('Electron runtime missing: run `node node_modules/electron/install.js` in app/')

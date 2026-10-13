@@ -199,6 +199,11 @@ function Appearance({ s, set }: P) {
       <Row title="UI scale" hint="Resizes the island and its content. Restart for the overlay window to resize."><NumberSlider value={s.appearance.scale} min={0.75} max={1.5} step={0.05} onChange={v => set({ appearance: { scale: v } })} format={v => `${Math.round(v * 100)}%`} /></Row>
       <Row title="Animation speed"><NumberSlider value={s.appearance.animSpeed} min={0.5} max={2} step={0.1} onChange={v => set({ appearance: { animSpeed: v } })} format={v => `${v.toFixed(1)}×`} /></Row>
       <Row title="Reduce motion" hint="Turns animations off."><Toggle on={s.appearance.reduceMotion} onChange={v => set({ appearance: { reduceMotion: v } })} /></Row>
+      <Row title="Preview screen glow" hint="The edge glow shown while the assistant thinks or speaks.">
+        {(['thinking', 'speaking', 'off'] as const).map(g => (
+          <button key={g} className="field" style={{ width: 'auto', cursor: 'pointer', padding: '0.375rem 0.75rem', textTransform: 'capitalize' }} onClick={() => { bridge.effects.glow(g); if (g !== 'off') setTimeout(() => bridge.effects.glow('off'), 4000) }}>{g}</button>
+        ))}
+      </Row>
     </Group>
   )
 }

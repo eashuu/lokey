@@ -26,6 +26,7 @@ export interface Settings {
     reduceMotion: boolean
   }
   wallpaper: { folder: string | null }
+  loadout: { soul: string; personality: string; voice: string; abilities: string[]; personalities: { id: string; name: string; prompt: string }[] }
   focusTimerMinutes: number
   startWithWindows: boolean
 }
@@ -46,6 +47,7 @@ export const defaultSettings: Settings = {
   },
   appearance: { theme: 'dark', accent: 'wallpaper', scale: 1, animSpeed: 1, reduceMotion: false },
   wallpaper: { folder: null },
+  loadout: { soul: 'drop', personality: 'chad', voice: 'Charon', abilities: [], personalities: [{ id: 'chad', name: 'True Chad', prompt: 'Confident, direct, a little cheeky. Short answers. Gets things done.' }] },
   focusTimerMinutes: 25,
   startWithWindows: false,
 }
@@ -57,6 +59,10 @@ export interface Stage {
   scale: number                    // devicePixelRatio of the display
   workTop: number                  // CSS px between the screen top and the usable work area (0 normally)
 }
+
+/** Whole-screen effects drawn by their own transient click-through windows. */
+export type GlowState = 'off' | 'thinking' | 'speaking' | 'research'
+export type MainPage = 'home' | 'bond' | 'soul' | 'desk' | 'settings'
 
 export interface Bridge {
   readonly kind: 'electron' | 'mock'
@@ -82,6 +88,14 @@ export interface Bridge {
     log(message: string): void
     openExternal(url: string): void
     pickFolder(): Promise<string | null>
+    /** Opens the main app window (Loadout etc.). */
+    openMain(page?: MainPage): void
+  }
+  effects: {
+    /** New wallpaper grows as a circle from a screen point, then is applied. x/y in screen px. Resolves when done. */
+    revealWallpaper(path: string, x: number, y: number): Promise<void>
+    /** Screen-edge glow while the assistant thinks or speaks. */
+    glow(state: GlowState): void
   }
   /** Present only under `--bench <dir>`: the renderer drives the run, main captures screenshots and process metrics. */
   bench?: {

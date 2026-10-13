@@ -114,6 +114,7 @@ export function createMockBridge(): Bridge {
       { id: 'a3', name: 'Microphone (Realtek)', kind: 'input' as const, isDefault: true },
     ],
     'audio.setDefault': () => ({}),
+    'system.setNightLight': ({ on }) => { system.nightLight = on; emit('system.changed', { ...system }); return { ok: true } },
     'system.setBrightness': ({ level }) => { system.brightness = level; emit('system.changed', { ...system }); return {} },
     'system.setBluetooth': ({ on }) => { system.bluetooth.on = on; emit('system.changed', { ...system }); return {} },
     'apps.list': () => apps,
@@ -160,6 +161,7 @@ export function createMockBridge(): Bridge {
       onChange: cb => { settingsCbs.add(cb); return () => { settingsCbs.delete(cb) } },
     },
     onApp: cb => { appCbs.add(cb); return () => { appCbs.delete(cb) } },
-    app: { openSettings() {}, quit() {}, log: m => console.log('[lokey]', m), openExternal: u => { window.open(u, '_blank') }, pickFolder: async () => null },
+    app: { openSettings() {}, quit() {}, log: m => console.log('[lokey]', m), openExternal: u => { window.open(u, '_blank') }, pickFolder: async () => null, openMain() {} },
+    effects: { revealWallpaper: async () => undefined, glow() {} },
   }
 }

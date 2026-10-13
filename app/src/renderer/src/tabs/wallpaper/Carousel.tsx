@@ -1,4 +1,4 @@
-import { useEffect, useRef, type WheelEvent } from 'react'
+import { useEffect, useRef, type MouseEvent, type WheelEvent } from 'react'
 import { animate, motion, useMotionTemplate, useMotionValue, useTransform, type MotionValue } from 'motion/react'
 import { Check } from 'lucide-react'
 import type { WallpaperItem } from '@shared/protocol'
@@ -22,7 +22,7 @@ function dist(i: number, pos: number, n: number) {
 //   width 330-264d, height 186-14d, centre offset 211.47d + 78 max(0, ad-1) (signed), top 4+(186-h)/2,
 //   opacity 1-.22 min(ad,1)-.11 max(0,ad-1), dim .275 when ad>.5, z-index 10-round(2ad).
 // Rendered as translateX + scale of a fixed 330x186 box so the tween stays on the compositor.
-function Card({ i, n, pos, it, thumb, active, onClick }: { i: number; n: number; pos: MotionValue<number>; it: WallpaperItem; thumb: string | null; active: boolean; onClick: () => void }) {
+function Card({ i, n, pos, it, thumb, active, onClick }: { i: number; n: number; pos: MotionValue<number>; it: WallpaperItem; thumb: string | null; active: boolean; onClick: (e: MouseEvent) => void }) {
   const p = useTransform(pos, v => dist(i, v, n))
   const x = useTransform(p, v => { const a = Math.abs(v); return Math.sign(v) * (211.47 * smooth(Math.min(a, 1)) + 78 * Math.max(0, a - 1)) })
   const sx = useTransform(p, v => (330 - 264 * smooth(Math.min(Math.abs(v), 1))) / W)
@@ -58,10 +58,11 @@ export function Carousel({ items, thumbs, index, onIndex, current, onSet }: {
   index: number
   onIndex: (i: number) => void
   current: string | null
-  onSet: (path: string) => void
+  onSet: (path: string, x: number, y: number) => void // x/y: screen point the reveal grows from
 }) {
   const n = items.length
   const lastWheel = useRef(0)
+  const box = useRef<HTMLDivElement>(null)
   const pos = useMotionValue(index)
   const go = (d: number) => onIndex(n >= 3 ? (index + d + n) % n : Math.min(n - 1, Math.max(0, index + d)))
 
@@ -81,7 +82,10 @@ export function Carousel({ items, thumbs, index, onIndex, current, onSet }: {
       const { go, onSet, item } = live.current
       if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1) }
       else if (e.key === 'ArrowRight') { e.preventDefault(); go(1) }
-      else if (e.key === 'Enter' && item) onSet(item.path)
+      else if (e.key === 'Enter' && item) {
+        const r = box.current?.getBoundingClientRect() // centre card, in screen px
+        onSet(item.path, window.screenX + (r ? r.left + r.width / 2 : 0), window.screenY + (r ? r.top + r.height / 2 : 0))
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -98,10 +102,10 @@ export function Carousel({ items, thumbs, index, onIndex, current, onSet }: {
 
   const sel = items[index]
   return (
-    <div onWheel={onWheel} style={{ position: 'absolute', left: 0, top: 44, width: 1004, height: 196 }}>
+    <div ref={box} onWheel={onWheel} style={{ position: 'absolute', left: 0, top: 44, width: 1004, height: 196 }}>
       {items.map((it, i) => {
         if (Math.abs(dist(i, index, n)) > 5) return null
-        return <Card key={it.path} i={i} n={n} pos={pos} it={it} thumb={it.thumb ?? thumbs[it.path] ?? null} active={it.path === current} onClick={() => (i === index ? onSet(it.path) : onIndex(i))} />
+        return <Card key={it.path} i={i} n={n} pos={pos} it={it} thumb={it.thumb ?? thumbs[it.path] ?? null} active={it.path === current} onClick={e => (i === index ? onSet(it.path, e.screenX, e.screenY) : onIndex(i))} />
       })}
       {sel && sel.path === current && (
         <div title="Current wallpaper" style={{ position: 'absolute', left: 645, top: 12, width: 22, height: 22, borderRadius: 11, background: 'var(--accent)', color: 'var(--accent-ink)', display: 'grid', placeItems: 'center', zIndex: 20, pointerEvents: 'none' }}>

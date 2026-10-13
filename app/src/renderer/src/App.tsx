@@ -14,6 +14,15 @@ export function App() {
 
   useEffect(() => { void initData().then(async () => { if (await bridge.bench?.config()) void runBench() }) }, [])
 
+  // screen-edge glow follows what the assistant is doing (voice mode drives `soul`; today only the preview does)
+  useEffect(() => {
+    let last = ''
+    return useIsland.subscribe(s => {
+      const g = s.soul === 'TALKING' ? 'speaking' : s.soul === 'THINKING' ? 'thinking' : 'off'
+      if (g !== last) { last = g; bridge.effects.glow(g) }
+    })
+  }, [])
+
   // peek: volume / brightness changes briefly widen the pill (never while the panel is open)
   useEffect(() => {
     let prev = useData.getState()

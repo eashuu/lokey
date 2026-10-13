@@ -55,11 +55,11 @@ export function morphKind(from: { shape: Shape; view: View }, to: { shape: Shape
 }
 
 export const MORPH: Record<MorphKind, { duration: number; ease: [number, number, number, number] }> = {
-  open: { duration: 0.42, ease: [0.215, 0.61, 0.355, 1] },
-  close: { duration: 0.42, ease: [0.65, 0, 0.35, 1] },
-  menu: { duration: 0.22, ease: [0.215, 0.61, 0.355, 1] },
-  music: { duration: 0.38, ease: [0.215, 0.61, 0.355, 1] },
-  notch: { duration: 0.55, ease: [0.215, 0.61, 0.355, 1] },
+  open: { duration: 0.34, ease: [0.215, 0.61, 0.355, 1] },
+  close: { duration: 0.28, ease: [0.65, 0, 0.35, 1] },
+  menu: { duration: 0.2, ease: [0.215, 0.61, 0.355, 1] },
+  music: { duration: 0.3, ease: [0.215, 0.61, 0.355, 1] },
+  notch: { duration: 0.42, ease: [0.215, 0.61, 0.355, 1] },
 }
 
 /** Tab bar widths from the reference, design px. */

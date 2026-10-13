@@ -5,11 +5,15 @@ import type { AppEvent, Stage } from '@shared/bridge'
 import type { EventName, MethodName, Methods } from '@shared/protocol'
 import { Sidecar } from './sidecar'
 import { dataDir, settings } from './settings'
-import { createTray, openSettings } from './windows'
+import { createTray, openMain, openSettings } from './windows'
+import { initEffects, revealWallpaper, setGlow, setGlowSuppressed } from './effects'
+import { runUiTest } from './uitest'
 
 // ---- args -----------------------------------------------------------------------------------------
 const argv = process.argv.slice(1)
 const useMock = argv.includes('--mock')
+const uiTestIdx = argv.indexOf('--uitest')
+const uiTestDir = uiTestIdx >= 0 ? (argv[uiTestIdx + 1] && !argv[uiTestIdx + 1].startsWith('--') ? argv[uiTestIdx + 1] : join(dataDir, 'uitest')) : null
 const benchIdx = argv.indexOf('--bench')
 const benchDir = benchIdx >= 0 ? (argv[benchIdx + 1] && !argv[benchIdx + 1].startsWith('--') ? argv[benchIdx + 1] : join(dataDir, 'bench')) : null
 
@@ -23,7 +27,7 @@ process.on('uncaughtException', e => log(`uncaught ${e.stack ?? e}`))
 process.on('unhandledRejection', e => log(`unhandled ${e}`))
 
 // ---- single instance (a second launch opens Settings in the first) --------------------------------
-if (!benchDir && !app.requestSingleInstanceLock()) { app.quit() }
+if (!benchDir && !uiTestDir && !app.requestSingleInstanceLock()) { app.quit() }
 app.on('second-instance', () => openSettings())
 
 // Compositor-friendly defaults for a transparent always-on-top overlay.
@@ -60,6 +64,7 @@ let tray: Tray | null = null
 let stage: Stage = { width: 1200, height: 720, scale: 1, workTop: 0 }
 const sidecar = new Sidecar()
 sidecar.setMaxListeners(64)
+initEffects(sidecar)
 const eventCounts: Record<string, number> = {}
 sidecar.on('log', log)
 
@@ -131,7 +136,7 @@ function registerIpc() {
     overlay.setShape(rects.slice(0, 4).map(r => ({ x: Math.max(0, Math.floor(r.x)), y: Math.max(0, Math.floor(r.y)), width: Math.max(1, Math.ceil(r.w)), height: Math.max(1, Math.ceil(r.h)) })))
   })
   ipcMain.on('lokey:focusable', (_e, on: boolean) => {
-    if (!overlay) return
+    if (!overlay || uiTestDir) return // the UI test never takes focus
     overlay.setFocusable(on)
     if (on) overlay.focus()
   })
@@ -142,6 +147,9 @@ function registerIpc() {
   ipcMain.on('lokey:quit', () => app.quit())
   ipcMain.on('lokey:external', (_e, url: string) => { if (/^https?:\/\//.test(url)) void shell.openExternal(url) })
   ipcMain.on('lokey:openSettings', () => openSettings())
+  ipcMain.on('lokey:openMain', (_e, page?: string) => openMain(page))
+  ipcMain.handle('lokey:effects:reveal', (_e, path: string, x: number, y: number) => revealWallpaper(path, x, y))
+  ipcMain.on('lokey:effects:glow', (_e, state) => { setGlow(state); setTimeout(raise, 120) }) // keep the island above the glow window
   ipcMain.handle('lokey:pickFolder', async () => {
     const r = await dialog.showOpenDialog({ properties: ['openDirectory'] })
     return r.canceled ? null : r.filePaths[0]
@@ -191,6 +199,7 @@ function wireSidecar() {
   sidecar.onEvent('fullscreen.changed', ({ full }) => {
     if (!overlay || overlay.isDestroyed()) return
     hiddenForFullscreen = full
+    setGlowSuppressed(full)
     if (full) overlay.hide()
     else { overlay.showInactive(); raise() }
     send({ type: 'fullscreen', full })
@@ -213,6 +222,7 @@ app.whenReady().then(async () => {
   screen.on('display-metrics-changed', () => raise())
   if (!benchDir) tray = createTray({ toggleIsland: () => send({ type: 'toggle-island' }), quit: () => app.quit() })
   if (argv.includes('--settings')) openSettings()
+  if (uiTestDir) overlay?.webContents.once('did-finish-load', () => { void runUiTest(overlay!, uiTestDir, () => app.quit()) })
   const ok = await sidecar.start()
   if (!ok) log('running without sidecar (mock data only)')
 })

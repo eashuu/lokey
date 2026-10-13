@@ -34,6 +34,11 @@ const bridge: Bridge = {
     log: m => ipcRenderer.send('lokey:log', m),
     openExternal: url => ipcRenderer.send('lokey:external', url),
     pickFolder: () => ipcRenderer.invoke('lokey:pickFolder'),
+    openMain: page => ipcRenderer.send('lokey:openMain', page),
+  },
+  effects: {
+    revealWallpaper: (path, x, y) => ipcRenderer.invoke('lokey:effects:reveal', path, x, y),
+    glow: state => ipcRenderer.send('lokey:effects:glow', state),
   },
   bench: {
     config: () => ipcRenderer.invoke('lokey:bench:config'),
@@ -45,3 +50,5 @@ const bridge: Bridge = {
 
 contextBridge.exposeInMainWorld('lokey', bridge)
 contextBridge.exposeInMainWorld('lokeyFlags', { mock: process.argv.includes('--lokey-mock') })
+// whole-screen effect pages (#reveal / #glow): last message is buffered so a late subscriber still gets it
+contextBridge.exposeInMainWorld('lokeyFx', ((last: Record<string, unknown>) => { for (const c of ['reveal:start', 'glow:state']) ipcRenderer.on(`lokey:${c}`, (_e, d) => { last[c] = d }); const sub = (c: string) => (cb: (d: any) => void) => { ipcRenderer.on(`lokey:${c}`, (_e, d) => cb(d)); if (c in last) cb(last[c]) }; return { ready: () => ipcRenderer.send('lokey:reveal:ready'), done: () => ipcRenderer.send('lokey:reveal:done'), onStart: sub('reveal:start'), onGlow: sub('glow:state') } })({}))

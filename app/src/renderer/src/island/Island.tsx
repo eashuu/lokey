@@ -10,14 +10,17 @@ import { MenuContent } from './Panel'
 import { Caption } from './Caption'
 import { Held } from './Held'
 import { PeekRow } from './Peek'
-import { Prewarm } from './Prewarm'
 import { Soul } from './Soul'
+import { SOUL_SKINS } from './skins'
 import { useIsland } from './store'
 
 /**
  * The island: one path (shapePath.ts) animated from five numbers, drawn as the fill and reused as the clip for
  * the content. States and timings follow docs/UI-SPEC.md; nothing here uses springs.
  */
+// exposed for the injected-event UI test (`--uitest`)
+;(window as unknown as { __island: typeof useIsland }).__island = useIsland
+
 export function Island() {
   const shape = useIsland(s => s.shape)
   const view = useIsland(s => s.view)
@@ -26,6 +29,7 @@ export function Island() {
   const soulMode = useIsland(s => s.soul)
   const heldPhase = useIsland(s => s.heldPhase)
   const isl = useData(s => s.settings.island)
+  const skin = useData(s => s.settings.loadout?.soul)
   const scale = useData(s => s.settings.appearance.scale)
   const k = scale * isl.size
 
@@ -76,12 +80,14 @@ export function Island() {
 
   // ---- mounted menu content (kept alive while the shape closes) -------------------------------------
   const [mount, setMount] = useState(shape === 'menu')
-  const [shown, setShown] = useState<View>(view)
+  const shownRef = useRef<View>(view)
+  if (shape === 'menu') shownRef.current = view
+  const shown = shownRef.current
   useEffect(() => {
-    if (shape === 'menu') { setMount(true); setShown(view); return }
-    const t = setTimeout(() => setMount(false), 520)
+    if (shape === 'menu') { setMount(true); return }
+    const t = setTimeout(() => setMount(false), 360)
     return () => clearTimeout(t)
-  }, [shape, view])
+  }, [shape])
 
   // ---- triggers -------------------------------------------------------------------------------------
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -117,15 +123,20 @@ export function Island() {
     }
   }, [isl.trigger, isl.scrollToOpen, isl.startTab])
 
+  // A click opens the menu from the notch; it never pins. Pinning (keyboard focus) is only for text fields.
   const onClick = useCallback(() => {
     const s = st()
-    if (s.shape !== 'menu') s.openMenu(isl.startTab, 'pinned')
-    else if (s.mode === 'hover') useIsland.setState({ mode: 'pinned' })
+    if (s.shape !== 'menu') s.openMenu(isl.startTab, 'hover')
   }, [isl.startTab])
 
   useEffect(() => { bridge.setFocusable(shape === 'menu' && mode === 'pinned') }, [shape, mode])
   useEffect(() => { useIsland.getState().setRest(isl.rest) }, [isl.rest])
   useEffect(() => () => cancel(), [])
+
+  useEffect(() => bridge.on('foreground.changed', () => {
+    const s = st()
+    if (s.shape === 'menu' && s.mode === 'pinned') setTimeout(() => { const t = st(); if (t.shape === 'menu' && t.mode === 'pinned') t.closeMenu() }, 150)
+  }), [])
 
   useEffect(() => bridge.onApp(e => {
     const s = st()
@@ -178,26 +189,24 @@ export function Island() {
           </div>
         )}
         {mount && (
-          // the content scales up from the top centre while the shape grows (reference: 0.594 -> 1 in 0.38 s, music 0.47 -> 1 in 0.42 s)
+          // content appears together with the shape (no delay, no scale): a short fade only. The wrapper changes only
+          // between the music island and the menu, so switching tabs never re-animates the frame or the tab bar.
           <motion.div
-            key={shown}
-            initial={{ opacity: 0, scale: shown === 'music' ? 0.4697 : 0.59375 }}
-            animate={inMenu ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1 }}
-            transition={inMenu
-              ? { scale: { duration: shown === 'music' ? 0.42 : 0.38, ease: [0.33, 1, 0.68, 1] }, opacity: { duration: shown === 'music' ? 0.3 : 0.23, delay: shown === 'music' ? 0.05 : 0.057, ease: 'linear' } }
-              : { duration: 0.12, ease: 'linear' }}
-            style={{ position: 'absolute', inset: 0, transformOrigin: `${cx}px 0px` }}
+            key={shown === 'music' ? 'music' : 'menu'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: inMenu ? 1 : 0 }}
+            transition={{ duration: inMenu ? 0.16 : 0.1, ease: 'linear' }}
+            style={{ position: 'absolute', inset: 0 }}
           >
             <MenuContent view={shown} scale={MENU_BASE * k} left={cx - menuW / 2} />
           </motion.div>
         )}
       </motion.div>
 
-      <Prewarm k={k} />
       <Caption top={(NOTCH_BASE * 75 + 26) * k} scale={k} />
 
       <motion.div style={{ position: 'absolute', left: cx - soulW / 2, top: 0, y: soulY, width: soulW, height: soulH, opacity: soulOn ? 1 : 0, transition: 'opacity 300ms linear', pointerEvents: 'none' }}>
-        <Soul width={soulW} height={soulH} mode={soulMode} active={soulOn} />
+        <Soul width={soulW} height={soulH} mode={soulMode} active={soulOn} palette={SOUL_SKINS[skin ?? '']?.palette} />
       </motion.div>
     </div>
   )

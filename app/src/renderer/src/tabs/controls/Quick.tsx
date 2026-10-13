@@ -97,7 +97,7 @@ function Row2() {
   const dark = !!system?.darkMode
   return (
     <>
-      <SplitTile left={0} width={297} icon={<MoonStar size={sz} />} title="Night Light" sub={night == null ? 'Unavailable' : night ? 'On' : 'Off'} on={!!night} disabled />
+      <SplitTile left={0} width={297} icon={<MoonStar size={sz} />} title="Night Light" sub={night == null ? 'Unavailable' : night ? 'On' : 'Off'} on={!!night} disabled={night == null} onClick={() => night != null && quiet(bridge.call('system.setNightLight', { on: !night }))} />
       <SplitTile left={307} width={297} icon={<SunMoon size={sz} />} title="Dark mode" sub={dark ? 'On' : 'Off'} on={dark} onClick={() => quiet(bridge.call('system.setDarkMode', { on: !dark }))} />
     </>
   )
