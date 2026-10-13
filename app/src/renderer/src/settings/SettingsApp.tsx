@@ -154,6 +154,13 @@ function Island({ s, set }: P) {
   return (
     <>
       <Group>
+        <Row title="Size" hint="Scales the island. 100% matches the design."><NumberSlider value={s.island.size} min={0.7} max={1.2} step={0.05} onChange={v => set({ island: { size: v } })} format={v => `${Math.round(v * 100)}%`} /></Row>
+        <Row title="How it opens" hint="Scroll: scroll down on the island (music first, then the menu). Hover wakes it.">
+          <Select value={s.island.trigger} options={[{ v: 'both', l: 'Scroll and hover' }, { v: 'scroll', l: 'Scroll only' }, { v: 'hover', l: 'Hover only' }]} onChange={v => set({ island: { trigger: v } })} />
+        </Row>
+        <Row title="Resting shape" hint="What you see when the menu is closed.">
+          <Select value={s.island.rest} options={[{ v: 'sleep', l: 'Sleeping (thin sliver)' }, { v: 'awake', l: 'Awake (flame)' }]} onChange={v => set({ island: { rest: v } })} />
+        </Row>
         <Row title="Open on hover"><Toggle on={s.island.openOnHover} onChange={v => set({ island: { openOnHover: v } })} /></Row>
         <Row title="Hover delay"><NumberSlider value={s.island.hoverDelayMs} min={0} max={600} step={20} onChange={v => set({ island: { hoverDelayMs: v } })} format={v => `${v} ms`} /></Row>
         <Row title="Close delay" hint="How long the island waits after the pointer leaves."><NumberSlider value={s.island.closeDelayMs} min={100} max={1500} step={50} onChange={v => set({ island: { closeDelayMs: v } })} format={v => `${v} ms`} /></Row>

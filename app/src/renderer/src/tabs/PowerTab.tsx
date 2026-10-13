@@ -1,21 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { Lock, LogOut, Moon, Power, RotateCw, Snowflake, type LucideIcon } from 'lucide-react'
+import { Lock, Moon, Power, RotateCw, type LucideIcon } from 'lucide-react'
 import type { PowerAction } from '@shared/protocol'
 import { bridge } from '@/bridge'
-import { useData } from '@/lib/data'
 
 const ITEMS: { id: PowerAction; label: string; Icon: LucideIcon; destructive?: boolean }[] = [
   { id: 'lock', label: 'Lock', Icon: Lock },
   { id: 'sleep', label: 'Sleep', Icon: Moon },
-  { id: 'hibernate', label: 'Hibernate', Icon: Snowflake },
-  { id: 'signout', label: 'Sign out', Icon: LogOut, destructive: true },
   { id: 'restart', label: 'Restart', Icon: RotateCw, destructive: true },
   { id: 'shutdown', label: 'Shut down', Icon: Power, destructive: true },
 ]
 
+/** Four 92px buttons across the 604px content width (gap 10); destructive ones need a second press within 2.5 s. */
 export function PowerTab() {
-  const user = useData(s => s.user)
   const [armed, setArmed] = useState<PowerAction | null>(null)
+  const [hover, setHover] = useState<PowerAction | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -31,38 +29,23 @@ export function PowerTab() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '9rem' }}>
-      {user && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minHeight: '1.75rem' }}>
-          <div style={{ width: '1.75rem', height: '1.75rem', borderRadius: '0.5rem', background: 'var(--s2)', overflow: 'hidden', flex: 'none', display: 'grid', placeItems: 'center', fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)' }}>
-            {user.avatar ? <img src={user.avatar} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.name.slice(0, 1).toUpperCase()}
-          </div>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
-          <span className="num" style={{ fontSize: '0.6875rem', color: 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.machine}</span>
-        </div>
-      )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem' }}>
-        {ITEMS.map(({ id, label, Icon, destructive }) => {
-          const on = armed === id
-          return (
-            <button
-              key={id}
-              onClick={() => press(id, destructive)}
-              className={on ? 'card active:scale-[0.96]' : 'card hover:bg-s2 active:scale-[0.96]'}
-              style={{
-                height: '4.25rem', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
-                color: on ? 'var(--bad)' : 'var(--text)',
-                ...(on ? { background: 'color-mix(in srgb, var(--bad) 16%, var(--s1))', borderColor: 'color-mix(in srgb, var(--bad) 45%, transparent)' } : null),
-                transition: 'background-color 140ms, color 140ms, border-color 140ms, transform 120ms',
-              }}
-            >
-              <Icon size={20} />
-              <span style={{ fontSize: '0.6875rem', fontWeight: 600, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{on ? 'Confirm?' : label}</span>
-            </button>
-          )
-        })}
-      </div>
-      <div style={{ fontSize: '0.6875rem', color: 'var(--dim)', textAlign: 'center' }}>Destructive actions need a second click.</div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, width: 604 }}>
+      {ITEMS.map(({ id, label, Icon, destructive }) => {
+        const on = armed === id
+        return (
+          <button
+            key={id}
+            onClick={() => press(id, destructive)}
+            onMouseEnter={() => setHover(id)}
+            onMouseLeave={() => setHover(h => (h === id ? null : h))}
+            className="active:scale-[0.97]"
+            style={{ position: 'relative', height: 92, borderRadius: 20, color: on ? 'var(--bad)' : 'var(--text)', background: on ? 'color-mix(in srgb, var(--bad) 18%, transparent)' : hover === id ? 'var(--fill-4)' : 'var(--fill-1)', transition: 'background-color .1s linear, color .1s linear, transform .1s linear' }}
+          >
+            <span style={{ position: 'absolute', left: 0, right: 0, top: 17, height: 26, display: 'grid', placeItems: 'center' }}><Icon size={26} strokeWidth={1.8} /></span>
+            <span style={{ position: 'absolute', left: 4, right: 4, top: 52, height: 20, lineHeight: '20px', fontSize: 13, fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{on ? 'Confirm?' : label}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

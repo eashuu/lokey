@@ -1,59 +1,94 @@
 import { useRef, useState } from 'react'
-import { Check, Pause, Play, RotateCcw, X } from 'lucide-react'
+import { ArrowRight, Check, X } from 'lucide-react'
 import { useData } from '@/lib/data'
 import { useFocus } from '@/lib/focus'
-import { duration, mmss } from '@/lib/format'
+import { duration } from '@/lib/format'
 import { useTodos, type Todo } from '@/lib/todos'
-import { Card, IconButton, Label, Ring } from '@/ui'
+import { FullRing as Ring } from '../stats/Ring'
 import { useIsland } from '@/island/store'
 
-const hhmm = (t: number) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+const AMBER = '#F5A524'
+const PRESETS = [1, 5, 10, 15, 20]
+const t12 = (t: number) => new Date(t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
 const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString()
+const ellipsis = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const
+const p2 = (n: number) => String(n).padStart(2, '0')
+const clock = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600); return `${h ? `${h}:` : ''}${p2(Math.floor((s % 3600) / 60))}:${p2(s % 60)}` }
+
+/** Pinned islands take keyboard focus; ask for it, then focus the field once the window is focusable. */
+function pinThen(focus: () => void) {
+  if (useIsland.getState().mode !== 'pinned') { useIsland.setState({ mode: 'pinned' }); setTimeout(focus, 80) } else focus()
+}
 
 function dueLabel(due: number, now: Date) {
   const d = new Date(due)
   const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-  return `${sameDay(d, now) ? 'Today' : sameDay(d, tomorrow) ? 'Tomorrow' : d.toLocaleDateString(undefined, { weekday: 'short' })} ${hhmm(due)}`
+  return sameDay(d, now) ? '' : `${sameDay(d, tomorrow) ? 'Tomorrow' : d.toLocaleDateString(undefined, { weekday: 'short' })} `
 }
 
 export function NextUp({ now }: { now: Date }) {
   const next = useTodos(s => s.items.filter(t => !t.done && t.due !== null && t.due > now.getTime()).sort((a, b) => a.due! - b.due!)[0])
   return (
-    <Card style={{ padding: '0.625rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-      <Label>Next up</Label>
-      {next ? (
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', justifyContent: 'space-between', minWidth: 0 }}>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{next.text}</span>
-          <span className="num" style={{ fontSize: '0.6875rem', color: 'var(--accent)', flex: 'none' }}>{dueLabel(next.due!, now)} · in {duration(Math.max(60, (next.due! - now.getTime()) / 1000))}</span>
-        </div>
-      ) : <span style={{ fontSize: '0.8125rem', color: 'var(--dim)' }}>Nothing scheduled</span>}
-    </Card>
+    <div style={{ position: 'relative', width: 330, height: 58, borderRadius: 14, background: 'rgba(255,255,255,.055)' }}>
+      <span style={{ position: 'absolute', left: 12, top: 13, width: 5, height: 32, borderRadius: 3, background: '#F28BB6' }} />
+      <div style={{ position: 'absolute', left: 28, right: 12, top: 9, height: 18, lineHeight: '18px', fontSize: 13, fontWeight: 500, ...ellipsis }}>{next ? `Next · ${dueLabel(next.due!, now)}${t12(next.due!)}` : 'Nothing scheduled'}</div>
+      <div style={{ position: 'absolute', left: 28, right: 12, top: 29, height: 16, lineHeight: '16px', fontSize: 12, color: 'var(--muted)', ...ellipsis }}>
+        {next ? `${next.text} · in ${duration(Math.max(60, (next.due! - now.getTime()) / 1000))}` : 'Add a task with @18:30 to see it here'}
+      </div>
+    </div>
+  )
+}
+
+/** Hours / minutes box: editable while idle (clicking pins the island so it can take the keyboard). */
+function TimeBox({ left, value, unit, editable, onChange }: { left: number; value: number; unit: string; editable: boolean; onChange: (n: number) => void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  return (
+    <div style={{ position: 'absolute', left, top: 24, width: 103, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.055)' }}>
+      <input
+        ref={ref} readOnly={!editable} value={unit === 'h' ? String(value) : p2(value)} inputMode="numeric"
+        onMouseDown={() => editable && pinThen(() => ref.current?.select())}
+        onChange={e => { const n = parseInt(e.target.value.replace(/\D/g, '').slice(-3) || '0', 10); onChange(n) }}
+        style={{ position: 'absolute', left: 8, top: 0, width: 52, height: 36, background: 'none', border: 0, outline: 'none', color: 'var(--text)', font: 'inherit', fontSize: 16, fontWeight: 500, textAlign: 'right', fontVariantNumeric: 'tabular-nums', userSelect: 'text', cursor: editable ? 'text' : 'default' }}
+      />
+      <span style={{ position: 'absolute', left: 67, top: 0, height: 36, lineHeight: '36px', fontSize: 11, color: 'var(--muted)' }}>{unit}</span>
+    </div>
   )
 }
 
 export function FocusCard() {
-  const minutes = useData(s => s.settings.focusTimerMinutes)
+  const setting = useData(s => s.settings.focusTimerMinutes)
   const f = useFocus()
+  const [sel, setSel] = useState(setting)
   const idle = f.status === 'idle'
-  const total = idle ? minutes * 60_000 : f.totalMs
-  const left = idle ? total : f.remainingMs
   const done = f.status === 'done'
   const running = f.status === 'running'
-  const px = parseFloat(getComputedStyle(document.documentElement).fontSize)
+  const total = idle ? sel * 60_000 : f.totalMs
+  const left = idle ? total : f.remainingMs
+  const shown = Math.ceil(left / 60_000)
+  const label = running ? 'Pause' : f.status === 'paused' ? 'Resume' : 'Start'
+  const set = (min: number) => setSel(Math.min(999, Math.max(1, min)))
   return (
-    <Card style={{ padding: '0.625rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-      <Ring value={done ? 100 : total ? (left / total) * 100 : 0} size={3.5 * px} stroke={0.25 * px} color={done ? 'var(--ok)' : 'var(--accent)'}>
-        <span className="num" style={{ fontSize: done ? '0.6875rem' : '0.75rem', fontWeight: 500 }}>{done ? 'Done' : mmss(left)}</span>
-      </Ring>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <Label>Focus</Label>
-        <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{done ? 'Nice work' : running ? 'In progress' : f.status === 'paused' ? 'Paused' : `${minutes} min`}</div>
+    <div style={{ position: 'relative', height: 170, width: 354, borderRadius: 20, background: 'var(--fill-1)', flex: 'none' }}>
+      <div style={{ position: 'absolute', left: 14, top: 43 }}>
+        <Ring value={done ? 100 : total ? (left / total) * 100 : 0} size={84} stroke={4} color={done ? 'var(--ok)' : AMBER}>
+          <span style={{ fontSize: done ? 14 : 17, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{done ? 'Done' : clock(left)}</span>
+        </Ring>
       </div>
-      <IconButton active title={running ? 'Pause' : 'Start'} onClick={() => (running ? f.pause() : f.start(minutes))} size="2rem">
-        {running ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
-      </IconButton>
-      <IconButton title="Reset" onClick={f.reset} size="2rem"><RotateCcw size={14} /></IconButton>
-    </Card>
+      <TimeBox left={114} unit="h" value={idle ? Math.floor(sel / 60) : Math.floor(shown / 60)} editable={idle} onChange={h => set(h * 60 + (sel % 60))} />
+      <TimeBox left={225} unit="min" value={idle ? sel % 60 : shown % 60} editable={idle} onChange={m => set(Math.floor(sel / 60) * 60 + Math.min(59, m))} />
+      <div style={{ position: 'absolute', left: 114, top: 72, display: 'flex', gap: 6 }}>
+        {PRESETS.map(m => {
+          const on = idle ? m === sel : m * 60_000 === f.totalMs
+          return (
+            <button key={m} disabled={!idle} onClick={() => setSel(m)} style={{ width: 38, height: 28, borderRadius: 14, fontSize: 12, fontWeight: 500, background: on ? 'rgba(245,165,36,.2)' : 'var(--fill-0)', color: on ? AMBER : 'var(--muted)', transition: 'background-color 140ms, color 140ms' }}>{m}m</button>
+          )
+        })}
+      </div>
+      <div style={{ position: 'absolute', left: 114, top: 112, display: 'flex', gap: 8 }}>
+        <button onClick={() => (running ? f.pause() : f.start(sel))} style={{ width: 103, height: 36, borderRadius: 11, background: AMBER, color: '#2A1800', fontSize: 13, fontWeight: 500 }}>{label}</button>
+        <button onClick={f.reset} style={{ width: 103, height: 36, borderRadius: 11, background: 'rgba(255,255,255,.07)', fontSize: 13, fontWeight: 500 }}>Reset</button>
+      </div>
+    </div>
   )
 }
 
@@ -64,24 +99,33 @@ export function TodoCard({ now }: { now: Date }) {
   const [text, setText] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const submit = () => { if (text.trim()) { add(text); setText('') } }
-  // pinned islands take keyboard focus; ask for it, then focus the field once the window is focusable
-  const pin = () => { if (useIsland.getState().mode !== 'pinned') { useIsland.setState({ mode: 'pinned' }); setTimeout(() => input.current?.focus(), 80) } }
+  const pin = () => pinThen(() => input.current?.focus())
   const sorted = [...items].sort((a, b) => Number(a.done) - Number(b.done))
+  const doneN = items.filter(t => t.done).length
   return (
-    <Card style={{ padding: '0.625rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-      <Label>To-do</Label>
-      <input
-        ref={input} className="field" value={text} placeholder="Add a task… (@18:30 for a time)"
-        style={{ padding: '0.375rem 0.625rem', fontSize: '0.75rem' }}
-        onMouseDown={pin} onChange={e => setText(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') submit() }}
-      />
-      {mode === 'hover' && <div style={{ fontSize: '0.5625rem', color: 'var(--dim)', marginTop: '-0.125rem' }}>Click the island to type</div>}
-      <div className="scroll-y" style={{ maxHeight: '6.5rem', display: 'flex', flexDirection: 'column', gap: '0.0625rem' }}>
-        {sorted.length === 0 && <div style={{ fontSize: '0.6875rem', color: 'var(--dim)', padding: '0.25rem 0' }}>All clear.</div>}
+    <div style={{ position: 'relative', flex: 1, minHeight: 0, borderRadius: 20, background: 'var(--fill-1)' }}>
+      <div style={{ position: 'absolute', left: 16, top: 12, height: 30, lineHeight: '30px', fontSize: 14, fontWeight: 500 }}>Today</div>
+      <div style={{ position: 'absolute', right: 12, top: 12 }}>
+        <Ring value={items.length ? (doneN / items.length) * 100 : 0} size={30} stroke={3} color="#C1EA86">
+          <span style={{ fontSize: 9, fontWeight: 500, color: '#C1EA86', fontVariantNumeric: 'tabular-nums' }}>{doneN}/{items.length}</span>
+        </Ring>
+      </div>
+      <div className="scroll-y" style={{ position: 'absolute', left: 12, right: 12, top: 52, bottom: 68, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {sorted.length === 0 && <div style={{ fontSize: 12, color: 'var(--muted)', padding: '6px 4px' }}>All clear.</div>}
         {sorted.map(t => <Row key={t.id} t={t} now={now} onToggle={() => toggle(t.id)} onDelete={() => remove(t.id)} />)}
       </div>
-    </Card>
+      <div style={{ position: 'absolute', left: 12, bottom: 12, width: 266, height: 44, borderRadius: 12, border: '1.2px dashed rgba(255,255,255,.157)', boxSizing: 'border-box' }}>
+        <input
+          ref={input} value={text} placeholder={mode === 'hover' ? 'Click the island to type…' : '+ Add a to-do…'}
+          style={{ position: 'absolute', left: 14, right: 46, top: 0, height: '100%', background: 'none', border: 0, outline: 'none', color: 'var(--text)', font: 'inherit', fontSize: 13, userSelect: 'text' }}
+          onMouseDown={pin} onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') submit() }}
+        />
+        <button aria-label="Add to-do" onClick={() => (text.trim() ? submit() : pin())} style={{ position: 'absolute', right: 6, top: 6, width: 30, height: 30, borderRadius: 9, display: 'grid', placeItems: 'center', background: 'var(--accent)', color: 'var(--accent-ink)' }}>
+          <ArrowRight size={16} strokeWidth={2.4} />
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -89,13 +133,13 @@ function Row({ t, now, onToggle, onDelete }: { t: Todo; now: Date; onToggle: () 
   const late = !t.done && t.due !== null && t.due < now.getTime()
   const [hover, setHover] = useState(false)
   return (
-    <div className="row-hover" onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0.375rem', opacity: t.done ? 0.5 : 1 }}>
-      <button onClick={onToggle} aria-label={t.done ? 'Mark not done' : 'Mark done'} style={{ width: '1rem', height: '1rem', borderRadius: '0.3125rem', flex: 'none', display: 'grid', placeItems: 'center', border: '1.5px solid ' + (t.done ? 'var(--accent)' : 'var(--dim)'), background: t.done ? 'var(--accent)' : 'transparent', color: 'var(--accent-ink)', transition: 'background-color 140ms, border-color 140ms' }}>
-        {t.done && <Check size={10} strokeWidth={3} />}
+    <div onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)} style={{ position: 'relative', height: 40, flex: 'none', borderRadius: 12, background: hover ? 'rgba(255,255,255,.086)' : 'rgba(255,255,255,.047)', transition: 'background-color 120ms' }}>
+      <button onClick={onToggle} aria-label={t.done ? 'Mark not done' : 'Mark done'} style={{ position: 'absolute', left: 10, top: 9, width: 22, height: 22, borderRadius: 11, display: 'grid', placeItems: 'center', boxSizing: 'border-box', border: t.done ? 0 : '1.5px solid rgba(255,255,255,.25)', background: t.done ? 'var(--accent)' : 'transparent', color: 'var(--accent-ink)', transition: 'background-color 140ms' }}>
+        {t.done && <Check size={12} strokeWidth={3} />}
       </button>
-      <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: t.done ? 'line-through' : 'none' }}>{t.text}</span>
-      {t.due !== null && <span className="num" style={{ fontSize: '0.625rem', color: late ? 'var(--warn)' : 'var(--dim)', flex: 'none' }}>{hhmm(t.due)}</span>}
-      <button onClick={onDelete} aria-label="Delete" style={{ color: 'var(--muted)', flex: 'none', display: 'grid', opacity: hover ? 1 : 0, transition: 'opacity 120ms' }}><X size={12} /></button>
+      <span style={{ position: 'absolute', left: 38, right: hover ? 28 : t.due !== null ? 62 : 12, top: 0, height: 40, lineHeight: '40px', fontSize: 13, color: t.done ? 'var(--muted)' : 'var(--text)', textDecoration: t.done ? 'line-through' : 'none', ...ellipsis }}>{t.text}</span>
+      {t.due !== null && !hover && <span style={{ position: 'absolute', right: 10, top: 0, height: 40, lineHeight: '40px', fontSize: 10, fontVariantNumeric: 'tabular-nums', color: late ? 'var(--warn)' : 'var(--muted)' }}>{new Date(t.due).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>}
+      <button onClick={onDelete} aria-label="Delete" style={{ position: 'absolute', right: 8, top: 12, width: 16, height: 16, display: 'grid', placeItems: 'center', color: 'var(--muted)', opacity: hover ? 1 : 0, transition: 'opacity 120ms' }}><X size={13} /></button>
     </div>
   )
 }

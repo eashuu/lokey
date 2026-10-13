@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Battery, BatteryCharging, BatteryLow, Bluetooth, BluetoothOff, Cable, Coffee, Keyboard, Mic, MicOff, Monitor, Sun, Volume1, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Bluetooth, BluetoothOff, Cable, MoonStar, Sun, SunMoon, Volume1, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react'
 import { bridge } from '@/bridge'
 import { useData } from '@/lib/data'
-import { Card, IconButton, Slider } from '@/ui'
+import { Tile } from '@/ui'
+import { Pill } from './Pill'
+import { SplitTile } from './SplitTile'
 
 const quiet = <T,>(p: Promise<T>) => void p.catch(() => undefined)
 
@@ -25,107 +27,89 @@ function useDragValue(remote: number, send: (v: number) => void) {
   return { value: drag ?? remote, onChange, onCommit }
 }
 
-const pctStyle: CSSProperties = { width: '2.25rem', textAlign: 'right', fontSize: '0.75rem' }
-
-function Volume() {
+function Volume({ width }: { width: number }) {
   const audio = useData(s => s.audio)
   const v = useDragValue(audio?.volume ?? 0, level => quiet(bridge.call('audio.setVolume', { level })))
   const muted = !!audio?.muted
   const Icon = muted || v.value === 0 ? VolumeX : v.value < 0.5 ? Volume1 : Volume2
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <IconButton title={muted ? 'Unmute' : 'Mute'} size="1.75rem" active={muted} onClick={() => quiet(bridge.call('audio.setMuted', { muted: !muted }))}><Icon size={15} /></IconButton>
-        <div style={{ flex: 1, opacity: muted ? 0.5 : 1, transition: 'opacity 140ms' }}><Slider label="Volume" {...v} /></div>
-        <span className="num" style={pctStyle}>{Math.round(v.value * 100)}%</span>
-      </div>
-      <div style={{ marginTop: '0.125rem', paddingLeft: '2.25rem', fontSize: '0.6875rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{audio?.device ?? ' '}</div>
-    </div>
+    <Pill {...v} width={width} label="Volume" dim={muted} icon={<Icon size={17} strokeWidth={1.8} />} onIcon={() => quiet(bridge.call('audio.setMuted', { muted: !muted }))} iconLabel={muted ? 'Unmute' : 'Mute'} text={`${Math.round(v.value * 100)}%`} />
   )
 }
 
-function Brightness({ level }: { level: number }) {
+function Brightness({ level, width }: { level: number; width: number }) {
   const v = useDragValue(level, l => quiet(bridge.call('system.setBrightness', { level: l })))
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      <span style={{ width: '1.75rem', height: '1.75rem', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}><Sun size={15} /></span>
-      <div style={{ flex: 1 }}><Slider label="Brightness" {...v} /></div>
-      <span className="num" style={pctStyle}>{Math.round(v.value * 100)}%</span>
-    </div>
-  )
+  return <Pill {...v} width={width} label="Brightness" icon={<Sun size={17} strokeWidth={1.8} />} text={`${Math.round(v.value * 100)}%`} />
 }
 
-const ellipsis: CSSProperties = { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+const open = (page: 'network' | 'bluetooth' | 'sound') => () => quiet(bridge.call('system.openSettings', { page }))
+const sz = 17
 
-function Tile({ icon, label, sub, on, disabled, onClick }: { icon: ReactNode; label: string; sub: string; on?: boolean; disabled?: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={on}
-      className="active:scale-[0.97]"
-      style={{
-        minHeight: '2.75rem', minWidth: 0, padding: '0.5rem 0.625rem', borderRadius: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', textAlign: 'left',
-        background: on ? 'var(--accent)' : 'var(--s2)', color: on ? 'var(--accent-ink)' : 'var(--text)', opacity: disabled ? 0.4 : 1, cursor: disabled ? 'default' : 'pointer',
-        transition: 'background-color 140ms, color 140ms, transform 120ms',
-      }}
-    >
-      <span style={{ flex: 'none', display: 'grid' }}>{icon}</span>
-      <span style={{ minWidth: 0, lineHeight: 1.2 }}>
-        <span style={{ ...ellipsis, fontSize: '0.75rem', fontWeight: 600 }}>{label}</span>
-        <span style={{ ...ellipsis, fontSize: '0.625rem', opacity: 0.7 }}>{sub}</span>
-      </span>
-    </button>
-  )
-}
-
-function Tiles() {
+/** Row 1 (y=0): Wi-Fi, Bluetooth, Audio, each with a chevron zone that opens the matching settings page. */
+function Row1() {
   const system = useData(s => s.system)
   const audio = useData(s => s.audio)
   const bt = system?.bluetooth
   const net = system?.network
-  const micMuted = !!audio?.micMuted
-  const sz = 16
+  const online = !!net && net.kind !== 'none'
+  const muted = !!audio?.muted
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-      <Tile icon={bt?.on ? <Bluetooth size={sz} /> : <BluetoothOff size={sz} />} label="Bluetooth" sub={bt?.available ? (bt.on ? 'On' : 'Off') : 'Unavailable'} on={!!bt?.available && bt.on} disabled={!bt?.available} onClick={() => bt && quiet(bridge.call('system.setBluetooth', { on: !bt.on }))} />
-      <Tile icon={<Coffee size={sz} />} label="Keep awake" sub={system?.keepAwake ? 'On' : 'Off'} on={!!system?.keepAwake} onClick={() => quiet(bridge.call('system.setKeepAwake', { on: !system?.keepAwake }))} />
-      <Tile icon={micMuted ? <MicOff size={sz} /> : <Mic size={sz} />} label="Microphone" sub={micMuted ? 'Muted' : 'Live'} on={micMuted} onClick={() => quiet(bridge.call('audio.setMicMuted', { muted: !micMuted }))} />
-      <Tile
-        icon={net?.kind === 'ethernet' ? <Cable size={sz} /> : net?.kind === 'wifi' ? <Wifi size={sz} /> : <WifiOff size={sz} />}
-        label={!net || net.kind === 'none' ? 'Offline' : net.name || (net.kind === 'wifi' ? 'Wi-Fi' : 'Ethernet')}
-        sub={net?.kind === 'wifi' ? `Wi-Fi${net.signal != null ? ` · ${Math.round(net.signal * 100)}%` : ''}` : net?.kind === 'ethernet' ? 'Ethernet' : 'No network'}
-        onClick={() => quiet(bridge.call('system.openSettings', { page: 'network' }))}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+      <SplitTile
+        icon={net?.kind === 'ethernet' ? <Cable size={sz} /> : online ? <Wifi size={sz} /> : <WifiOff size={sz} />}
+        title={net?.kind === 'ethernet' ? 'Ethernet' : 'Wi-Fi'}
+        sub={online ? net.name || 'Connected' : 'Not connected'}
+        on={online}
+        onClick={open('network')}
+        onMore={open('network')}
+        moreLabel="Network settings"
+      />
+      <SplitTile
+        icon={bt?.on ? <Bluetooth size={sz} /> : <BluetoothOff size={sz} />}
+        title="Bluetooth"
+        sub={bt?.available ? (bt.on ? 'On' : 'Off') : 'Unavailable'}
+        on={!!bt?.available && bt.on}
+        onClick={() => bt?.available && quiet(bridge.call('system.setBluetooth', { on: !bt.on }))}
+        onMore={open('bluetooth')}
+        moreLabel="Bluetooth settings"
+      />
+      <SplitTile
+        icon={muted ? <VolumeX size={sz} /> : <Volume2 size={sz} />}
+        title="Audio"
+        sub={audio?.device ?? 'No output'}
+        on={!muted && !!audio}
+        onClick={() => quiet(bridge.call('audio.setMuted', { muted: !muted }))}
+        onMore={open('sound')}
+        moreLabel="Sound settings"
       />
     </div>
   )
 }
 
-function Status() {
+/** Row 2 (y=68): Night Light (~1/3, unavailable until the sidecar supports it) and Dark mode (rest). */
+function Row2() {
   const system = useData(s => s.system)
-  const d = useData(s => s.desktops)
-  const b = system?.battery
-  const BatIcon = b?.charging ? BatteryCharging : b && b.pct <= 20 ? BatteryLow : Battery
-  const item: CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }
+  const night = system?.nightLight
+  const dark = !!system?.darkMode
   return (
-    <div className="num" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.6875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-      {b?.present && <span style={{ ...item, color: b.charging ? 'var(--ok)' : b.pct <= 20 ? 'var(--bad)' : undefined }}><BatIcon size={14} />{Math.round(b.pct)}%</span>}
-      {system?.keyboard && <span style={item}><Keyboard size={13} />{system.keyboard}</span>}
-      {d && <span style={{ ...item, marginLeft: 'auto' }}><Monitor size={13} />Desktop {d.current + 1}/{d.count}</span>}
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.05fr', gap: 10 }}>
+      <Tile icon={<MoonStar size={sz} />} title="Night Light" sub={night == null ? 'Unavailable' : night ? 'On' : 'Off'} on={!!night} disabled />
+      <Tile icon={<SunMoon size={sz} />} title="Dark mode" sub={dark ? 'On' : 'Off'} on={dark} onClick={() => quiet(bridge.call('system.setDarkMode', { on: !dark }))} />
     </div>
   )
 }
 
-export function QuickSettings() {
+/** Above the media card (which sits at y=188): tiles at 0 and 68, volume at 136 (shares the row with brightness when present). */
+export function Quick() {
   const brightness = useData(s => s.system?.brightness ?? null)
+  const has = brightness !== null
+  const w = has ? 297 : 604
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 0 }}>
-      <Card style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', padding: '0.625rem 0.75rem' }}>
-        <Volume />
-        {brightness !== null && <Brightness level={brightness} />}
-      </Card>
-      <Tiles />
-      <Status />
-    </div>
+    <>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 0 }}><Row1 /></div>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 68 }}><Row2 /></div>
+      <div style={{ position: 'absolute', left: 0, top: 136 }}><Volume width={w} /></div>
+      {has && <div style={{ position: 'absolute', left: 307, top: 136 }}><Brightness level={brightness} width={w} /></div>}
+    </>
   )
 }

@@ -1,47 +1,66 @@
-import { memo } from 'react'
-import { Image as ImageIcon, Link2, Pin, Trash2, Type } from 'lucide-react'
+import { memo, type ReactNode } from 'react'
+import { AlignLeft, Image as ImageIcon, Link2, Pin, Trash2 } from 'lucide-react'
 import type { ClipItem } from '@shared/protocol'
-import { ago } from '@/lib/format'
+import { bytes } from '@/lib/format'
 
-const icons = { text: Type, image: ImageIcon, link: Link2 } as const
+const icons = { text: AlignLeft, image: ImageIcon, link: Link2 } as const
 
-function Act({ title, on, onClick, children }: { title: string; on?: boolean; onClick: () => void; children: React.ReactNode }) {
+/** "now", "4m", "1h", "2d" */
+function short(at: number): string {
+  const s = Math.max(0, (Date.now() - at) / 1000)
+  if (s < 60) return 'now'
+  if (s < 3600) return `${Math.floor(s / 60)}m`
+  if (s < 86400) return `${Math.floor(s / 3600)}h`
+  return `${Math.floor(s / 86400)}d`
+}
+
+export function clipTitle(it: ClipItem): string {
+  if (it.kind === 'image') return `Image • ${bytes(it.size)}`
+  return it.preview.split('\n').find(l => l.trim())?.trim() || '(empty)'
+}
+
+function Act({ title, on, onClick, children }: { title: string; on?: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       title={title}
       aria-label={title}
       onClick={e => { e.stopPropagation(); onClick() }}
-      className={`grid place-items-center transition-opacity ${on ? '' : 'opacity-0 group-hover:opacity-100'}`}
-      style={{ width: '1.5rem', height: '1.5rem', borderRadius: '0.5rem', background: 'var(--s3)', color: on ? 'var(--accent)' : 'var(--muted)' }}
+      style={{ width: 22, height: 22, borderRadius: 7, display: 'grid', placeItems: 'center', background: 'var(--fill-2)', color: on ? 'var(--accent)' : 'var(--soft)' }}
     >
       {children}
     </button>
   )
 }
 
-export const ClipRow = memo(function ClipRow({ item, onPaste, onPin, onDelete }: { item: ClipItem; onPaste: (id: string) => void; onPin: (id: string, on: boolean) => void; onDelete: (id: string) => void }) {
-  const Icon = icons[item.kind]
+export const ClipRow = memo(function ClipRow({ item, sel, picked, onSelect, onPaste, onPin, onDelete }: {
+  item: ClipItem
+  sel: boolean
+  picked: boolean
+  onSelect: (id: string, multi: boolean) => void
+  onPaste: (id: string) => void
+  onPin: (id: string, on: boolean) => void
+  onDelete: (id: string) => void
+}) {
+  const Icon = item.pinned ? Pin : icons[item.kind]
   return (
-    <div className="row-hover group" onClick={() => onPaste(item.id)} style={{ display: 'flex', gap: '0.625rem', alignItems: 'flex-start', padding: '0.5rem', cursor: 'pointer' }}>
-      <div style={{ width: '1.5rem', height: '1.5rem', flex: 'none', borderRadius: '0.5rem', background: 'var(--s2)', color: item.kind === 'link' ? 'var(--accent)' : 'var(--muted)', display: 'grid', placeItems: 'center' }}>
+    <div
+      data-id={item.id}
+      className="group hover:bg-[var(--fill-2)]"
+      onClick={e => onSelect(item.id, e.ctrlKey || e.metaKey || e.shiftKey)}
+      onDoubleClick={() => onPaste(item.id)}
+      style={{ position: 'relative', height: 36, borderRadius: 10, cursor: 'pointer', background: sel ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : picked ? 'color-mix(in srgb, var(--accent) 11%, transparent)' : undefined }}
+    >
+      <span style={{ position: 'absolute', left: 8, top: 5, width: 26, height: 26, borderRadius: 7, display: 'grid', placeItems: 'center', background: sel ? 'color-mix(in srgb, var(--accent) 28%, transparent)' : 'rgba(255,255,255,.07)', color: sel ? 'var(--accent)' : 'var(--muted)' }}>
         <Icon size={13} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {item.kind === 'image' && item.image ? (
-          <img src={item.image} alt="" draggable={false} style={{ display: 'block', maxHeight: '5rem', maxWidth: '100%', borderRadius: '0.5rem', border: '1px solid var(--line)' }} />
-        ) : (
-          <div style={{ fontSize: '0.8125rem', lineHeight: 1.35, whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', color: item.kind === 'link' ? 'var(--accent)' : 'var(--text)' }}>
-            {item.preview || (item.kind === 'image' ? 'Image' : '(empty)')}
-          </div>
-        )}
-        <div style={{ marginTop: '0.1875rem', fontSize: '0.6875rem', color: 'var(--dim)' }}>
-          {item.source && <>{item.source} · </>}{ago(item.at)}
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: '0.25rem', flex: 'none' }}>
+      </span>
+      <span style={{ position: 'absolute', left: 44, right: 64, top: 0, height: 36, lineHeight: '36px', fontSize: 13, fontWeight: sel ? 500 : 400, color: sel ? 'var(--text)' : '#D3D9E3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {clipTitle(item)}
+      </span>
+      <span className="group-hover:opacity-0" style={{ position: 'absolute', right: 8, top: 0, height: 36, lineHeight: '36px', fontSize: 11, color: 'var(--muted)' }}>{short(item.at)}</span>
+      <span className="opacity-0 group-hover:opacity-100" style={{ position: 'absolute', right: 6, top: 7, display: 'flex', gap: 4 }}>
         <Act title={item.pinned ? 'Unpin' : 'Pin'} on={item.pinned} onClick={() => onPin(item.id, !item.pinned)}><Pin size={12} fill={item.pinned ? 'currentColor' : 'none'} /></Act>
         <Act title="Delete" onClick={() => onDelete(item.id)}><Trash2 size={12} /></Act>
-      </div>
+      </span>
     </div>
   )
 })

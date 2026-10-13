@@ -14,6 +14,9 @@ export interface Settings {
     closeDelayMs: number
     scrollToOpen: boolean
     startTab: TabId
+    size: number                   // 0.7..1.2, scales the island (on top of appearance.scale)
+    trigger: 'scroll' | 'hover' | 'both'
+    rest: 'sleep' | 'awake'        // the shape the island rests in when closed
   }
   appearance: {
     theme: 'dark' | 'light' | 'auto'
@@ -37,6 +40,9 @@ export const defaultSettings: Settings = {
     closeDelayMs: 420,
     scrollToOpen: true,
     startTab: 'controls',
+    size: 1,
+    trigger: 'both',
+    rest: 'sleep',
   },
   appearance: { theme: 'dark', accent: 'wallpaper', scale: 1, animSpeed: 1, reduceMotion: false },
   wallpaper: { folder: null },

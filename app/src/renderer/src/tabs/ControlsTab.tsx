@@ -1,11 +1,12 @@
 import { MediaCard } from './controls/Media'
-import { QuickSettings } from './controls/Quick'
+import { Quick } from './controls/Quick'
 
+/** 604x320 content area of the 640x390 controls menu: media card, volume (+ brightness), tile row, status line. */
 export function ControlsTab() {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: '0.75rem', alignItems: 'stretch', maxHeight: '21rem' }}>
+    <div style={{ position: 'relative', width: 604, height: 320 }}>
       <MediaCard />
-      <QuickSettings />
+      <Quick />
     </div>
   )
 }

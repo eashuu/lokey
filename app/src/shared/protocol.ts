@@ -56,6 +56,8 @@ export interface SystemStatus {
   keyboard: string      // layout tag e.g. "ENG"
   keepAwake: boolean
   brightness: number | null   // 0..1, null when no controllable panel
+  darkMode: boolean           // Windows apps theme is dark
+  nightLight: boolean | null  // null = not available (not implemented yet)
 }
 
 export interface UserInfo { name: string; avatar: string | null; machine: string }
@@ -114,6 +116,7 @@ export interface Methods {
   'system.get': [{}, SystemStatus]
   'system.setBrightness': [{ level: number }, {}]
   'system.setKeepAwake': [{ on: boolean }, {}]
+  'system.setDarkMode': [{ on: boolean }, {}]
   'system.setBluetooth': [{ on: boolean }, {}]
   'system.openSettings': [{ page: 'network' | 'bluetooth' | 'sound' | 'display' | 'main' }, {}]
 

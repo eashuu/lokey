@@ -27,7 +27,6 @@ function record(name: string, ms: number): Promise<Phase> {
 
 export async function runBench() {
   const b = bridge.bench!
-  const island = useIsland.getState()
   const phases: Phase[] = []
   const tabsOrder = useData.getState().settings.island.tabs
   await sleep(1800)
@@ -41,19 +40,48 @@ export async function runBench() {
   const idleMs = performance.now() - idleStart
 
   for (let round = 0; round < 3; round++) {
-    island.openIsland('hover', 'controls')
-    phases.push(await record(`open#${round}`, 900))
+    const is = () => useIsland.getState()
+    is().wake('hover')
+    phases.push(await record(`wake#${round}`, 800))
+    if (round === 0) { await sleep(300); await b.capture('05-awake') }
+    is().openMenu('music', 'hover')
+    phases.push(await record(`music#${round}`, 700))
+    if (round === 0) { await sleep(300); await b.capture('08-music') }
+    is().setView('controls')
+    phases.push(await record(`controls#${round}`, 700))
     if (round === 0) { await sleep(500); await b.capture('10-open-controls') }
     for (const t of tabsOrder.slice(1)) {
-      useIsland.getState().setTab(t)
-      phases.push(await record(`tab:${t}#${round}`, 700))
+      is().setView(t)
+      phases.push(await record(`tab:${t}#${round}`, 600))
       if (round === 0) { await sleep(500); await b.capture(`20-tab-${t}`) }
     }
-    useIsland.getState().setTab('controls')
+    is().setView('controls')
     await sleep(300)
-    island.closeIsland()
+    is().closeMenu()
     phases.push(await record(`close#${round}`, 800))
+    if (round === 0) {
+      is().hold('listening')
+      phases.push(await record(`held#${round}`, 700))
+      await b.capture('30-held')
+      is().hold('thinking')
+      await sleep(600)
+      await b.capture('30b-held-thinking')
+      is().hold('done')
+      await sleep(600)
+      await b.capture('30c-held-done')
+      is().release()
+      is().wake('hover')
+      is().setCaption({ kind: 'said', text: 'Hey John, lets go fishing together at nine this morning.' })
+      phases.push(await record(`caption#${round}`, 1400))
+      await b.capture('31-caption-said')
+      is().setCaption({ kind: 'reply', text: 'Done, I sent it to John.' })
+      await sleep(1400)
+      await b.capture('32-caption-reply')
+      is().setCaption(null)
+    }
     if (round === 0) await b.capture('90-closed-again')
+    is().sleep()
+    await sleep(300)
   }
 
   const all = phases

@@ -33,7 +33,7 @@ export function createMockBridge(): Bridge {
   const audio = { volume: 0.42, muted: false, device: 'Speakers (Realtek)', micMuted: false }
   const system = {
     network: { kind: 'wifi' as const, name: 'HomeNet-5G', signal: 0.8 }, bluetooth: { available: true, on: true },
-    battery: { present: true, pct: 82, charging: false, minutesLeft: 214 }, keyboard: 'ENG', keepAwake: false, brightness: 0.7,
+    battery: { present: true, pct: 82, charging: false, minutesLeft: 214 }, keyboard: 'ENG', keepAwake: false, brightness: 0.7, darkMode: true, nightLight: false as boolean | null,
   }
   const apps: AppEntry[] = ['Spotify', 'Visual Studio Code', 'Google Chrome', 'Discord', 'File Explorer', 'Minecraft', 'Valorant', 'Calculator', 'Canva', 'Notepad', 'Terminal', 'Settings']
     .map((name, i) => ({ id: `app${i}`, name, kind: (['Minecraft', 'Valorant'].includes(name) ? 'game' : 'app') as AppEntry['kind'], starred: i < 2, lastUsed: Date.now() - i * 3_600_000 }))
@@ -86,6 +86,7 @@ export function createMockBridge(): Bridge {
     'stats.unsubscribe': () => { if (statsTimer) clearInterval(statsTimer); statsTimer = null; return {} },
     'system.get': () => system,
     'system.setKeepAwake': ({ on }) => { system.keepAwake = on; emit('system.changed', { ...system }); return {} },
+    'system.setDarkMode': ({ on }) => { system.darkMode = on; emit('system.changed', { ...system }); return {} },
     'system.setBrightness': ({ level }) => { system.brightness = level; emit('system.changed', { ...system }); return {} },
     'system.setBluetooth': ({ on }) => { system.bluetooth.on = on; emit('system.changed', { ...system }); return {} },
     'apps.list': () => apps,

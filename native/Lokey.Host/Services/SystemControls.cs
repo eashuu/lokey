@@ -77,6 +77,32 @@ internal static class SystemControls
         Status.Poke();
     }
 
+    // ---- dark mode: apps + system theme values, then tell running apps ----
+    const string PersonalizeKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+
+    public static bool DarkMode
+    {
+        get
+        {
+            try { using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(PersonalizeKey); return k?.GetValue("AppsUseLightTheme") is int v && v == 0; }
+            catch { return false; }
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, IntPtr wParam, string lParam, uint flags, uint timeout, out IntPtr result);
+
+    static void SetDarkMode(bool on)
+    {
+        using (var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(PersonalizeKey))
+        {
+            k.SetValue("AppsUseLightTheme", on ? 0 : 1, Microsoft.Win32.RegistryValueKind.DWord);
+            k.SetValue("SystemUsesLightTheme", on ? 0 : 1, Microsoft.Win32.RegistryValueKind.DWord);
+        }
+        SendMessageTimeout(new IntPtr(0xffff), 0x001A /*WM_SETTINGCHANGE*/, IntPtr.Zero, "ImmersiveColorSet", 2 /*SMTO_ABORTIFHUNG*/, 1000, out _);
+        Status.Poke();
+    }
+
     // ---- bluetooth ----
     public static async Task<Radio?> GetRadioAsync(RadioKind kind)
     {
@@ -114,6 +140,7 @@ internal static class SystemControls
     public static void Register()
     {
         Dispatcher.Add("system.setBrightness", p => { SetBrightness(Args.Num(p, "level")); return Dispatcher.Ok; });
+        Dispatcher.Add("system.setDarkMode", p => { SetDarkMode(Args.Bool(p, "on")); return Dispatcher.Ok; });
         Dispatcher.Add("system.setKeepAwake", p => { SetKeepAwake(Args.Bool(p, "on")); return Dispatcher.Ok; });
         Dispatcher.AddAsync("system.setBluetooth", async p => { await SetBluetoothAsync(Args.Bool(p, "on")); return Dispatcher.Ok; });
         Dispatcher.Add("system.openSettings", p => { OpenSettings(Args.Str(p, "page")); return Dispatcher.Ok; });

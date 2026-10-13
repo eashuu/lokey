@@ -1,72 +1,65 @@
-import { useEffect, useRef, useState } from 'react'
 import { useData } from '@/lib/data'
 import { cn } from '@/lib/format'
 import { tabs } from '@/tabs/registry'
+import { MENU_SIZE, TAB_WIDTH, type View } from './shapes'
 import { useIsland } from './store'
+import type { TabId } from '@shared/bridge'
+import { MusicView } from '@/tabs/MusicView'
 
-/** The open panel: tab bar + the active tab. Content is mounted only while open (plus a short exit grace). */
-export function Panel({ open, onHeight }: { open: boolean; onHeight: (h: number) => void }) {
-  const tab = useIsland(s => s.tab)
-  const order = useData(s => s.settings.island.tabs)
-  const [mounted, setMounted] = useState(open)
-  const inner = useRef<HTMLDivElement>(null)
+/** Where tab content starts inside the menu box, in design pixels (see UI-SPEC section 4). */
+export const CONTENT_X = 18
+export const CONTENT_Y = 52
 
-  useEffect(() => {
-    if (open) { setMounted(true); return }
-    const t = setTimeout(() => setMounted(false), 600)
-    return () => clearTimeout(t)
-  }, [open])
-
-  useEffect(() => {
-    const el = inner.current
-    if (!el || !mounted) return
-    const ro = new ResizeObserver(() => onHeight(Math.ceil(el.getBoundingClientRect().height)))
-    ro.observe(el)
-    onHeight(Math.ceil(el.getBoundingClientRect().height))
-    return () => ro.disconnect()
-  }, [mounted, tab, onHeight])
-
-  const active = tabs[tab]
-  const Active = active.Component
+/**
+ * Menu content for one view, laid out at its design size (w x h) and scaled by `scale` as a whole, so every
+ * measurement in UI-SPEC.md applies as written. The clip-path morph reveals it; this box never animates.
+ */
+export function MenuContent({ view, scale, left }: { view: View; scale: number; left: number }) {
+  const { w, h } = MENU_SIZE[view]
   return (
-    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', opacity: open ? 1 : 0, transition: `opacity ${open ? '180ms 60ms' : '120ms'} linear`, pointerEvents: open ? 'auto' : 'none' }}>
-      {mounted && (
-        <div ref={inner} style={{ padding: '0.625rem 1rem 1rem' }}>
-          <TabBar current={tab} order={order} />
-          <div key={tab} className="tab-in" style={{ marginTop: '0.75rem' }}>
-            <Active />
-          </div>
-        </div>
-      )}
+    <div style={{ position: 'absolute', top: 0, left, width: w * scale, height: h * scale }}>
+      <div style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: '0 0', position: 'relative', fontFamily: 'var(--font-island)', color: 'var(--text)' }}>
+        {view === 'music' ? <MusicView /> : <TabbedView view={view} w={w} />}
+      </div>
     </div>
   )
 }
 
-function TabBar({ current, order }: { current: string; order: string[] }) {
-  const setTab = useIsland(s => s.setTab)
+function TabbedView({ view, w }: { view: TabId; w: number }) {
+  const order = useData(s => s.settings.island.tabs)
+  const Active = tabs[view].Component
+  return (
+    <>
+      <TabBar current={view} order={order} />
+      <div key={view} className="tab-in" style={{ position: 'absolute', left: CONTENT_X, top: CONTENT_Y, width: w - CONTENT_X * 2 }}>
+        <Active />
+      </div>
+    </>
+  )
+}
+
+export function TabBar({ current, order }: { current: TabId; order: TabId[] }) {
+  const setView = useIsland(s => s.setView)
   const onWheel = (e: React.WheelEvent) => {
+    e.stopPropagation()
     const i = order.indexOf(current)
     const n = order[Math.min(order.length - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1)))]
-    if (n && n !== current) setTab(n as never)
+    if (n && n !== current) setView(n)
   }
+  const total = order.reduce((s, id) => s + TAB_WIDTH[id], 0) + 6 * (order.length - 1)
   return (
-    <div onWheel={onWheel} style={{ display: 'flex', justifyContent: 'center', gap: '0.125rem' }}>
+    <div onWheel={onWheel} style={{ position: 'absolute', top: 14, left: '50%', width: total, marginLeft: -total / 2, display: 'flex', gap: 6 }}>
       {order.map(id => {
-        const t = tabs[id as keyof typeof tabs]
-        if (!t) return null
         const on = id === current
         return (
           <button
             key={id}
-            onClick={() => setTab(id as never)}
-            className={cn('rounded-full')}
-            style={{
-              padding: '0.3125rem 0.75rem', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.01em',
-              color: on ? 'var(--accent)' : 'var(--dim)', background: on ? 'var(--accent-soft)' : 'transparent',
-              transition: 'color 160ms, background-color 160ms',
-            }}
+            onClick={() => setView(id)}
+            data-on={on}
+            className={cn('tab-btn')}
+            style={{ width: TAB_WIDTH[id], height: 28, borderRadius: 14, fontSize: 13, display: 'grid', placeItems: 'center', whiteSpace: 'nowrap' }}
           >
-            {t.label}
+            {tabs[id].label}
           </button>
         )
       })}

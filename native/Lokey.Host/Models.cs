@@ -26,7 +26,7 @@ internal sealed record StatsTick(CpuStat Cpu, GpuStat? Gpu, RamStat Ram, DiskSta
 internal sealed record NetworkStat(string Kind, string Name, int? Signal);
 internal sealed record BluetoothStat(bool Available, bool On);
 internal sealed record BatteryStat(bool Present, int Pct, bool Charging, int? MinutesLeft);
-internal sealed record SystemStatus(NetworkStat Network, BluetoothStat Bluetooth, BatteryStat Battery, string Keyboard, bool KeepAwake, double? Brightness);
+internal sealed record SystemStatus(NetworkStat Network, BluetoothStat Bluetooth, BatteryStat Battery, string Keyboard, bool KeepAwake, double? Brightness, bool DarkMode, bool? NightLight);
 
 internal sealed record UserInfo(string Name, string? Avatar, string Machine);
 internal sealed record AppEntry(string Id, string Name, string Kind, bool Starred, long? LastUsed);

@@ -46,8 +46,8 @@ function send(e: AppEvent) { overlay?.webContents.send('lokey:app', e) }
 function createOverlay() {
   const d = screen.getPrimaryDisplay()
   const s = Math.min(1.5, Math.max(0.75, settings.value.appearance.scale))
-  const width = Math.min(d.bounds.width, Math.round(1100 * s))
-  const height = Math.min(d.bounds.height, Math.round(660 * s))
+  const width = Math.min(d.bounds.width, Math.round(1200 * s))
+  const height = Math.min(d.bounds.height, Math.round(760 * s))
   stage = { width, height, scale: d.scaleFactor, workTop: 0 }
 
   overlay = new BrowserWindow({

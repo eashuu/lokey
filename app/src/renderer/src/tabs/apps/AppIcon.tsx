@@ -7,7 +7,7 @@ function hue(s: string) {
   return h
 }
 
-/** 2rem icon; the real icon is requested only once the row scrolls into view. Falls back to a letter avatar. */
+/** 28px tile with a 20px icon; the real icon is requested only once the row scrolls into view. Falls back to a letter. */
 export function AppIcon({ id, name }: { id: string; name: string }) {
   const [icon, setIcon] = useState(() => cachedIcon(id))
   const ref = useRef<HTMLDivElement>(null)
@@ -26,8 +26,8 @@ export function AppIcon({ id, name }: { id: string; name: string }) {
 
   const h = hue(name)
   return (
-    <div ref={ref} style={{ width: '2rem', height: '2rem', flex: 'none', borderRadius: '0.5rem', overflow: 'hidden', display: 'grid', placeItems: 'center', background: icon ? 'var(--s2)' : `hsl(${h} 30% 24%)`, color: `hsl(${h} 65% 78%)`, fontSize: '0.8125rem', fontWeight: 700 }}>
-      {icon ? <img src={icon} alt="" draggable={false} style={{ width: '1.625rem', height: '1.625rem', objectFit: 'contain' }} /> : (name.trim()[0] ?? '?').toUpperCase()}
+    <div ref={ref} style={{ position: 'absolute', left: 10, top: 7, width: 28, height: 28, borderRadius: 8, overflow: 'hidden', display: 'grid', placeItems: 'center', background: icon ? 'rgba(255,255,255,.102)' : `hsl(${h} 30% 24%)`, color: `hsl(${h} 65% 78%)`, fontSize: 13, fontWeight: 600 }}>
+      {icon ? <img src={icon} alt="" draggable={false} style={{ width: 20, height: 20, objectFit: 'contain' }} /> : (name.trim()[0] ?? '?').toUpperCase()}
     </div>
   )
 }
