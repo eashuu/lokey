@@ -16,7 +16,7 @@ import { useIsland } from './store'
 
 /**
  * The island: one path (shapePath.ts) animated from five numbers, drawn as the fill and reused as the clip for
- * the content. States and timings follow docs/UI-SPEC.md; nothing here uses springs.
+ * the content. States and timings follow the design spec; nothing here uses springs.
  */
 // exposed for the injected-event UI test (`--uitest`)
 ;(window as unknown as { __island: typeof useIsland }).__island = useIsland

@@ -332,7 +332,7 @@ function About() {
   return (
     <div style={{ color: 'var(--muted)', fontSize: '0.8125rem', lineHeight: 1.6, maxWidth: '30rem' }}>
       <p style={{ margin: 0 }}><b style={{ color: 'var(--text)' }}>lokey</b> — a voice-first island for Windows.</p>
-      <p>Open source (GPL-3.0). Island design inspired by Caelestia; feature set inspired by the idea of a voice-driven desktop companion.</p>
+      <p>Open source (GPL-3.0). A Dynamic-Island-style launcher and voice assistant for the Windows desktop.</p>
       <p style={{ color: 'var(--dim)' }}>Settings file: %LocalAppData%\Lokey\settings.json</p>
     </div>
   )

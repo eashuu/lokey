@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repo = resolve(app, '..')
 let out = join(app, 'release', 'Lokey')
-// paths contain spaces (C:\Users\Vtg User\...), so quote every argument for the Windows shell
+// paths contain spaces (C:\Users\Jane Doe\...), so quote every argument for the Windows shell
 const q = a => (/[\s&()^%!]/.test(a) ? '"' + a + '"' : a)
 const run = (cmd, args, cwd) => execFileSync(q(cmd), args.map(q), { cwd, stdio: 'inherit', shell: process.platform === 'win32' })
 const step = msg => console.log(`\n== ${msg}`)

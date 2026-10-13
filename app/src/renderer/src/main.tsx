@@ -7,6 +7,8 @@ import { RevealApp } from './effects/RevealApp'
 import { GlowApp } from './effects/GlowApp'
 import { MainApp } from './mainwin/MainApp'
 import { Lab } from './mascot/Lab'
+import { Reel } from './mascot/Reel'
+import { Mock } from './mascot/Mock'
 import { AgentApp } from './agent/AgentApp'
 import { CaptionApp } from './agent/CaptionApp'
 import { DictationApp } from './agent/DictationApp'
@@ -19,6 +21,8 @@ function route() {
   if (h === '#reveal') return <RevealApp />
   if (h === '#glow') return <GlowApp />
   if (h === '#lab') return <Lab />
+  if (h === '#reel') return <Reel />
+  if (h === '#mock') return <Mock />
   if (h === '#agent') return <AgentApp />
   if (h === '#caption') return <CaptionApp />
   if (h === '#dictation') return <DictationApp />

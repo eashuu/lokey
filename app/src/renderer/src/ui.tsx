@@ -105,7 +105,7 @@ export function Chip({ children, on, onClick }: { children: ReactNode; on?: bool
   )
 }
 
-// ---- v2 primitives (design px; sized for the 0.9-scaled island menu, see docs/UI-SPEC.md) ------------------
+// ---- v2 primitives (design px; sized for the 0.9-scaled island menu, see the design spec) ------------------
 
 export function Kbd({ children }: { children: ReactNode }) {
   return (

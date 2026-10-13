@@ -165,5 +165,5 @@ export type AppEvent =
 export type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? (T[K] extends unknown[] ? T[K] : DeepPartial<T[K]>) : T[K] }
 
 declare global {
-  interface Window { lokey?: Bridge; lokeyFlags?: { mock: boolean } }
+  interface Window { lokey?: Bridge; lokeyFlags?: { mock: boolean; demo?: boolean } }
 }

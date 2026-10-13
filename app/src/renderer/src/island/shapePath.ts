@@ -1,5 +1,5 @@
 // Island outline generator. One closed path from five numbers; the same string drives the visible fill and the
-// clip-path for the content, so the two can never drift apart. Geometry follows docs/UI-SPEC.md section 1.
+// clip-path for the content, so the two can never drift apart. Geometry follows design spec section 1.
 
 export interface ShapeParams {
   depth: number   // distance from the screen's top edge to the bottom of the body

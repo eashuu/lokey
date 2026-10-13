@@ -1,0 +1,60 @@
+name: Release
+
+# Push a tag like v0.1.0 to build the Windows app and attach it to a GitHub release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for a manual build (for example 0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Install
+        run: pnpm --dir app install --frozen-lockfile
+      - name: Package
+        run: pnpm --dir app package
+      - name: Zip
+        shell: pwsh
+        run: |
+          $v = if ('${{ github.event.inputs.version }}') { '${{ github.event.inputs.version }}' } else { '${{ github.ref_name }}'.TrimStart('v') }
+          $zip = "Lokey-$v-win-x64.zip"
+          Compress-Archive -Path app/release/Lokey -DestinationPath $zip -CompressionLevel Optimal
+          (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower() + "  $zip" | Out-File -Encoding ascii "$zip.sha256"
+          "ZIP=$zip" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || github.ref_name }}
+          name: lokey ${{ github.event.inputs.version || github.ref_name }}
+          generate_release_notes: true
+          prerelease: true
+          files: |
+            ${{ env.ZIP }}
+            ${{ env.ZIP }}.sha256
+          body: |
+            ## Install
+            1. Download **${{ env.ZIP }}** below and unzip it anywhere.
+            2. Run **Lokey.exe** (not code-signed: SmartScreen may ask you to choose *More info, then Run anyway*).
+            3. Optional: add a free Google AI Studio key in *Settings, Voice* to enable the assistant.
+
+            Windows 10 (2004+) or 11, 64-bit. Verify the download with the `.sha256` file.

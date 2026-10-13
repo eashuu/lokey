@@ -8,13 +8,13 @@ import type { TabId } from '@shared/bridge'
 import { MusicView } from '@/tabs/MusicView'
 import { FlyoutView } from '@/tabs/flyouts'
 
-/** Where tab content starts inside the menu box, in design pixels (see UI-SPEC section 4). */
+/** Where tab content starts inside the menu box, in design pixels (design spec, section 4). */
 export const CONTENT_X = 18
 export const CONTENT_Y = 56
 
 /**
  * Menu content for one view, laid out at its design size (w x h) and scaled by `scale` as a whole, so every
- * measurement in UI-SPEC.md applies as written. The clip-path morph reveals it; this box never animates.
+ * measurement in the design spec applies as written. The clip-path morph reveals it; this box never animates.
  */
 export function MenuContent({ view, scale, left }: { view: View; scale: number; left: number }) {
   const { w, h } = MENU_SIZE[view]

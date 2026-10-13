@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 const ink = 'var(--accent-ink)'
 
-/** 58px tile (UI-LAYOUT.md): icon disc, title, sub; with `onMore` also a divider + chevron zone at the right. */
+/** 58px tile (design spec): icon disc, title, sub; with `onMore` also a divider + chevron zone at the right. */
 export function SplitTile({ icon, title, sub, on, disabled, onClick, onMore, moreLabel, left, width }: { icon: ReactNode; title: string; sub?: string; on?: boolean; disabled?: boolean; onClick?: () => void; onMore?: () => void; moreLabel?: string; left: number; width: number }) {
   const right = onMore ? 2 : 18 // relative to the main button (which stops 40px short of the tile edge): 42 / 18 from the tile edge
   return (

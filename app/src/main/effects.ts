@@ -113,6 +113,9 @@ export function setGlow(state: GlowState) {
   }
 }
 
+/** a screenshot of the edge glow window as it is now (null when it is not showing); used by --demo */
+export async function glowCapture() { return glowWin && !glowWin.isDestroyed() && glowWin.isVisible() ? glowWin.webContents.capturePage() : null }
+
 /** While a real fullscreen app is active the glow is torn down (and restored when it ends). */
 export function setGlowSuppressed(on: boolean) {
   suppressed = on

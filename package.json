@@ -1,0 +1,15 @@
+{
+  "name": "lokey-monorepo",
+  "private": true,
+  "description": "Convenience scripts for the lokey repo (the app itself lives in ./app, the native sidecar in ./native/Lokey.Host)",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "bootstrap": "pnpm --dir app install && dotnet build native/Lokey.Host -c Release",
+    "dev": "pnpm --dir app dev",
+    "build": "pnpm --dir app build",
+    "typecheck": "pnpm --dir app typecheck",
+    "sidecar": "dotnet build native/Lokey.Host -c Release",
+    "package": "pnpm --dir app package",
+    "verify": "pnpm --dir app typecheck && pnpm --dir app build && dotnet build native/Lokey.Host -c Release"
+  }
+}

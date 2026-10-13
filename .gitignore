@@ -9,3 +9,13 @@ dist/
 .serena/
 *.log
 release/
+
+# private working notes (reverse-engineering and research); never published
+docs/internal/
+.local/
+assets/demos/
+# build outputs and local tooling
+app/release/
+app/out/
+*.tsbuildinfo
+.vscode/

@@ -7,7 +7,7 @@ export const animSpeed = () => speed
 
 export type SpringKind = 'spatial' | 'fast' | 'soft'
 
-// Springs tuned to feel like Caelestia's spatial curves (slight overshoot, settles ~450 ms).
+// Springs tuned for a slight overshoot that settles in ~450 ms (slight overshoot, settles ~450 ms).
 const springs: Record<SpringKind, { stiffness: number; damping: number; mass: number }> = {
   spatial: { stiffness: 230, damping: 22, mass: 1 },
   fast: { stiffness: 380, damping: 26, mass: 1 },

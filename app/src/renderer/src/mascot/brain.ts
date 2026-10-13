@@ -10,6 +10,8 @@ export interface BrainInput {
   music: boolean
   /** honour reduced motion: no autonomous fidgets */
   calm: boolean
+  /** false = never start a fidget on its own (deterministic captures) */
+  fidget?: boolean
 }
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a)
@@ -35,6 +37,11 @@ export class Brain {
   private idleFor = 0
 
   constructor(private emit: (k: EmoteKind) => void) { this.rig.snap(NEUTRAL) }
+
+  /** a one-shot action is running */
+  get busy() { return !!this.one }
+  /** end the running one-shot now (the springs ease back to the state pose) */
+  cancel() { this.one = null }
 
   /** call when the mascot becomes visible again: the next idle state greets with a wave */
   wake() { this.lastMode = '' }
@@ -96,7 +103,7 @@ export class Brain {
     // idle fidgets; a long quiet spell ends with sitting down and, much later, lying down
     if (this.one || this.state !== 'idle') this.idleFor = 0
     else this.idleFor += dt
-    if (!inp.calm && inp.awake && !this.one && this.state === 'idle') {
+    if (!inp.calm && inp.awake && inp.fidget !== false && !this.one && this.state === 'idle') {
       this.nextFidget -= dt
       if (this.nextFidget <= 0) {
         const long = this.idleFor > 70

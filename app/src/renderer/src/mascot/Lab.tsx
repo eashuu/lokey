@@ -14,6 +14,15 @@ export function Lab() {
   useEffect(() => {
     void (async () => {
     const q = new URLSearchParams(location.hash.split('?')[1] ?? '')
+    if (q.get('fx') === 'glowlayer') {
+      // transparent full-screen glow for compositing into README art: w,h in px, state thinking|speaking
+      const st = (q.get('state') ?? 'thinking') as 'thinking' | 'speaking'
+      const cvs = ref.current!
+      paintGlow(cvs, GLOW[st].reach, GLOW[st].color, { w: Number(q.get('w') ?? 1600), h: Number(q.get('h') ?? 900) })
+      ;(window as unknown as { __labPng: string }).__labPng = cvs.toDataURL('image/png')
+      ;(window as unknown as { __labDone: string }).__labDone = '[]'
+      return
+    }
     if (q.get('fx') === 'glow') {
       // the edge glow on a dark and a light background, 640x400 each, with the numeric alpha at the very border
       const cvs = ref.current!
@@ -44,10 +53,10 @@ export function Lab() {
     const rows = Math.ceil(names.length / cols)
     const cv = ref.current!
     cv.width = cols * size
-    cv.height = rows * (size + 22)
+    cv.height = rows * (size + (q.get('bg') === 'none' ? 0 : 22))
     const g = cv.getContext('2d')!
-    g.fillStyle = '#15171c'
-    g.fillRect(0, 0, cv.width, cv.height)
+    const bare = q.get('bg') === 'none'
+    if (!bare) { g.fillStyle = '#15171c'; g.fillRect(0, 0, cv.width, cv.height) }
     const off = document.createElement('canvas')
     off.width = size
     off.height = size
@@ -59,19 +68,18 @@ export function Lab() {
       names.forEach((n, i) => {
         const p = POSES[n]
         const x = (i % cols) * size
-        const y = Math.floor(i / cols) * (size + 22)
+        const y = Math.floor(i / cols) * (size + (bare ? 0 : 22))
         if (!p) { log.push('unknown pose ' + n); return }
         const t = at ? Number(at) : (p.dur ?? 1.5) * 0.4
         const P: Params = { ...NEUTRAL, ...p.f(t, { gx: 0, gy: 0, level: 0.7 }) }
         gl.draw(P, { top: skin.top, bottom: skin.bottom, glow: skin.glow, ink: skin.ink, foot: skin.foot ?? skin.bottom, form: skin.form ?? 0 }, t, 1, 1.08)
-        g.drawImage(off, x, y + 22)
-        g.fillStyle = '#9aa3b2'
-        g.font = '13px Segoe UI, sans-serif'
-        g.fillText(n, x + 10, y + 16)
+        g.drawImage(off, x, bare ? y : y + 22)
+        if (!bare) { g.fillStyle = '#9aa3b2'; g.font = '13px Segoe UI, sans-serif'; g.fillText(n, x + 10, y + 16) }
       })
     } catch (e) {
       log.push(String(e))
     }
+    if (bare) (window as unknown as { __labPng: string }).__labPng = cv.toDataURL('image/png')
     ;(window as unknown as { __labDone: string }).__labDone = JSON.stringify(log)
     })()
   }, [])

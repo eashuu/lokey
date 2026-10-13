@@ -9,6 +9,7 @@ import { createTray, openMain, openSettings } from './windows'
 import { initEffects, revealWallpaper, setGlow, setGlowSuppressed } from './effects'
 import { runUiTest } from './uitest'
 import { runLab } from './lab'
+import { runShots } from './shots'
 import { runDemo } from './agent/demo'
 import { Scheduler } from './agent/scheduler'
 import { readMemory, toolsSelfCheck, writeMemory } from './agent/tools'
@@ -22,9 +23,13 @@ const argv = process.argv.slice(1)
 const useMock = argv.includes('--mock')
 const uiTestIdx = argv.indexOf('--uitest')
 const uiTestDir = uiTestIdx >= 0 ? (argv[uiTestIdx + 1] && !argv[uiTestIdx + 1].startsWith('--') ? argv[uiTestIdx + 1] : join(dataDir, 'uitest')) : null
+const shotsIdx = argv.indexOf('--shots')
+const shotsDir = shotsIdx >= 0 ? argv[shotsIdx + 1] : null
 const selfCheck = argv.includes('--selfcheck')
 const demoIdx = argv.indexOf('--demo')
 const demoName = demoIdx >= 0 ? argv[demoIdx + 1] : null
+const recIdx = argv.indexOf('--record')
+const recordDir = recIdx >= 0 ? argv[recIdx + 1] : null
 const capIdx = argv.indexOf('--capture')
 const captureDir = capIdx >= 0 ? argv[capIdx + 1] : null
 const labIdx = argv.indexOf('--lab')
@@ -44,7 +49,7 @@ process.on('uncaughtException', e => log(`uncaught ${e.stack ?? e}`))
 process.on('unhandledRejection', e => log(`unhandled ${e}`))
 
 // ---- single instance (a second launch opens Settings in the first) --------------------------------
-if (!benchDir && !uiTestDir && !labDir && !demoName && !selfCheck && !app.requestSingleInstanceLock()) { app.quit() }
+if (!benchDir && !uiTestDir && !labDir && !demoName && !selfCheck && !shotsDir && !app.requestSingleInstanceLock()) { app.quit() }
 app.on('second-instance', () => openSettings())
 
 // Compositor-friendly defaults for a transparent always-on-top overlay.
@@ -127,7 +132,7 @@ function createOverlay() {
       backgroundThrottling: false,
       spellcheck: false,
       devTools: !app.isPackaged,
-      additionalArguments: useMock ? ['--lokey-mock'] : [],
+      additionalArguments: [...(useMock ? ['--lokey-mock'] : []), ...(shotsDir ? ['--lokey-demo-data'] : [])],
     },
   })
   overlay.setAlwaysOnTop(true, 'screen-saver')
@@ -305,7 +310,8 @@ app.whenReady().then(async () => {
   screen.on('display-metrics-changed', () => raise())
   if (!benchDir) tray = createTray({ toggleIsland: () => send({ type: 'toggle-island' }), quit: () => app.quit() })
   if (argv.includes('--settings')) openSettings()
-  if (demoName) overlay?.webContents.once('did-finish-load', () => { void runDemo(demoName, agent, overlay, captureDir).then(() => app.quit()) })
+  if (shotsDir) overlay?.webContents.once('did-finish-load', () => { void runShots(overlay!, shotsDir, () => app.quit()) })
+  if (demoName) overlay?.webContents.once('did-finish-load', () => { void runDemo(demoName, agent, overlay, captureDir, recordDir).then(() => app.quit()) })
   if (uiTestDir) overlay?.webContents.once('did-finish-load', () => { void runUiTest(overlay!, uiTestDir, () => app.quit()) })
   const ok = await sidecar.start()
   if (!ok) log('running without sidecar (mock data only)')

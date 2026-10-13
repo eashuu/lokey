@@ -64,7 +64,7 @@ const bridge: Bridge = {
 }
 
 contextBridge.exposeInMainWorld('lokey', bridge)
-contextBridge.exposeInMainWorld('lokeyFlags', { mock: process.argv.includes('--lokey-mock') })
+contextBridge.exposeInMainWorld('lokeyFlags', { mock: process.argv.includes('--lokey-mock'), demo: process.argv.includes('--lokey-demo-data') })
 // whole-screen effect pages (#reveal / #glow): last message is buffered so a late subscriber still gets it
 contextBridge.exposeInMainWorld('lokeyFx', ((last: Record<string, unknown>) => { for (const c of ['reveal:start', 'glow:state']) ipcRenderer.on(`lokey:${c}`, (_e, d) => { last[c] = d }); const sub = (c: string) => (cb: (d: any) => void) => { ipcRenderer.on(`lokey:${c}`, (_e, d) => cb(d)); if (c in last) cb(last[c]) }; return { ready: () => ipcRenderer.send('lokey:reveal:ready'), done: () => ipcRenderer.send('lokey:reveal:done'), onStart: sub('reveal:start'), onGlow: sub('glow:state') } })({}))
 

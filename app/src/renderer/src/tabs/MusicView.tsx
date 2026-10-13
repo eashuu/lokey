@@ -20,7 +20,7 @@ function Icon({ cx, cy, label, onClick, disabled, children }: { cx: number; cy: 
   )
 }
 
-/** The 380x150 "music island": content box 344x118 at (18,24), coordinates from docs/UI-LAYOUT.md. */
+/** The 380x150 "music island": content box 344x118 at (18,24), coordinates from the design spec. */
 export function MusicView() {
   const { media, playing, pos, dur } = useMediaPosition()
   const has = !!media?.hasSession

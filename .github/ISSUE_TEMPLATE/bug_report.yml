@@ -1,0 +1,38 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect and what did you see? A screenshot or short clip helps.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Island and tabs, Clipboard, Launcher, Wi-Fi / Bluetooth / audio, Voice assistant, Dictation, Circle to ask, Spirit (3D character), Shortcuts, Themes, Settings, Installer / packaging, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: lokey version
+      description: Release name, or the commit if you built it yourself.
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2 (build 26100), 125% display scale, 1 monitor
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The last ~30 lines of `%LocalAppData%\Lokey\main.log` (and `host.log` for native problems). Remove anything private.
+      render: text

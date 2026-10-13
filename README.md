@@ -1,176 +1,354 @@
-# lokey
+<div align="center">
 
-A [Caelestia](https://github.com/caelestia-dots/shell)-style desktop shell for **Windows 11**, built natively with WinUI 3.
+<img src="assets/banner.png" alt="lokey: a voice-first AI island for your Windows desktop" width="100%">
 
-Caelestia is a Quickshell/Hyprland shell for Linux. lokey brings its look and motion to Windows: drawers that grow out of the screen edges, Material You colours from your wallpaper, and a fixed side bar. It runs as an overlay on top of Explorer and does not replace it.
+<br>
 
-> The project and executable are currently named **Hitodama** (`src/Hitodama.Shell`, `Hitodama.exe`).
+[![Release](https://img.shields.io/github/v/release/eashuu/lokey?include_prereleases&style=for-the-badge&color=ff7fb8&label=release)](https://github.com/eashuu/lokey/releases)
+[![Downloads](https://img.shields.io/github/downloads/eashuu/lokey/total?style=for-the-badge&color=8a5cff)](https://github.com/eashuu/lokey/releases)
+[![License](https://img.shields.io/badge/license-GPL--3.0-5ab0ff?style=for-the-badge)](LICENSE)
+[![Platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4?style=for-the-badge&logo=windows11&logoColor=white)](#install)
+[![CI](https://img.shields.io/github/actions/workflow/status/eashuu/lokey/ci.yml?branch=main&style=for-the-badge&label=build)](https://github.com/eashuu/lokey/actions)
 
-## Features
+[![Electron](https://img.shields.io/badge/Electron-44-47848f?logo=electron&logoColor=white)](https://www.electronjs.org)
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![.NET](https://img.shields.io/badge/.NET-8-512bd4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com)
+[![WebGL2](https://img.shields.io/badge/WebGL2-raymarched%20spirit-990000?logo=webgl&logoColor=white)](#-the-spirit)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-4cd27a)](CONTRIBUTING.md)
+[![Stars](https://img.shields.io/github/stars/eashuu/lokey?style=social)](https://github.com/eashuu/lokey/stargazers)
 
-**Top island (dashboard)**
+**[Install](#install)** &nbsp;·&nbsp; **[Features](#-features)** &nbsp;·&nbsp; **[Voice](#-voice-assistant)** &nbsp;·&nbsp; **[Spirit](#-the-spirit)** &nbsp;·&nbsp; **[Shortcuts](#-keyboard-shortcuts)** &nbsp;·&nbsp; **[Build](#-build-from-source)** &nbsp;·&nbsp; **[Architecture](#-architecture)** &nbsp;·&nbsp; **[Roadmap](#-roadmap)**
 
-A small live pill at the top of the screen showing the clock, now-playing art and the focus timer. Hover it, scroll on it or press the hotkey and it morphs into Caelestia's dashboard:
+<br>
 
-- **Dashboard**: weather, user card (with your account picture), date, month calendar, CPU/RAM/disk bars, media card with a progress arc.
-- **Media**: round cover inside a live audio visualiser ring, controls, seek bar and a player switcher (Spotify, browsers, anything using Windows media controls).
-- **Performance**: CPU, GPU and memory ring gauges, storage and a network sparkline.
-- **Clipboard**: Windows clipboard history with search, filters and click-to-paste.
+<img src="assets/screenshots/controls.png" alt="The lokey island open on the Controls tab" width="86%">
 
-It also briefly expands for volume changes and track changes.
+</div>
 
-**Bottom launcher**
+<br>
 
-App search over every installed app (Win32 and Store), and `>` commands:
+## What is lokey?
 
-| Command | What it does |
+**lokey** turns the top edge of your screen into a small, living control surface. A thin bar sits in the middle of the top edge. Hover it, scroll on it or press a hotkey and it **morphs into a dashboard**: media, volume, Wi-Fi, Bluetooth, clipboard history, an app launcher, system stats, a calendar and a focus timer, all in one place and all themed from your wallpaper.
+
+It is also a **voice assistant**. Hold a key and talk: lokey opens apps and sites, searches, schedules things for later, dictates cleaned-up text into any text field, and answers questions about whatever you circle on screen. Your assistant has a face: a round, bouncy 3D **spirit** that listens, thinks, talks, jumps, sits down and falls asleep.
+
+> [!NOTE]
+> lokey is a young open-source project (working name, version 0.1). The island and its tabs are daily-driver quality; the voice features need your own free Google AI Studio key and are still being hardened. See [Status](#-status-and-known-limits) for what is and is not verified.
+
+<br>
+
+## ✨ Features
+
+| | Feature | What it does |
+|:--:|---|---|
+| 🏝️ | **Morphing island** | One animated shape grows from a thin bar into a menu, 11 sizes in all, with eased morphs and no layout jumps. Opens on hover, scroll, click or hotkey. |
+| 🎛️ | **Controls** | Wi-Fi, Bluetooth, audio output, Night Light, dark mode, volume, brightness and a media card with seek, art and a live visualiser. |
+| 📶 | **In-app flyouts** | Scan and join Wi-Fi networks, pair and connect Bluetooth devices, switch the default audio device without leaving the island. |
+| 🎵 | **Music island** | Scroll once for a compact player for whatever is playing (Spotify, browsers, anything with Windows media controls). |
+| 📋 | **Clipboard history** | Text, links and images with search, filters, pinning, multi-select, keyboard control and a full-content preview. Stored encrypted. |
+| 🚀 | **Launcher** | Search installed apps, Store apps, games and indexed files; recent searches; per-app star. |
+| 🗓️ | **Today** | Clock, week calendar, weather, a focus timer and a quick to-do list. |
+| 📊 | **Stats** | CPU, GPU, RAM, disk, network, top apps by memory and a speed test. |
+| 🖼️ | **Wallpaper** | A skewed carousel of your wallpapers; picking one grows it from your click as a circle. |
+| 🎨 | **Themes** | Dark, light or follow Windows, with the accent and panel tint derived from your wallpaper. |
+| 🎙️ | **Voice assistant** | Push-to-talk conversation over Gemini Live with tools, a scheduler and memory. |
+| ⌨️ | **Dictation** | Hold a key in any text field, talk badly, get a clean sentence typed in. |
+| ⭕ | **Circle to ask** | Draw a loop around anything on screen and ask about it out loud. |
+| 🫧 | **The spirit** | A 3D character with 35+ actions and states, 14 emote reactions, 10 skins and eye contact. |
+| ⚙️ | **Everything configurable** | Per-tab global hotkeys, trigger mode, size, animation speed, skins, personalities. |
+
+<br>
+
+## 🖼️ Screenshots
+
+The island adapts to its content. Dark theme on a dark wallpaper:
+
+<table>
+  <tr>
+    <td width="50%"><img src="assets/screenshots/today.png" alt="Today tab"><br><sub><b>Today</b>: clock, week, weather, focus timer, to-do</sub></td>
+    <td width="50%"><img src="assets/screenshots/stats.png" alt="Stats tab"><br><sub><b>Stats</b>: live CPU, GPU and memory gauges</sub></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/clipboard.png" alt="Clipboard tab"><br><sub><b>Clipboard</b>: history, preview and keyboard hints</sub></td>
+    <td><img src="assets/screenshots/apps.png" alt="Apps tab"><br><sub><b>Apps</b>: launcher with starred and recent apps</sub></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/wallpaper.png" alt="Wallpaper tab"><br><sub><b>Wallpaper</b>: carousel with a circle-reveal apply</sub></td>
+    <td><img src="assets/screenshots/wifi.png" alt="Wi-Fi flyout"><br><sub><b>Wi-Fi</b>: scan and join without opening Settings</sub></td>
+  </tr>
+</table>
+
+### Light theme, same island
+
+<table>
+  <tr>
+    <td width="50%"><img src="assets/screenshots/light-controls.png" alt="Controls in the light theme"></td>
+    <td width="50%"><img src="assets/screenshots/light-clipboard.png" alt="Clipboard in the light theme"></td>
+  </tr>
+</table>
+
+### From a thin bar to a full panel
+
+<div align="center">
+  <img src="assets/screenshots/notch-sleep.png" alt="The island asleep: a thin bar" width="40%">
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/notch-awake.png" alt="The island awake with the spirit" width="40%">
+  <br>
+  <sub>Asleep (left) and awake (right): hover the bar and the spirit says hello.</sub>
+</div>
+
+<br>
+
+## 🎙️ Voice assistant
+
+Everything below needs a **free Google AI Studio key** (paste it in *Settings → Voice*). It is stored encrypted on your PC and only ever sent to Google.
+
+| Feature | How | What you see |
+|---|---|---|
+| **Talk** | Hold <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd>, speak, release | The island wakes, your words stream into a pill at the bottom of the screen, the reply follows. The spirit listens, thinks and talks. |
+| **Dictation** | Hold <kbd>Ctrl</kbd>+<kbd>Win</kbd> in any text field | A pill with live bars sits on the field, your raw speech streams into a bubble, then rewrites itself into the clean sentence and is typed in. Password fields are refused. |
+| **Circle to ask** | Hold <kbd>Ctrl</kbd>+<kbd>Shift</kbd> briefly, draw a loop, ask | A glowing loop follows your pointer; the model gets the whole screen and a zoomed crop of what you circled. |
+
+<table>
+  <tr>
+    <td width="33%"><img src="assets/screenshots/voice-schedule.png" alt="Voice command scheduled for later"><br><sub><b>"Open VS Code, then open Netflix an hour later."</b> It acts now and schedules the rest.</sub></td>
+    <td width="33%"><img src="assets/screenshots/dictation.png" alt="Dictation bubble cleaning up speech"><br><sub><b>Dictation</b> rewrites false starts and corrections before typing.</sub></td>
+    <td width="33%"><img src="assets/screenshots/circle-to-ask.png" alt="Circle to ask"><br><sub><b>Circle to ask</b>: "open the store page of this game".</sub></td>
+  </tr>
+</table>
+
+<sub>These three frames come from lokey's built-in scripted demos (`lokey --demo schedule | dictation | lasso`): no microphone, no network, fake text.</sub>
+
+**What the assistant can do** (all of it visible and reversible, nothing destructive): open apps and sites, search the web or a specific site, schedule actions for a time or delay (they survive restarts and appear on the *Desk* page), control media, volume and brightness, and remember or forget facts about you (the *Bond* page lists and edits them).
+
+<br>
+
+## 🫧 The spirit
+
+The island's face is a 3D character drawn by a small WebGL2 raymarcher: no models, no textures, no dependencies. A spring-driven rig, a behaviour brain and 14 floating emote reactions make it feel alive: it looks at your pointer, blinks, fidgets, sits down when you are away, and lies down to sleep.
+
+<div align="center">
+  <img src="assets/skins.png" alt="Spirit skins: Puff, Bloom, Sunny, Minty, Sky, Droplet" width="80%">
+  <br><sub>Skins: Puff, Bloom, Sunny, Minty, Sky and the original Droplet (more water-drop skins in Loadout).</sub>
+</div>
+
+<br>
+
+<img src="assets/spirit-poses.png" alt="Every spirit pose and action on one sheet" width="100%">
+
+<sub>Every state and action, rendered by `lokey --lab`: idle, asleep, listening, thinking, talking, writing, looking, humming, wave, nod, shrug, celebrate, cheer, point, search, sad, startled, love, nervous, peek, spin, stretch, curious, look around, bounce, yawn, alert, inhale, waddle, roll, belly bounce, jump, stand tall, sit, lie down and crouch. Open *Open lokey → Soul* to preview them all.</sub>
+
+<br>
+
+## 📥 Install
+
+### Option 1: download the app (recommended)
+
+1. Open the **[Releases page](https://github.com/eashuu/lokey/releases/latest)** and download `Lokey-<version>-win-x64.zip`.
+2. Unzip it anywhere (no installer, no admin rights, nothing is written outside your user folders).
+3. Run **`Lokey.exe`**. A tray icon appears and the thin bar shows at the top of your screen.
+
+| Requirement | |
 |---|---|
-| `>wallpaper` | Wallpaper carousel with a live colour preview |
-| `>variant` | Material You variant |
-| `>light` `>dark` `>auto` | Light, dark, or following the wallpaper |
-| `>palette` | Surface palette: `neutral`, `monochrome` or `tinted` |
-| `>transparency 0.85` | Surface opacity |
-| `>scale 1.1` | UI scale (restarts) |
-| `>timer 25` | Focus timer in minutes |
-| `>session` `>lock` `>sleep` | Power actions |
-| `>settings` `>quit` | |
+| OS | Windows 10 (2004 or newer) or Windows 11, 64-bit |
+| Size | about 450 MB unpacked (self-contained: Electron and the .NET runtime are bundled) |
+| Optional | A free [Google AI Studio key](https://aistudio.google.com/apikey) for voice, dictation and circle to ask |
 
-**Left bar**
+> [!TIP]
+> The exe is **not code-signed**, so Windows SmartScreen may warn on first run: choose *More info → Run anyway*. You can verify the download against the checksum on the release page, or build it yourself below.
 
-A fixed bar like Caelestia's, reserving screen space like the taskbar, so maximised windows stop at its edge. Autohide mode is also available, and the bar can sit on the left or right. Its entries can be reordered or turned off:
+**First run checklist**
 
-- Logo
-- Virtual-desktop pills with a stretching active indicator
-- The active window title
-- Clock
-- Status icons: network, Bluetooth, battery, audio, mic, keyboard layout
-- Power
+- Hover the bar at the top centre, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>.
+- Right-click the tray icon → *Settings* to change the trigger, size, theme and shortcuts.
+- For voice: *Settings → Voice*, paste your key, press *Save*, then hold <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> and talk.
+- Where things live: settings and logs in `%LocalAppData%\Lokey` (delete that folder to reset everything).
 
-Hovering an entry opens a popout for audio, network, Bluetooth, battery, the active window or the calendar. Scrolling on the bar changes volume on the top half, brightness on the bottom half, and switches desktops over the pills.
+### Option 2: build it yourself
 
-**Right drawer**
+See [Build from source](#-build-from-source). It takes about five minutes.
 
-- Vertical volume, mic and brightness sliders.
-- Wi-Fi, Bluetooth, microphone and keep-awake toggles.
-- A session menu (lock, sleep, sign out, hibernate, restart, shut down) that dims the screen behind it. Destructive actions need a second click.
+<br>
 
-**Look and motion**
+## ⌨️ Keyboard shortcuts
 
-- **Theme.** Light and dark modes, either set by hand or chosen from the wallpaper's brightness. The default palette is *neutral*: true white or charcoal surfaces with the accent colour taken from the wallpaper. *Monochrome* and wallpaper-*tinted* palettes are also available.
-- **Motion.** Caelestia's curves and durations. Every animation runs on the Windows compositor, so nothing redraws in a loop.
-- **Style.** Material Symbols icons, Rubik for numbers, Google Sans Flex for text, ripple feedback on buttons.
-- **Scaling.** Sizes scale to the screen, so on smaller screens everything stays compact.
+Every shortcut can be changed (or cleared) in *Settings → Shortcuts*, which also tells you when Windows or another app already owns a combination.
 
-**Everything is configurable**
+| Action | Default | Notes |
+|---|---|---|
+| Open or close the island | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> | Global |
+| Open the Apps tab | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> | Press again to close; every tab can have its own |
+| Open the Clipboard tab | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> | |
+| Talk to the assistant | hold <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> | Release to send |
+| Dictation | hold <kbd>Ctrl</kbd>+<kbd>Win</kbd> | Types into the focused field |
+| Circle to ask | hold <kbd>Ctrl</kbd>+<kbd>Shift</kbd> | A quick tap is ignored |
+| Close the island | <kbd>Esc</kbd> | |
 
-Each surface can be turned on or off: island only, drawers only, bar only, or any mix. You can also change hotkeys, tab order, bar entries, edge triggers and delays, palette, opacity, animation speed and UI scale.
+In the island: scroll down on the bar for the music island, scroll again for the menu; <kbd>↑</kbd><kbd>↓</kbd> move in lists, <kbd>Enter</kbd> acts, <kbd>Tab</kbd> cycles clipboard filters.
 
-## Requirements
+<br>
 
-- Windows 11, or Windows 10 19041+ (the bar's desktop switching targets Windows 11).
-- x64.
-- To build from source: the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0). Nothing else; the Windows App SDK comes from NuGet and is bundled in the output.
+## 🛠️ Build from source
 
-## Build and run
+**Prerequisites**
+
+| Tool | Version | Why |
+|---|---|---|
+| [Node.js](https://nodejs.org) | 22 or newer | build tooling |
+| [pnpm](https://pnpm.io/installation) | 11 | package manager (`npm i -g pnpm`) |
+| [.NET SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | 8.0 | the native sidecar |
+| Windows | 10 / 11, 64-bit | the sidecar uses Windows APIs |
+| ffmpeg *(optional)* | any | only to regenerate the README art |
 
 ```powershell
 git clone https://github.com/eashuu/lokey.git
-cd lokey\src\Hitodama.Shell
-dotnet build -c Release
-.\bin\Release\net8.0-windows10.0.22621.0\win-x64\Hitodama.exe
+cd lokey
+pnpm run bootstrap  # installs the app's dependencies and builds the sidecar (about 2 minutes)
+pnpm dev            # runs the app with hot reload
 ```
 
-The build is unpackaged and self-contained, so no installer is needed. To have it start at sign-in, turn on **Start with Windows** in settings.
-
-## Usage
-
-| Action | Default |
+| Command (from the repo root) | What it does |
 |---|---|
-| Toggle the island | `Ctrl+Alt+Space`, hover the pill, or scroll down on it |
-| Toggle the launcher | `Ctrl+Alt+A`, or hover the bottom-centre edge |
-| Session menu | `Ctrl+Alt+End`, or the power button on the bar or dashboard |
-| Right drawer | Hover the right-centre edge, or change the volume |
-| Switch dashboard tabs | Click, scroll over the tabs, or `Ctrl+Tab` |
-| Close any surface | `Esc`, click elsewhere, or move the pointer away |
-| Settings | Run `Hitodama.exe` again while it's running, or `>settings` |
+| `pnpm dev` | Start the app in development mode (renderer hot reload) |
+| `pnpm build` | Production build of the app into `app/out` |
+| `pnpm typecheck` | TypeScript check of the whole app |
+| `pnpm sidecar` | Build the .NET sidecar (Release) |
+| `pnpm package` | Build everything and assemble `app/release/Lokey/Lokey.exe` |
+| `pnpm verify` | Typecheck, build the app and build the sidecar (what CI runs) |
 
-Settings are stored in `%LocalAppData%\Hitodama\settings.json`.
+**Quality tools** (none of them touch your real mouse, keyboard or focus):
 
-### Command line
+| Mode | Command | Purpose |
+|---|---|---|
+| Self-check | `Lokey.exe --selfcheck` | Scheduler and tool-parsing checks |
+| Sidecar self-test | `Lokey.Host.exe --selftest` | Calls every read-only native method once |
+| Bench | `Lokey.exe --bench <dir>` | Frame times, CPU and memory plus screenshots of every tab |
+| UI test | `Lokey.exe --uitest <dir>` | Injected-event test of hover, scroll and clicks (web contents only) |
+| Lab | `Lokey.exe --lab <dir>` | Renders the spirit's pose sheet and other QA pages offscreen |
+| Demos | `Lokey.exe --demo schedule\|dictation\|lasso` | Replays the voice scenarios with scripted text |
 
-| Flag | Effect |
+More in **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** and **[docs/TESTING.md](docs/TESTING.md)**.
+
+<br>
+
+## 🧱 Architecture
+
+```mermaid
+flowchart LR
+  subgraph Electron["Electron app (TypeScript)"]
+    direction TB
+    M["Main process<br/>windows · IPC · agent · scheduler"]
+    O["Island overlay<br/>React 19 · Motion · WebGL2 spirit"]
+    W["Settings · Loadout<br/>Caption · Dictation · Lasso · Glow"]
+    A["Hidden audio page<br/>mic in · speaker out"]
+    M <--> O
+    M <--> W
+    M <--> A
+  end
+  S["Lokey.Host<br/>.NET 8 sidecar"]
+  G(["Gemini Live<br/>(your key)"])
+  M <-- "JSON lines over a<br/>named pipe" --> S
+  M -- "WebSocket" --> G
+  S --> OS[("Windows APIs<br/>media · audio · Wi-Fi · Bluetooth<br/>clipboard · hotkeys · UI Automation")]
+```
+
+| Layer | Tech | Responsibility |
+|---|---|---|
+| **Renderer** | React 19, Motion, zustand, Tailwind v4, WebGL2 | The island shape (one SVG path from five animated numbers), tabs, the 3D spirit |
+| **Main process** | Electron 44, TypeScript | Overlay window shaped with `setShape`, tray, settings, voice agent, scheduler, tools |
+| **Sidecar** | .NET 8, NAudio, WinRT, UI Automation | Everything that needs native Windows APIs, behind a typed JSON protocol |
+| **Protocol** | `app/src/shared/protocol.ts` | One TypeScript file that both sides are checked against |
+
+```text
+lokey/
+├─ app/                       Electron app
+│  ├─ src/main/               main process: windows, IPC, agent/ (voice, tools, scheduler, overlays)
+│  ├─ src/preload/            the only bridge between pages and the main process
+│  ├─ src/renderer/src/       island/ tabs/ mascot/ mainwin/ settings/ agent/ effects/ lib/ bridge/
+│  ├─ src/shared/             protocol and types shared by main, renderer and tests
+│  └─ scripts/                packaging and icon scripts
+├─ native/Lokey.Host/         .NET 8 sidecar (Services/ for each Windows feature)
+├─ assets/                    README art (logo, screenshots, sheets)
+├─ docs/                      architecture, development, testing, review and roadmap
+├─ scripts/                   README art generator
+├─ legacy/winui-prototype/    the first, frozen WinUI 3 version (not built, kept for history)
+└─ .github/                   CI, release workflow, issue and PR templates
+```
+
+Deep dive: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+
+<br>
+
+## 🔒 Privacy and security
+
+- **No telemetry, no accounts, no cloud service of ours.** The only network traffic is what you enable: Gemini (voice features, with *your* key), weather in the Today tab (Open-Meteo, with an IP-based location lookup) and the speed test in the Stats tab (Cloudflare).
+- **Your API key** is encrypted with Windows DPAPI (`safeStorage`) and only ever read in the main process. It never appears in logs.
+- **Clipboard history** is encrypted per user; password-manager windows are skipped; pinned items are the one exception (stored readable, by design). Retention is configurable.
+- **Voice**: the microphone is only open while you hold the key; the agent can only use a small set of reversible tools (open, search, schedule, media, volume, brightness, remember). It cannot delete files, run commands, buy or send anything.
+- **Dictation** never types into password fields and refuses when focus has moved.
+- Found a vulnerability? See **[SECURITY.md](SECURITY.md)**.
+
+<br>
+
+## 🚧 Status and known limits
+
+lokey is built in the open and moves fast. Honest state of things:
+
+| Area | State |
 |---|---|
-| `--settings` | Open settings on start |
-| `--open island[:Tab]` | Start with the island open, e.g. `--open island:Media` |
-| `--open launcher[:query]` | Start with the launcher open, e.g. `--open launcher:>wallpaper` |
-| `--open side` / `--open session` | Open the right drawer or the session menu |
-| `--selftest [dir]` | Run the self-test (below) and exit |
+| Island, tabs, themes, clipboard, launcher, stats, wallpaper, shortcuts | ✅ Used daily |
+| Wi-Fi connect, Bluetooth pairing, audio-device switching | 🧪 Implemented, needs more hardware testing |
+| Voice, dictation, circle to ask | 🧪 Implemented against the Gemini Live API; needs wider real-world testing, microphone-permission and key-chord edge cases are being hardened |
+| Night Light toggle | 🧪 Reads the state on supported builds; writing is unverified on recent Windows 11 |
+| Multi-monitor | ⚠️ The island and overlays use the primary display |
+| Memory use | ⚠️ About 600-800 MB total (most of it Chromium's GPU process); a lighter shell is on the roadmap |
 
-## Self-test
+A prioritised bug and risk list from a full code review lives in **[docs/REVIEW-AND-ROADMAP.md](docs/REVIEW-AND-ROADMAP.md)**.
 
-`Hitodama.exe --selftest <dir>` drives every surface, tab, popout, theme and palette through the app's own API. It never sends mouse or keyboard input and never takes focus. For each state it saves a screenshot to `<dir>`, then writes `report.txt`, which includes:
+<br>
 
-- page sizes and overflow and trimmed-text checks
-- work-area reservation by the bar
-- the fullscreen check
-- idle CPU and memory
+## 🗺️ Roadmap
 
-It exits with code 0 when every check passes.
+- [x] Morphing island with 7 tabs, flyouts, themes and per-tab hotkeys
+- [x] 3D spirit with actions, emotes, skins and postures
+- [x] Voice assistant, scheduler, dictation, circle to ask
+- [ ] Stability and safety pass (microphone ownership, chord hold-delay, stricter IPC)
+- [ ] Permission model with on-island confirmations and an action log
+- [ ] Context engine (active app, selected text, browser tab) and MCP tool servers
+- [ ] Navigator: jump to windows, files and settings by voice; routines with triggers
+- [ ] Real memory, optional wake word, offline speech and local models
+- [ ] Installer, auto-update and a lighter runtime
 
-## How it works
+Full plan: **[docs/REVIEW-AND-ROADMAP.md](docs/REVIEW-AND-ROADMAP.md)**.
 
-- **One small window per surface** (`IslandWindow`, `LauncherWindow`, `SideWindow`, `BarWindow`, `BarPopout`). Each is a borderless, topmost, transparent window. Only the visible shape takes clicks (`SetWindowRgn`); the rest is click-through.
-- **`EdgeSurface`** draws the surface as a Composition shape: a rounded body joined to the screen edge by concave fillets, like Caelestia's frame. Only a small property set is animated; expressions derive the shape, clip, slide and fade from it on the compositor thread.
-- **Theme.** `Theme` extracts a seed colour from the wallpaper with [MaterialColorUtilities](https://github.com/albi005/MaterialColorUtilities). It builds the light or dark scheme and recolours every surface live.
-- **Event-driven, no polling.** One hidden message window handles hotkeys, wallpaper changes, display changes and appbar notifications. WinEvent hooks track the foreground window and real fullscreen apps; registry change notifications track virtual desktops; system events track network and power. At idle the app wakes only once a minute, for the clock.
-- **System services:**
+<br>
 
-  | Feature | Windows API |
-  |---|---|
-  | Media | `GlobalSystemMediaTransportControls` |
-  | Audio | Core Audio (NAudio) |
-  | Visualiser | WASAPI loopback + FFT |
-  | Clipboard | Clipboard history |
-  | GPU and thermal | PDH counters |
-  | Laptop brightness | WMI |
-  | Weather | [Open-Meteo](https://open-meteo.com) |
+## 🤝 Contributing
 
-## Limitations
+Issues and pull requests are very welcome: bug reports with your `main.log`, new tools for the assistant, spirit skins and actions, translations, accessibility fixes. Start with **[CONTRIBUTING.md](CONTRIBUTING.md)**; the *good first issue* label marks small starting points.
 
-- **No system tray** in the bar: Windows has no public API for reading other apps' tray icons.
-- **No notification popups:** reading Windows notifications requires a packaged (MSIX) app.
-- **Brightness** works on laptop panels only; external monitors would need DDC/CI.
-- **Virtual-desktop switching** sends `Ctrl+Win+←/→`, and only when you click or scroll the pills.
+<a href="https://github.com/eashuu/lokey/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=eashuu/lokey" alt="Contributors" height="48">
+</a>
 
-## Project layout
+<br>
 
-```
-src/Hitodama.Shell/
-  App.xaml(.cs)        coordinator: surfaces, hotkeys, settings changes
-  EdgeSurface.cs       edge drawer engine (shape, motion, input region)
-  Motion.cs Tokens.cs  Caelestia motion curves and size tokens
-  Theme.cs             Material You / neutral / monochrome schemes
-  *Window.*            island, launcher, side drawer, bar, settings
-  Tabs/                dashboard pages
-  Services/            media, audio, stats, weather, desktops, ...
-  Assets/Fonts/        Material Symbols, Material Icons, Rubik, Google Sans Flex
-```
+## 🙏 Acknowledgements
 
-## Credits
+lokey stands on great open-source work: [Electron](https://www.electronjs.org), [React](https://react.dev), [Motion](https://motion.dev), [zustand](https://zustand-demo.pmnd.rs), [Tailwind CSS](https://tailwindcss.com), [Lucide](https://lucide.dev), [Material Color Utilities](https://github.com/material-foundation/material-color-utilities), [Fontsource](https://fontsource.org) (Inter, Rubik, JetBrains Mono), [NAudio](https://github.com/naudio/NAudio) and [electron-vite](https://electron-vite.org). The floating-island idea is inspired by Dynamic-Island-style launchers, and the shell look by the [Caelestia](https://github.com/caelestia-dots/shell) desktop shell for Linux. Full list in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-- Design and motion based on [Caelestia](https://github.com/caelestia-dots/shell) by caelestia-dots.
-- Fonts:
-  - [Material Symbols / Material Icons](https://github.com/google/material-design-icons) (Apache-2.0)
-  - [Rubik](https://github.com/googlefonts/rubik) (OFL)
-  - [Google Sans Flex](https://github.com/google/fonts) (OFL)
+## 📄 License
 
-  Licence files are in `Assets/Fonts`.
-- Libraries:
-  - [Windows App SDK](https://github.com/microsoft/WindowsAppSDK)
-  - [WinUIEx](https://github.com/dotMorten/WinUIEx)
-  - [NAudio](https://github.com/naudio/NAudio)
-  - [MaterialColorUtilities](https://github.com/albi005/MaterialColorUtilities)
+[GPL-3.0](LICENSE) © eashuu and contributors.
 
-## License
+<br>
 
-[GPL-3.0](LICENSE), the same licence as Caelestia.
+<div align="center">
+
+[![Star History Chart](https://api.star-history.com/svg?repos=eashuu/lokey&type=Date&theme=dark)](https://star-history.com/#eashuu/lokey&Date)
+
+<sub>If lokey makes your desktop nicer, a ⭐ helps others find it.</sub>
+
+</div>

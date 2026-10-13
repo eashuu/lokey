@@ -45,7 +45,7 @@ export function paramsFor(shape: Shape, view: View, k: number): ShapeParams {
 
 export type MorphKind = 'open' | 'close' | 'menu' | 'music' | 'notch'
 
-/** Which transition table applies when going from one state to another (UI-SPEC section 1). */
+/** Which transition table applies when going from one state to another (design spec section 1). */
 export function morphKind(from: { shape: Shape; view: View }, to: { shape: Shape; view: View }): MorphKind {
   const a = from.shape === 'menu', b = to.shape === 'menu'
   if (!a && b) return 'open'
