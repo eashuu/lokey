@@ -7,13 +7,14 @@ import { useIsland } from '@/island/store'
  * island (main then focuses the window) and we focus the input once that has happened.
  * `right` is absolutely placed at the bar's right edge and `rightPad` reserves its width for the input.
  */
-export function SearchInput({ value, onChange, placeholder, height, fontSize, iconLeft, iconSize = 16, textLeft, right, rightPad = 12, onKeyDown }: {
+export function SearchInput({ value, onChange, placeholder, height, fontSize, iconLeft, iconTop, iconSize = 16, textLeft, right, rightPad = 12, onKeyDown }: {
   value: string
   onChange: (v: string) => void
   placeholder: string
   height: number
   fontSize: number
   iconLeft: number
+  iconTop?: number
   iconSize?: number
   textLeft: number
   right?: ReactNode
@@ -38,7 +39,7 @@ export function SearchInput({ value, onChange, placeholder, height, fontSize, ic
   }, [])
   return (
     <div style={{ position: 'relative', height, borderRadius: 14, background: 'var(--fill-1)' }}>
-      <Search size={iconSize} color="var(--muted)" style={{ position: 'absolute', left: iconLeft, top: (height - iconSize) / 2, pointerEvents: 'none' }} />
+      <Search size={iconSize} color="var(--muted)" style={{ position: 'absolute', left: iconLeft, top: iconTop ?? (height - iconSize) / 2, pointerEvents: 'none' }} />
       <input
         ref={ref}
         value={value}

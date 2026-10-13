@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { animate, motion, useMotionValue, useTransform } from 'motion/react'
 import { bridge } from '@/bridge'
 import { useData } from '@/lib/data'
-import { hitProps, reset as resetHit } from '@/lib/hit'
+import { setRegion } from '@/lib/region'
 import { animSpeed } from '@/lib/motion'
 import { buildPath } from './shapePath'
 import { MENU_BASE, MORPH, NOTCH_BASE, morphKind, paramsFor, peekParams, type Shape, type View } from './shapes'
@@ -10,6 +10,7 @@ import { MenuContent } from './Panel'
 import { Caption } from './Caption'
 import { Held } from './Held'
 import { PeekRow } from './Peek'
+import { Prewarm } from './Prewarm'
 import { Soul } from './Soul'
 import { useIsland } from './store'
 
@@ -62,6 +63,17 @@ export function Island() {
     return () => ctl.forEach(c => c.stop())
   }, [shape, view, peeking, k, depth, width, corner, rampW, rampH])
 
+  // ---- window region: the overlay is shaped to the island so the rest of the screen belongs to other apps ----
+  const caption = useIsland(s => s.caption)
+  useEffect(() => {
+    const p = peeking ? peekParams(k) : paramsFor(shape, view, k)
+    const m = 16 * k // room for the drop shadow and the ramps' anti-aliasing
+    const rect = { x: cx - p.width / 2 - p.rampW - m, y: 0, w: p.width + 2 * (p.rampW + m), h: p.depth + m }
+    const more = caption ? [{ x: cx - 320 * k, y: 0, w: 640 * k, h: (NOTCH_BASE * 75 + 26 + 90) * k }] : []
+    const kind = peeking ? 'notch' : morphKind(prev.current, { shape, view })
+    setRegion(rect, (MORPH[kind].duration / Math.max(0.1, animSpeed() || 1)) * 1000, more)
+  }, [shape, view, peeking, k, cx, caption])
+
   // ---- mounted menu content (kept alive while the shape closes) -------------------------------------
   const [mount, setMount] = useState(shape === 'menu')
   const [shown, setShown] = useState<View>(view)
@@ -78,13 +90,11 @@ export function Island() {
   const st = () => useIsland.getState()
 
   const onEnter = useCallback(() => {
-    hitProps.onPointerEnter()
     cancel()
     if (isl.trigger !== 'scroll' && st().shape === 'sleep') timer.current = setTimeout(() => st().wake('hover'), isl.hoverDelayMs)
   }, [isl.trigger, isl.hoverDelayMs])
 
   const onLeave = useCallback(() => {
-    hitProps.onPointerLeave()
     cancel()
     const s = st()
     if (s.mode !== 'hover') return
@@ -122,8 +132,8 @@ export function Island() {
     if (e.type === 'toggle-island') { if (s.shape === 'menu') s.closeMenu(); else s.openMenu(isl.startTab, 'pinned') }
     else if (e.type === 'open-island') s.openMenu(e.tab ?? isl.startTab, 'pinned')
     else if (e.type === 'close-island') { if (s.shape === 'menu') s.closeMenu(); else if (s.shape === 'awake' && s.rest === 'sleep') s.sleep() }
-    else if (e.type === 'blur') { if (s.shape === 'menu' && s.mode === 'pinned') s.closeMenu(); resetHit() }
-    else if (e.type === 'fullscreen' && e.full) { if (s.shape === 'menu') s.closeMenu(); resetHit() }
+    else if (e.type === 'blur') { if (s.shape === 'menu' && s.mode === 'pinned') s.closeMenu() }
+    else if (e.type === 'fullscreen' && e.full) { if (s.shape === 'menu') s.closeMenu() }
   }), [isl.startTab])
 
   // ---- layout ---------------------------------------------------------------------------------------
@@ -168,13 +178,22 @@ export function Island() {
           </div>
         )}
         {mount && (
-          // content is invisible while the shape grows into place, then fades in; on close it fades out first
-          <motion.div key={shown} initial={{ opacity: 0 }} animate={{ opacity: inMenu ? 1 : 0 }} transition={{ duration: inMenu ? 0.26 : 0.18, delay: inMenu ? 0.1 : 0, ease: 'linear' }} style={{ position: 'absolute', inset: 0 }}>
+          // the content scales up from the top centre while the shape grows (reference: 0.594 -> 1 in 0.38 s, music 0.47 -> 1 in 0.42 s)
+          <motion.div
+            key={shown}
+            initial={{ opacity: 0, scale: shown === 'music' ? 0.4697 : 0.59375 }}
+            animate={inMenu ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1 }}
+            transition={inMenu
+              ? { scale: { duration: shown === 'music' ? 0.42 : 0.38, ease: [0.33, 1, 0.68, 1] }, opacity: { duration: shown === 'music' ? 0.3 : 0.23, delay: shown === 'music' ? 0.05 : 0.057, ease: 'linear' } }
+              : { duration: 0.12, ease: 'linear' }}
+            style={{ position: 'absolute', inset: 0, transformOrigin: `${cx}px 0px` }}
+          >
             <MenuContent view={shown} scale={MENU_BASE * k} left={cx - menuW / 2} />
           </motion.div>
         )}
       </motion.div>
 
+      <Prewarm k={k} />
       <Caption top={(NOTCH_BASE * 75 + 26) * k} scale={k} />
 
       <motion.div style={{ position: 'absolute', left: cx - soulW / 2, top: 0, y: soulY, width: soulW, height: soulH, opacity: soulOn ? 1 : 0, transition: 'opacity 300ms linear', pointerEvents: 'none' }}>

@@ -1,44 +1,42 @@
 import { useEffect, useRef, type WheelEvent } from 'react'
-import { animate, motion, useMotionTemplate, useMotionValue, useTransform } from 'motion/react'
+import { animate, motion, useMotionTemplate, useMotionValue, useTransform, type MotionValue } from 'motion/react'
 import { Check } from 'lucide-react'
 import type { WallpaperItem } from '@shared/protocol'
 import { dur } from '@/lib/motion'
 
 const SKEW = 11.86
-const W = 330 // centre card (design px); the track is 1004 x 196
-const H = 196
-const EASE = [0.215, 0.61, 0.355, 1] as const
+const W = 330 // centre card box; every card is this box scaled (transform only) to the reference's width/height
+const H = 186
+const EASE = [0.33, 1, 0.68, 1] as const
 
-// Pose per distance from the centre. Neighbours are narrow slivers (x pitch 211, then 78 further): they are the centre
-// card scaled non-uniformly, with the image counter-scaled so it is cropped rather than squashed. Transform + opacity only.
-const POSE = [
-  { x: 0, sx: 1, sy: 1, dim: 0, o: 1 },
-  { x: 211, sx: 0.2, sy: 0.88, dim: 0.45, o: 1 },
-  { x: 289, sx: 0.17, sy: 0.8, dim: 0.55, o: 1 },
-  { x: 355, sx: 0.15, sy: 0.74, dim: 0.6, o: 0 },
-]
-const pose = (d: number) => {
-  const p = POSE[Math.min(3, Math.abs(d))]
-  return { ...p, x: Math.sign(d) * p.x }
+const smooth = (u: number) => u * u * (3 - 2 * u)
+
+/** Signed circular distance of card `i` from the (fractional) centre `pos`; wraps only with 3+ items. */
+function dist(i: number, pos: number, n: number) {
+  let p = i - pos
+  if (n >= 3) { p = ((p % n) + n) % n; if (p > n / 2) p -= n }
+  return p
 }
 
-function Card({ d, it, thumb, active, onClick }: { d: number; it: WallpaperItem; thumb: string | null; active: boolean; onClick: () => void }) {
-  const p = pose(d)
-  const x = useMotionValue(p.x), sx = useMotionValue(p.sx), sy = useMotionValue(p.sy), dim = useMotionValue(p.dim), o = useMotionValue(p.o)
-  useEffect(() => {
-    const t = { duration: dur(0.35), ease: EASE }
-    const n = pose(d)
-    const run = [animate(x, n.x, t), animate(sx, n.sx, t), animate(sy, n.sy, t), animate(dim, n.dim, t), animate(o, n.o, t)]
-    return () => run.forEach(a => a.stop())
-  }, [d, x, sx, sy, dim, o])
-
-  // skew is applied after the scale so the lean stays at -11.86deg on the slivers; the image undoes both
+// Reference geometry for a card at distance p (ad = |p|, d = smoothstep(min(ad,1))):
+//   width 330-264d, height 186-14d, centre offset 211.47d + 78 max(0, ad-1) (signed), top 4+(186-h)/2,
+//   opacity 1-.22 min(ad,1)-.11 max(0,ad-1), dim .275 when ad>.5, z-index 10-round(2ad).
+// Rendered as translateX + scale of a fixed 330x186 box so the tween stays on the compositor.
+function Card({ i, n, pos, it, thumb, active, onClick }: { i: number; n: number; pos: MotionValue<number>; it: WallpaperItem; thumb: string | null; active: boolean; onClick: () => void }) {
+  const p = useTransform(pos, v => dist(i, v, n))
+  const x = useTransform(p, v => { const a = Math.abs(v); return Math.sign(v) * (211.47 * smooth(Math.min(a, 1)) + 78 * Math.max(0, a - 1)) })
+  const sx = useTransform(p, v => (330 - 264 * smooth(Math.min(Math.abs(v), 1))) / W)
+  const sy = useTransform(p, v => (186 - 14 * smooth(Math.min(Math.abs(v), 1))) / H)
+  const opacity = useTransform(p, v => { const a = Math.abs(v); return a > 4.2 ? 0 : 1 - 0.22 * Math.min(a, 1) - 0.11 * Math.max(0, a - 1) })
+  const dim = useTransform(p, v => (Math.abs(v) > 0.5 ? 0.275 : 0))
+  const z = useTransform(p, v => 10 - Math.round(2 * Math.abs(v)))
+  // skew after the scale keeps the lean at -11.86deg on the narrow cards; the image undoes both
   const transform = useMotionTemplate`translateX(${x}px) skewX(-${SKEW}deg) scale(${sx}, ${sy})`
   const inv = useMotionTemplate`scale(${useTransform(sx, v => 1 / v)}, ${useTransform(sy, v => 1 / v)}) skewX(${SKEW}deg)`
   return (
     <motion.div
       onClick={onClick}
-      style={{ position: 'absolute', left: (1004 - W) / 2, top: 0, width: W, height: H, borderRadius: 12, overflow: 'hidden', transform, opacity: o, zIndex: 10 - Math.abs(d), cursor: 'pointer', pointerEvents: Math.abs(d) > 2 ? 'none' : 'auto', background: 'var(--fill-1)' }}
+      style={{ position: 'absolute', left: (1004 - W) / 2, top: 4, width: W, height: H, borderRadius: 12, overflow: 'hidden', transform, opacity, zIndex: z, cursor: 'pointer', background: 'var(--fill-1)' }}
     >
       <motion.div style={{ position: 'absolute', inset: '-12px -30px', transform: inv }}>
         {thumb ? (
@@ -53,7 +51,7 @@ function Card({ d, it, thumb, active, onClick }: { d: number; it: WallpaperItem;
   )
 }
 
-/** Track of skewed cards. `active` (the applying / current wallpaper) gets the accent ring. */
+/** Track of skewed cards with wrap-around. `current` (the applying / current wallpaper) gets the accent ring. */
 export function Carousel({ items, thumbs, index, onIndex, current, onSet }: {
   items: WallpaperItem[]
   thumbs: Record<string, string | null>
@@ -62,8 +60,18 @@ export function Carousel({ items, thumbs, index, onIndex, current, onSet }: {
   current: string | null
   onSet: (path: string) => void
 }) {
+  const n = items.length
   const lastWheel = useRef(0)
-  const go = (d: number) => onIndex(Math.min(items.length - 1, Math.max(0, index + d)))
+  const pos = useMotionValue(index)
+  const go = (d: number) => onIndex(n >= 3 ? (index + d + n) % n : Math.min(n - 1, Math.max(0, index + d)))
+
+  // glide along the shortest circular path to the new centre
+  useEffect(() => {
+    const from = pos.get()
+    const target = from + dist(index, from, n)
+    const a = animate(pos, target, { duration: dur(0.26), ease: EASE })
+    return () => a.stop()
+  }, [index, n, pos])
 
   // keys: the window only receives them while the island is pinned
   const live = useRef({ go, onSet, item: items[index] })
@@ -90,11 +98,10 @@ export function Carousel({ items, thumbs, index, onIndex, current, onSet }: {
 
   const sel = items[index]
   return (
-    <div onWheel={onWheel} style={{ position: 'absolute', left: 0, top: 44, width: 1004, height: H }}>
+    <div onWheel={onWheel} style={{ position: 'absolute', left: 0, top: 44, width: 1004, height: 196 }}>
       {items.map((it, i) => {
-        const d = i - index
-        if (Math.abs(d) > 4) return null
-        return <Card key={it.path} d={d} it={it} thumb={it.thumb ?? thumbs[it.path] ?? null} active={it.path === current} onClick={() => (d === 0 ? onSet(it.path) : onIndex(i))} />
+        if (Math.abs(dist(i, index, n)) > 5) return null
+        return <Card key={it.path} i={i} n={n} pos={pos} it={it} thumb={it.thumb ?? thumbs[it.path] ?? null} active={it.path === current} onClick={() => (i === index ? onSet(it.path) : onIndex(i))} />
       })}
       {sel && sel.path === current && (
         <div title="Current wallpaper" style={{ position: 'absolute', left: 645, top: 12, width: 22, height: 22, borderRadius: 11, background: 'var(--accent)', color: 'var(--accent-ink)', display: 'grid', placeItems: 'center', zIndex: 20, pointerEvents: 'none' }}>

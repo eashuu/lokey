@@ -41,8 +41,8 @@ export function PowerTab() {
             className="active:scale-[0.97]"
             style={{ position: 'relative', height: 92, borderRadius: 20, color: on ? 'var(--bad)' : 'var(--text)', background: on ? 'color-mix(in srgb, var(--bad) 18%, transparent)' : hover === id ? 'var(--fill-4)' : 'var(--fill-1)', transition: 'background-color .1s linear, color .1s linear, transform .1s linear' }}
           >
-            <span style={{ position: 'absolute', left: 0, right: 0, top: 17, height: 26, display: 'grid', placeItems: 'center' }}><Icon size={26} strokeWidth={1.8} /></span>
-            <span style={{ position: 'absolute', left: 4, right: 4, top: 52, height: 20, lineHeight: '20px', fontSize: 13, fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{on ? 'Confirm?' : label}</span>
+            <span style={{ position: 'absolute', left: '50%', marginLeft: -11, top: 20, width: 22, height: 22, display: 'grid', placeItems: 'center' }}><Icon size={22} strokeWidth={1.8} /></span>
+            <span style={{ position: 'absolute', left: 4, right: 4, top: 52, height: 22, lineHeight: '22px', fontSize: 13, fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{on ? 'Confirm?' : label}</span>
           </button>
         )
       })}

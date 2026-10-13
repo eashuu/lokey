@@ -13,6 +13,7 @@ internal sealed record MediaState(
     SessionInfo[] Sessions, string? CurrentSession);
 
 internal sealed record AudioState(double Volume, bool Muted, string Device, bool MicMuted);
+internal sealed record AudioDevice(string Id, string Name, string Kind, bool IsDefault);
 internal sealed record BandsEvent(float[] Bands);
 
 internal sealed record CpuStat(double Pct, string Name, double Ghz, int Processes, double? TempC);
@@ -44,3 +45,10 @@ internal sealed record ThumbResult(string? Thumb);
 internal sealed record IconResult(string? Icon);
 internal sealed record FileHit(string Name, string Path);
 internal sealed record ClipEvent(ClipItem Item);
+
+internal sealed record WifiNetwork(string Ssid, int Signal, bool Secured, bool Connected, bool Known);
+internal sealed record WifiConnected(string Ssid, int Signal);
+internal sealed record WifiState(bool Available, bool On, WifiConnected? Connected, bool AccessDenied);
+internal sealed record BtDevice(string Id, string Name, string Kind, bool Paired, bool Connected, int? Battery);
+internal sealed record BtState(bool Available, bool On);
+internal sealed record OkResult(bool Ok, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Reason = null);

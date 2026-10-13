@@ -35,10 +35,10 @@ export function Preview({ item }: { item: ClipItem | undefined }) {
               item.preview || (item.kind === 'image' ? 'Image' : '(empty)')
             )}
           </div>
-          <div style={{ position: 'absolute', left: 18, right: 18, top: 198, height: 1, background: 'rgba(255,255,255,.08)' }} />
-          <Meta top={206} k="Type" v={KIND[item.kind]} />
-          <Meta top={226} k="Size" v={stats(item)} />
-          <Meta top={246} k="Copied" v={`${dayLabel(item.at)}, ${new Date(item.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}${item.source ? ` · ${item.source}` : ''}`} />
+          <div style={{ position: 'absolute', left: 18, right: 18, top: 198, height: 1, background: 'rgba(255,255,255,.086)' }} />
+          <Meta top={208} k="Type" v={KIND[item.kind]} />
+          <Meta top={228} k="Size" v={stats(item)} />
+          <Meta top={248} k="Copied" v={`${dayLabel(item.at)}, ${new Date(item.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}${item.source ? ` · ${item.source}` : ''}`} />
         </>
       )}
     </div>

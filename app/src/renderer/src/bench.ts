@@ -38,7 +38,14 @@ export async function runBench() {
   await sleep(15000) // idle window: process CPU is read before/after
   const m1 = await b.metrics()
   const idleMs = performance.now() - idleStart
+  await sleep(2000)
+  const m2 = await b.metrics()
+  await sleep(15000)
+  const m3 = await b.metrics() // second idle window, well after start-up work has settled
 
+  const gpuTrace: string[] = []
+  const trace = async (label: string) => { const m = (await b.metrics()) as { type: string; privateMb: number }[]; gpuTrace.push(`${label}:${m.find(x => x.type === 'GPU')?.privateMb}`) }
+  await trace('start')
   for (let round = 0; round < 3; round++) {
     const is = () => useIsland.getState()
     is().wake('hover')
@@ -49,11 +56,18 @@ export async function runBench() {
     if (round === 0) { await sleep(300); await b.capture('08-music') }
     is().setView('controls')
     phases.push(await record(`controls#${round}`, 700))
+    await trace(`controls${round}`)
     if (round === 0) { await sleep(500); await b.capture('10-open-controls') }
     for (const t of tabsOrder.slice(1)) {
       is().setView(t)
       phases.push(await record(`tab:${t}#${round}`, 600))
+      await trace(`${t}${round}`)
       if (round === 0) { await sleep(500); await b.capture(`20-tab-${t}`) }
+    }
+    for (const f of ['wifi', 'bluetooth', 'audio'] as const) {
+      is().setView(f)
+      phases.push(await record(`flyout:${f}#${round}`, 600))
+      if (round === 0) { await sleep(900); await b.capture(`40-${f}`) }
     }
     is().setView('controls')
     await sleep(300)
@@ -90,7 +104,9 @@ export async function runBench() {
     kind: bridge.kind,
     dpr: devicePixelRatio,
     viewport: [innerWidth, innerHeight],
+    gpuTrace,
     idle: { ms: idleMs, before: m0, after: m1 },
+    idleLate: { ms: 15000, before: m2, after: m3 },
     phases,
     summary: {
       worstP95: worst,

@@ -31,6 +31,31 @@ app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion')
 app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization')
 
 let overlay: BrowserWindow | null = null
+let hiddenForFullscreen = false
+let lastRaise = 0
+let maxLag = 0
+
+// Other topmost windows (taskbar flyouts, task switcher, video pop-outs) can end up above ours after focus changes;
+// re-assert the stacking order whenever the foreground window changes (throttled), never by polling.
+function raise() {
+  if (!overlay || overlay.isDestroyed() || hiddenForFullscreen) return
+  overlay.setAlwaysOnTop(true, 'screen-saver')
+  overlay.moveTop()
+}
+
+// Optional main-thread stall monitor (`--diag`, always on during --bench): logs gaps over 150 ms.
+function startLagMonitor() {
+  const startedAt = Date.now()
+  let last = Date.now()
+  setInterval(() => {
+    const now = Date.now()
+    const lag = now - last - 100
+    last = now
+    if (now - startedAt < 8000) return // start-up (window creation, sidecar spawn) is expected to be busy
+    if (lag > maxLag) maxLag = lag
+    if (lag > 150) log(`main loop stalled ${lag} ms`)
+  }, 100).unref()
+}
 let tray: Tray | null = null
 let stage: Stage = { width: 1200, height: 720, scale: 1, workTop: 0 }
 const sidecar = new Sidecar()
@@ -80,7 +105,8 @@ function createOverlay() {
     },
   })
   overlay.setAlwaysOnTop(true, 'screen-saver')
-  overlay.setIgnoreMouseEvents(true, { forward: true })
+  // shaped to the island by the renderer (lokey:region); start with the sleep sliver so nothing else is ever hit
+  overlay.setShape([{ x: Math.round(width / 2 - 170), y: 0, width: 340, height: 40 }])
   overlay.setMenu(null)
   overlay.on('blur', () => send({ type: 'blur' }))
   overlay.webContents.setWindowOpenHandler(({ url }) => { void shell.openExternal(url); return { action: 'deny' } })
@@ -100,10 +126,9 @@ function registerIpc() {
     await sidecar.whenReady()
     return sidecar.call(method, params)
   })
-  ipcMain.on('lokey:interactive', (_e, on: boolean) => {
-    if (!overlay) return
-    if (on) overlay.setIgnoreMouseEvents(false)
-    else overlay.setIgnoreMouseEvents(true, { forward: true })
+  ipcMain.on('lokey:region', (_e, rects: { x: number; y: number; w: number; h: number }[]) => {
+    if (!overlay || !Array.isArray(rects) || rects.length === 0) return
+    overlay.setShape(rects.slice(0, 4).map(r => ({ x: Math.max(0, Math.floor(r.x)), y: Math.max(0, Math.floor(r.y)), width: Math.max(1, Math.ceil(r.w)), height: Math.max(1, Math.ceil(r.h)) })))
   })
   ipcMain.on('lokey:focusable', (_e, on: boolean) => {
     if (!overlay) return
@@ -134,12 +159,12 @@ function registerIpc() {
     const img = await overlay.webContents.capturePage()
     writeFileSync(join(benchDir, `${name}.png`), img.toPNG())
   })
-  ipcMain.handle('lokey:bench:metrics', () => app.getAppMetrics().map(m => ({ type: m.type, pid: m.pid, cpuTimeSec: m.cpu.cumulativeCPUUsage, cpuPct: m.cpu.percentCPUUsage })))
+  ipcMain.handle('lokey:bench:metrics', () => app.getAppMetrics().map(m => ({ type: m.type, pid: m.pid, cpuTimeSec: m.cpu.cumulativeCPUUsage, cpuPct: m.cpu.percentCPUUsage, privateMb: +((m.memory.privateBytes ?? 0) / 1024).toFixed(0) })))
   ipcMain.handle('lokey:bench:finish', (_e, report) => {
     if (!benchDir) return
     mkdirSync(benchDir, { recursive: true })
     const metrics = app.getAppMetrics().map(m => ({ type: m.type, pid: m.pid, cpuPct: m.cpu.percentCPUUsage, workingSetMb: +(m.memory.workingSetSize / 1024).toFixed(1), privateMb: +((m.memory.privateBytes ?? 0) / 1024).toFixed(1) }))
-    writeFileSync(join(benchDir, 'report.json'), JSON.stringify({ ...report, sidecarEvents: eventCounts, electron: process.versions.electron, metrics }, null, 2))
+    writeFileSync(join(benchDir, 'report.json'), JSON.stringify({ ...report, maxMainLagMs: maxLag, sidecarEvents: eventCounts, electron: process.versions.electron, metrics }, null, 2))
     setTimeout(() => app.quit(), 300)
   })
 }
@@ -164,10 +189,15 @@ function wireSidecar() {
   for (const name of FWD) sidecar.onEvent(name, data => { eventCounts[name] = (eventCounts[name] ?? 0) + 1; overlay?.webContents.send('lokey:event', name, data) })
   sidecar.onEvent('hotkey.pressed', ({ id }) => { if (id === HOTKEY_ISLAND) send({ type: 'toggle-island' }) })
   sidecar.onEvent('fullscreen.changed', ({ full }) => {
-    if (!overlay) return
+    if (!overlay || overlay.isDestroyed()) return
+    hiddenForFullscreen = full
     if (full) overlay.hide()
-    else overlay.showInactive()
+    else { overlay.showInactive(); raise() }
     send({ type: 'fullscreen', full })
+  })
+  sidecar.onEvent('foreground.changed', () => {
+    const now = Date.now()
+    if (now - lastRaise > 250) { lastRaise = now; raise() }
   })
   sidecar.on('ready', () => { void registerHotkeys() })
   settings.on('changed', () => { void registerHotkeys() })
@@ -178,7 +208,9 @@ app.whenReady().then(async () => {
   settings.load()
   registerIpc()
   wireSidecar()
+  if (benchDir || argv.includes('--diag')) startLagMonitor()
   createOverlay()
+  screen.on('display-metrics-changed', () => raise())
   if (!benchDir) tray = createTray({ toggleIsland: () => send({ type: 'toggle-island' }), quit: () => app.quit() })
   if (argv.includes('--settings')) openSettings()
   const ok = await sidecar.start()

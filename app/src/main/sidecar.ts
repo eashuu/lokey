@@ -10,6 +10,9 @@ import type { EventName, Events, MethodName, Methods } from '@shared/protocol'
 const exeRelative = join('native', 'Lokey.Host', 'bin', 'Release', 'net8.0-windows10.0.22621.0', 'win-x64', 'Lokey.Host.exe')
 
 export function sidecarPath(): string | null {
+  // LOKEY_HOST_EXE: use a specific build (e.g. while the default exe is locked by a running instance)
+  const override = process.env.LOKEY_HOST_EXE
+  if (override && existsSync(override)) return override
   const candidates = [
     join(process.resourcesPath ?? '', 'host', 'Lokey.Host.exe'),            // packaged
     join(app.getAppPath(), '..', exeRelative),                                // dev: app/ -> repo root

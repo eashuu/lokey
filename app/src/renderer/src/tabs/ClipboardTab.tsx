@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ClipboardList, Settings } from 'lucide-react'
 import type { ClipItem } from '@shared/protocol'
 import { bridge } from '@/bridge'
@@ -22,15 +22,15 @@ function FilterChip({ on, onClick, children }: { on: boolean; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className={on ? undefined : 'hover:bg-[var(--fill-2)]'}
-      style={{ height: 28, padding: '0 12px', borderRadius: 14, fontSize: 12, fontWeight: 500, background: on ? 'var(--accent)' : 'transparent', color: on ? 'var(--accent-ink)' : 'var(--soft)', transition: 'background-color 140ms, color 140ms' }}
+      className={`transition duration-100 ease-linear active:scale-[.96] ${on ? '' : 'hover:bg-[var(--fill-3)]'}`}
+      style={{ height: 28, padding: '0 12px', borderRadius: 14, fontSize: 12, fontWeight: 500, background: on ? 'var(--accent)' : 'transparent', color: on ? 'var(--accent-ink)' : 'var(--soft)' }}
     >
       {children}
     </button>
   )
 }
 
-const hintLabel = { fontSize: 12, color: 'var(--muted)' } as const
+const hintLabel = { fontSize: 12, color: 'var(--soft)' } as const
 
 export function ClipboardTab() {
   const [items, setItems] = useState<ClipItem[]>([])
@@ -161,58 +161,74 @@ export function ClipboardTab() {
     if (cur) listRef.current?.querySelector(`[data-id="${cur.id}"]`)?.scrollIntoView({ block: 'nearest' })
   }, [cur?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // absolute rows: header top e+4 (h22, e += 26), row top e+1 (h36, e += 38)
+  const layout = useMemo(() => {
+    let e = 0
+    const nodes: ReactNode[] = []
+    for (const g of groups) {
+      nodes.push(<div key={`h-${g.label}`} style={{ position: 'absolute', left: 10, top: e + 4, height: 22, lineHeight: '22px', fontSize: 11, fontWeight: 500, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{g.label}</div>)
+      e += 26
+      for (const it of g.items) {
+        nodes.push(<ClipRow key={it.id} item={it} top={e + 1} sel={it.id === cur?.id} picked={picked.includes(it.id)} onSelect={select} onPaste={paste} onPin={pin} onDelete={del} />)
+        e += 38
+      }
+    }
+    return { nodes, height: e }
+  }, [groups, cur?.id, picked, select, paste, pin, del])
+
   const filter = FILTERS.find(f => f.id === kind)!
   return (
-    <div style={{ position: 'relative', width: 844, height: 376 }}>
+    <div style={{ position: 'relative', width: 844, height: 372 }}>
       <SearchInput
         value={query}
         onChange={setQuery}
         placeholder={`Search ${items.length} ${items.length === 1 ? 'item' : 'items'}…`}
         height={42}
         fontSize={14}
-        iconLeft={14}
+        iconLeft={15}
+        iconTop={12}
+        iconSize={18}
         textLeft={42}
-        rightPad={240}
+        rightPad={300}
         right={
-          <div style={{ position: 'absolute', right: 7, top: 7, display: 'flex', alignItems: 'center', gap: 2 }}>
-            {FILTERS.map(f => <FilterChip key={f.label} on={f.id === kind} onClick={() => setKind(f.id)}>{f.label}</FilterChip>)}
+          <>
+            <div style={{ position: 'absolute', right: 44, top: 7, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {FILTERS.map(f => <FilterChip key={f.label} on={f.id === kind} onClick={() => setKind(f.id)}>{f.label}</FilterChip>)}
+            </div>
             <button
               title="Settings"
               aria-label="Settings"
               onClick={() => bridge.app.openSettings()}
-              className="hover:bg-[var(--fill-2)]"
-              style={{ width: 28, height: 28, borderRadius: 14, marginLeft: 4, display: 'grid', placeItems: 'center', color: 'var(--muted)', background: 'var(--fill-1)' }}
+              className="transition duration-100 ease-linear active:scale-[.96]"
+              style={{ position: 'absolute', left: 814, top: 13, width: 16, height: 16, display: 'grid', placeItems: 'center', color: 'var(--soft)' }}
             >
-              <Settings size={13} />
+              <Settings size={16} />
             </button>
-          </div>
+          </>
         }
       />
 
-      <div ref={listRef} className="scroll-y" style={{ position: 'absolute', left: 0, top: 52, width: 372, height: 280 }}>
+      <div ref={listRef} className="scroll-y" style={{ position: 'absolute', left: 0, top: 52, width: 372, height: 280, overflowX: 'hidden' }}>
         {groups.length === 0 && (
           <div style={{ height: '100%', display: 'grid', placeItems: 'center', alignContent: 'center', justifyItems: 'center', gap: 8, color: 'var(--muted)', fontSize: 12, opacity: loaded ? 1 : 0 }}>
             <ClipboardList size={22} />
             {query.trim() ? `No matches for “${query.trim()}”` : filter.empty}
           </div>
         )}
-        {groups.map((g, n) => (
-          <div key={g.label}>
-            <div style={{ height: 20, lineHeight: '20px', padding: '0 8px', marginTop: n === 0 ? 0 : 6, fontSize: 11, fontWeight: 500, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{g.label}</div>
-            {g.items.map(it => <ClipRow key={it.id} item={it} sel={it.id === cur?.id} picked={picked.includes(it.id)} onSelect={select} onPaste={paste} onPin={pin} onDelete={del} />)}
-          </div>
-        ))}
+        <div style={{ position: 'relative', height: layout.height }}>
+          {layout.nodes}
+        </div>
       </div>
 
       <Preview item={cur} />
 
-      <div style={{ position: 'absolute', left: 0, top: 342, width: 844, height: 30, display: 'flex', alignItems: 'center', gap: 14, whiteSpace: 'nowrap' }}>
+      <div style={{ position: 'absolute', left: 0, top: 342, width: 844, height: 30, display: 'flex', alignItems: 'center', gap: 12, paddingLeft: 4, whiteSpace: 'pre' }}>
         <span style={{ display: 'flex', alignItems: 'center' }}><Kbd>↵</Kbd><span style={hintLabel}>Paste</span></span>
         <span style={{ display: 'flex', alignItems: 'center' }}><Kbd>Ctrl C</Kbd><span style={hintLabel}>Copy</span></span>
         <span style={{ display: 'flex', alignItems: 'center' }}><Kbd>Ctrl P</Kbd><span style={hintLabel}>Pin</span></span>
         <span style={{ display: 'flex', alignItems: 'center' }}><Kbd>Del</Kbd><span style={hintLabel}>Remove</span></span>
-        <button onClick={clear} style={{ ...hintLabel, color: confirm ? 'var(--bad)' : 'var(--muted)', transition: 'color 140ms' }}>{confirm ? 'Clear all?' : 'Clear'}</button>
-        <span style={{ ...hintLabel, marginLeft: 'auto' }}>↑↓ Move · Ctrl/Shift pick several · Tab Filter</span>
+        <button onClick={clear} className="transition duration-100 ease-linear active:scale-[.96]" style={{ ...hintLabel, color: confirm ? 'var(--bad)' : 'var(--soft)' }}>{confirm ? 'Clear all?' : 'Clear'}</button>
+        <span style={{ ...hintLabel, color: 'var(--muted)', marginLeft: 'auto' }}>↑↓ Move  ·  Ctrl/Shift pick several  ·  Tab Filter</span>
       </div>
     </div>
   )

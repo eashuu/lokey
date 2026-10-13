@@ -26,7 +26,7 @@ export function AppIcon({ id, name }: { id: string; name: string }) {
 
   const h = hue(name)
   return (
-    <div ref={ref} style={{ position: 'absolute', left: 10, top: 7, width: 28, height: 28, borderRadius: 8, overflow: 'hidden', display: 'grid', placeItems: 'center', background: icon ? 'rgba(255,255,255,.102)' : `hsl(${h} 30% 24%)`, color: `hsl(${h} 65% 78%)`, fontSize: 13, fontWeight: 600 }}>
+    <div ref={ref} style={{ position: 'absolute', left: 10, top: 7, width: 28, height: 28, borderRadius: 8, overflow: 'hidden', display: 'grid', placeItems: 'center', background: icon ? 'rgba(255,255,255,.102)' : `hsl(${h} 30% 24%)`, color: `hsl(${h} 65% 78%)`, fontSize: 13, fontWeight: 500 }}>
       {icon ? <img src={icon} alt="" draggable={false} style={{ width: 20, height: 20, objectFit: 'contain' }} /> : (name.trim()[0] ?? '?').toUpperCase()}
     </div>
   )

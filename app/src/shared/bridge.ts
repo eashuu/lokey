@@ -63,8 +63,8 @@ export interface Bridge {
   call<M extends MethodName>(method: M, params: Methods[M][0]): Promise<Methods[M][1]>
   on<E extends EventName>(event: E, cb: (data: Events[E]) => void): () => void
 
-  /** Click-through control. `true` while the pointer is over an interactive element. */
-  setInteractive(on: boolean): void
+  /** Shapes the overlay window to these rectangles (overlay CSS px); everything outside is click-through by construction. */
+  setRegion(rects: { x: number; y: number; w: number; h: number }[]): void
   /** Ask for keyboard focus (launcher-style input). The overlay is non-focusable otherwise. */
   setFocusable(on: boolean): void
 

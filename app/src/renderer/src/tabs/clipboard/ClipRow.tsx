@@ -25,6 +25,7 @@ function Act({ title, on, onClick, children }: { title: string; on?: boolean; on
       title={title}
       aria-label={title}
       onClick={e => { e.stopPropagation(); onClick() }}
+      className="transition duration-100 ease-linear active:scale-[.96]"
       style={{ width: 22, height: 22, borderRadius: 7, display: 'grid', placeItems: 'center', background: 'var(--fill-2)', color: on ? 'var(--accent)' : 'var(--soft)' }}
     >
       {children}
@@ -32,8 +33,9 @@ function Act({ title, on, onClick, children }: { title: string; on?: boolean; on
   )
 }
 
-export const ClipRow = memo(function ClipRow({ item, sel, picked, onSelect, onPaste, onPin, onDelete }: {
+export const ClipRow = memo(function ClipRow({ item, top, sel, picked, onSelect, onPaste, onPin, onDelete }: {
   item: ClipItem
+  top: number
   sel: boolean
   picked: boolean
   onSelect: (id: string, multi: boolean) => void
@@ -45,15 +47,15 @@ export const ClipRow = memo(function ClipRow({ item, sel, picked, onSelect, onPa
   return (
     <div
       data-id={item.id}
-      className="group hover:bg-[var(--fill-2)]"
+      className="group hover:bg-[var(--fill-2)] transition-colors duration-100 ease-linear"
       onClick={e => onSelect(item.id, e.ctrlKey || e.metaKey || e.shiftKey)}
       onDoubleClick={() => onPaste(item.id)}
-      style={{ position: 'relative', height: 36, borderRadius: 10, cursor: 'pointer', background: sel ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : picked ? 'color-mix(in srgb, var(--accent) 11%, transparent)' : undefined }}
+      style={{ position: 'absolute', left: 0, top, width: 366, height: 36, borderRadius: 10, cursor: 'pointer', background: sel ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : picked ? 'color-mix(in srgb, var(--accent) 11%, transparent)' : undefined }}
     >
       <span style={{ position: 'absolute', left: 8, top: 5, width: 26, height: 26, borderRadius: 7, display: 'grid', placeItems: 'center', background: sel ? 'color-mix(in srgb, var(--accent) 28%, transparent)' : 'rgba(255,255,255,.07)', color: sel ? 'var(--accent)' : 'var(--muted)' }}>
-        <Icon size={13} />
+        <Icon size={16} />
       </span>
-      <span style={{ position: 'absolute', left: 44, right: 64, top: 0, height: 36, lineHeight: '36px', fontSize: 13, fontWeight: sel ? 500 : 400, color: sel ? 'var(--text)' : '#D3D9E3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <span style={{ position: 'absolute', left: 44, right: 52, top: 0, height: 36, lineHeight: '36px', fontSize: 13, fontWeight: sel ? 500 : 400, color: sel ? 'var(--text)' : '#D3D9E3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {clipTitle(item)}
       </span>
       <span className="group-hover:opacity-0" style={{ position: 'absolute', right: 8, top: 0, height: 36, lineHeight: '36px', fontSize: 11, color: 'var(--muted)' }}>{short(item.at)}</span>

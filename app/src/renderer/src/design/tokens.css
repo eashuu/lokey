@@ -4,6 +4,12 @@
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
 
+@property --accent { syntax: "<color>"; inherits: true; initial-value: #d9b556; }
+@property --accent-ink { syntax: "<color>"; inherits: true; initial-value: #1b1405; }
+@property --chest { syntax: "<color>"; inherits: true; initial-value: #d3a6ed; }
+@property --done { syntax: "<color>"; inherits: true; initial-value: #a3c97d; }
+@property --panel { syntax: "<color>"; inherits: true; initial-value: #07090d; }
+
 @theme {
   --font-sans: "Inter Variable", "Segoe UI Variable Text", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -38,6 +44,9 @@
   --accent-soft: rgba(217, 181, 86, 0.16);
   --font-island: "Rubik Variable", Rubik, "Segoe UI Variable Text", system-ui, sans-serif;
   --panel: #07090d;
+  --chest: #d3a6ed;
+  --done: #a3c97d;
+  --ember: #ffbfb1;
   --soft: #a3aab8;
   --fill-0: rgba(255, 255, 255, 0.047);
   --fill-1: rgba(255, 255, 255, 0.063);
@@ -141,3 +150,5 @@ input.field:focus { border-color: var(--accent); }
 /* tab bar (island menu) */
 .tab-btn { color: #8c8791; background: transparent; transition: color 160ms linear, background-color 160ms linear; }
 .tab-btn[data-on="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+
+:root { transition: --accent 0.8s ease, --accent-ink 0.8s ease, --chest 0.8s ease, --done 0.8s ease, --panel 0.8s ease; }

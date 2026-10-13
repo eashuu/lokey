@@ -52,6 +52,13 @@ internal static class SelfTest
         await T("media.get");
         await T("audio.get");
         await T("system.get");
+        // read-only radio/device queries (no connect/pair/setDefault/toggle here)
+        await T("wifi.get");
+        await T("wifi.scan");
+        await T("bt.get");
+        await T("bt.devices");
+        await T("bt.discover", """{"seconds":2}""");
+        await T("audio.devices");
         await T("foreground.get");
         await T("desktops.get");
         await T("hotkey.unregisterAll");
@@ -109,6 +116,9 @@ internal static class SelfTest
         FileHit[] f => $"{f.Length} hits",
         IconResult i => i.Icon is null ? "icon: null" : $"icon: data url {i.Icon.Length} chars",
         ThumbResult t => t.Thumb is null ? "thumb: null" : $"thumb: data url {t.Thumb.Length} chars",
+        WifiNetwork[] w => $"{w.Length} networks",
+        BtDevice[] b => $"{b.Length} devices ({b.Count(x => x.Connected)} connected)",
+        AudioDevice[] ad => $"{ad.Count(x => x.Kind == "output")} outputs, {ad.Count(x => x.Kind == "input")} inputs",
         MediaState m => $"hasSession={m.HasSession} playing={m.Playing} sessions={m.Sessions.Length} app='{m.App}'",
         _ => Trim(DataUrl.Replace(JsonSerializer.Serialize(r, Json.O), m => $"\"<data url {m.Length} chars>\"")),
     };

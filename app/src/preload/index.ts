@@ -19,7 +19,7 @@ const bridge: Bridge = {
     set.add(cb as (d: unknown) => void)
     return () => { set!.delete(cb as (d: unknown) => void) }
   },
-  setInteractive: on => ipcRenderer.send('lokey:interactive', on),
+  setRegion: rects => ipcRenderer.send('lokey:region', rects),
   setFocusable: on => ipcRenderer.send('lokey:focusable', on),
   stage: () => ipcRenderer.invoke('lokey:stage'),
   settings: {

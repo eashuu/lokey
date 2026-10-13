@@ -87,6 +87,33 @@ export function createMockBridge(): Bridge {
     'system.get': () => system,
     'system.setKeepAwake': ({ on }) => { system.keepAwake = on; emit('system.changed', { ...system }); return {} },
     'system.setDarkMode': ({ on }) => { system.darkMode = on; emit('system.changed', { ...system }); return {} },
+    'wifi.get': () => ({ available: true, on: true, connected: { ssid: 'HomeNet-5G', signal: 82 }, accessDenied: false }),
+    'wifi.scan': () => [
+      { ssid: 'HomeNet-5G', signal: 82, secured: true, connected: true, known: true },
+      { ssid: 'Neighbour-2.4', signal: 61, secured: true, connected: false, known: false },
+      { ssid: 'CafeGuest', signal: 44, secured: false, connected: false, known: false },
+      { ssid: 'Office-WiFi', signal: 30, secured: true, connected: false, known: true },
+    ],
+    'wifi.setOn': () => ({}),
+    'wifi.connect': () => ({ ok: true }),
+    'wifi.disconnect': () => ({}),
+    'bt.get': () => ({ available: true, on: true }),
+    'bt.devices': () => [
+      { id: 'b1', name: 'WH-1000XM5', kind: 'audio' as const, paired: true, connected: true, battery: 74 },
+      { id: 'b2', name: 'Keyboard K380', kind: 'input' as const, paired: true, connected: false, battery: null },
+      { id: 'b3', name: 'Pixel 8', kind: 'phone' as const, paired: true, connected: false, battery: null },
+    ],
+    'bt.discover': () => [{ id: 'b9', name: 'JBL Flip 6', kind: 'audio' as const, paired: false, connected: false, battery: null }],
+    'bt.pair': () => ({ ok: true }),
+    'bt.forget': () => ({}),
+    'bt.connect': () => ({ ok: true }),
+    'bt.disconnect': () => ({ ok: true }),
+    'audio.devices': () => [
+      { id: 'a1', name: 'Speakers (Realtek)', kind: 'output' as const, isDefault: true },
+      { id: 'a2', name: 'Headphones (WH-1000XM5)', kind: 'output' as const, isDefault: false },
+      { id: 'a3', name: 'Microphone (Realtek)', kind: 'input' as const, isDefault: true },
+    ],
+    'audio.setDefault': () => ({}),
     'system.setBrightness': ({ level }) => { system.brightness = level; emit('system.changed', { ...system }); return {} },
     'system.setBluetooth': ({ on }) => { system.bluetooth.on = on; emit('system.changed', { ...system }); return {} },
     'apps.list': () => apps,
@@ -119,7 +146,7 @@ export function createMockBridge(): Bridge {
       set.add(cb as (d: unknown) => void)
       return () => { set!.delete(cb as (d: unknown) => void) }
     },
-    setInteractive() {},
+    setRegion() {},
     setFocusable() {},
     stage: async () => ({ width: innerWidth, height: innerHeight, scale: devicePixelRatio, workTop: 0 }),
     settings: {

@@ -14,6 +14,8 @@ internal static class Boot
         Hotkeys.Register();
         Media.Register();
         Audio.Register();
+        Wifi.Register();
+        Bluetooth.Register();
         Stats.Register();
         Status.Register();
         SystemControls.Register();

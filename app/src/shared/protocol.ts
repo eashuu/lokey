@@ -87,6 +87,17 @@ export interface DesktopsState { count: number; current: number; occupied: boole
 
 export interface ForegroundInfo { title: string; exe: string; pid: number }
 
+export interface WifiNetwork { ssid: string; signal: number; secured: boolean; connected: boolean; known: boolean }   // signal 0..100
+export interface WifiState {
+  available: boolean            // a Wi-Fi adapter exists
+  on: boolean                   // its radio is on
+  connected: { ssid: string; signal: number } | null
+  accessDenied: boolean         // Windows blocked scanning (Location services off)
+}
+export interface BtDevice { id: string; name: string; kind: 'audio' | 'input' | 'phone' | 'computer' | 'other'; paired: boolean; connected: boolean; battery: number | null }
+export interface BtState { available: boolean; on: boolean }
+export interface AudioDevice { id: string; name: string; kind: 'output' | 'input'; isDefault: boolean }
+
 export type PowerAction = 'lock' | 'sleep' | 'hibernate' | 'signout' | 'restart' | 'shutdown'
 
 // ---- request methods: name -> [params, result] -----------------------------------------------
@@ -117,6 +128,20 @@ export interface Methods {
   'system.setBrightness': [{ level: number }, {}]
   'system.setKeepAwake': [{ on: boolean }, {}]
   'system.setDarkMode': [{ on: boolean }, {}]
+  'wifi.get': [{}, WifiState]
+  'wifi.scan': [{}, WifiNetwork[]]                                        // active scan, sorted: connected first, then by signal
+  'wifi.setOn': [{ on: boolean }, {}]
+  'wifi.connect': [{ ssid: string; password?: string }, { ok: boolean; reason?: string }]
+  'wifi.disconnect': [{}, {}]
+  'bt.get': [{}, BtState]
+  'bt.devices': [{}, BtDevice[]]                                          // paired devices with connection state
+  'bt.discover': [{ seconds: number }, BtDevice[]]                         // nearby unpaired devices (blocks for `seconds`)
+  'bt.pair': [{ id: string }, { ok: boolean; reason?: string }]
+  'bt.forget': [{ id: string }, {}]
+  'bt.connect': [{ id: string }, { ok: boolean; reason?: string }]
+  'bt.disconnect': [{ id: string }, { ok: boolean; reason?: string }]
+  'audio.devices': [{}, AudioDevice[]]
+  'audio.setDefault': [{ id: string }, {}]
   'system.setBluetooth': [{ on: boolean }, {}]
   'system.openSettings': [{ page: 'network' | 'bluetooth' | 'sound' | 'display' | 'main' }, {}]
 
@@ -163,6 +188,9 @@ export interface Events {
   'system.changed': SystemStatus
   'clipboard.changed': { item: ClipItem }
   'desktops.changed': DesktopsState
+  'wifi.changed': WifiState
+  'bt.changed': {}                                  // re-fetch bt.get / bt.devices
+  'audio.devices.changed': {}                       // re-fetch audio.devices
   'apps.changed': {}                                // installed-apps list changed, re-fetch
 }
 

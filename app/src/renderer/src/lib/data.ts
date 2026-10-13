@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { create } from 'zustand'
 import type { Settings } from '@shared/bridge'
 import { defaultSettings } from '@shared/bridge'
-import type { AudioState, DesktopsState, MediaState, StatsTick, SystemStatus, UserInfo } from '@shared/protocol'
+import type { AudioState, DesktopsState, MediaState, StatsTick, SystemStatus, UserInfo, WifiState } from '@shared/protocol'
 import { bridge } from '@/bridge'
 
 interface Data {
@@ -12,6 +12,7 @@ interface Data {
   system: SystemStatus | null
   user: UserInfo | null
   desktops: DesktopsState | null
+  wifi: WifiState | null
   stats: StatsTick | null
   bands: number[]
   wallpaper: string | null
@@ -19,7 +20,7 @@ interface Data {
 }
 
 export const useData = create<Data>(() => ({
-  settings: defaultSettings, media: null, audio: null, system: null, user: null, desktops: null,
+  settings: defaultSettings, media: null, audio: null, system: null, user: null, desktops: null, wifi: null,
   stats: null, bands: [], wallpaper: null, fullscreen: false,
 }))
 
@@ -42,6 +43,8 @@ export async function initData() {
   bridge.on('audio.changed', audio => set({ audio }))
   bridge.on('system.changed', system => set({ system }))
   bridge.on('desktops.changed', desktops => set({ desktops }))
+  void bridge.call('wifi.get', {}).then(wifi => set({ wifi })).catch(() => undefined)
+  bridge.on('wifi.changed', wifi => set({ wifi }))
   bridge.on('wallpaper.changed', e => set({ wallpaper: e.path }))
   bridge.on('stats.tick', stats => set({ stats }))
   bridge.on('audio.bands', e => set({ bands: e.bands }))

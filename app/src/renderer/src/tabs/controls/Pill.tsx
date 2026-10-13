@@ -25,15 +25,16 @@ export function Pill({ value, onChange, onCommit, label, icon, onIcon, iconLabel
       onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit?.(at(e)) }}
       style={{ position: 'relative', width: W, height: 38, borderRadius: 19, background: 'var(--fill-1)', overflow: 'hidden', touchAction: 'none', cursor: 'pointer' }}
     >
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${value * 100}%`, borderRadius: 19, background: 'var(--accent)', opacity: dim ? 0.5 : 1, transition: 'opacity .14s linear' }} />
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: Math.max(50, value * W), borderRadius: 19, background: 'var(--accent)', opacity: dim ? 0.5 : 1, transition: 'opacity .14s linear' }} />
       <button
         aria-label={iconLabel}
         disabled={!onIcon}
         onPointerDown={e => e.stopPropagation()}
         onClick={onIcon}
-        style={{ position: 'absolute', left: 8, top: 4, width: 30, height: 30, borderRadius: 15, display: 'grid', placeItems: 'center', cursor: onIcon ? 'pointer' : 'default', ...ink(46) }}
+        className="hover:brightness-[1.15] active:scale-[0.94]"
+        style={{ position: 'absolute', left: 8, top: 4, width: 32, height: 30, borderRadius: 15, cursor: onIcon ? 'pointer' : 'default', color: 'var(--accent-ink)', transition: 'filter .1s linear, transform .1s linear' }}
       >
-        {icon}
+        <span style={{ position: 'absolute', left: 8, top: 7, width: 16, height: 16, display: 'grid', placeItems: 'center' }}>{icon}</span>
       </button>
       <span style={{ position: 'absolute', right: 16, top: 0, height: 38, lineHeight: '38px', fontSize: 12, fontWeight: 500, fontVariantNumeric: 'tabular-nums', pointerEvents: 'none', ...ink(W - 52) }}>{text}</span>
     </div>

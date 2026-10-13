@@ -94,25 +94,73 @@ internal static class Foreground
     }
 
     // ---- fullscreen: emit only on transitions ----
+    // A fullscreen *start* must hold for 350 ms before it is reported, so transient shell surfaces (Alt+Tab, Win+Tab,
+    // Start, Search, snipping overlays) that cover the monitor for a moment never hide the island. The end is instant.
+    static Timer? _confirm;
+
     public static void CheckFullscreen() => CheckFullscreen(W.GetForegroundWindow());
 
     static void CheckFullscreen(IntPtr hwnd)
     {
         bool now = IsRealFullscreen(hwnd);
-        lock (FL)
+        if (!now)
         {
-            if (now == _full) return;
-            _full = now;
+            _confirm?.Dispose();
+            _confirm = null;
+            lock (FL) { if (!_full) return; _full = false; }
+            Events.Emit("fullscreen.changed", new FullEvent(false));
+            return;
         }
-        Events.Emit("fullscreen.changed", new FullEvent(now));
+        lock (FL) { if (_full) return; }
+        _confirm?.Dispose();
+        _confirm = new Timer(_ =>
+        {
+            bool still = IsRealFullscreen(W.GetForegroundWindow());
+            if (!still) return;
+            lock (FL) { if (_full) return; _full = true; }
+            Events.Emit("fullscreen.changed", new FullEvent(true));
+        }, null, 350, Timeout.Infinite);
     }
 
-    /// <summary>True only when a normal app window covers its whole monitor. Never for the desktop, the taskbar, or our own/Electron windows.</summary>
+    // Shell and transient surfaces that cover a monitor without being a fullscreen app.
+    static readonly HashSet<string> ShellClasses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "XamlExplorerHostIslandWindow", "MultitaskingViewFrame",
+        "TaskSwitcherWnd", "TaskSwitcherOverlayWnd", "ForegroundStaging", "LockApp", "ApplicationManager_DesktopShellWindow",
+        "NotifyIconOverflowWindow", "TopLevelWindowForOverflowXamlIsland", "Windows.UI.Core.CoreWindow", "ImmersiveLauncher",
+    };
+    static readonly HashSet<string> ShellExes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "explorer.exe", "SearchHost.exe", "StartMenuExperienceHost.exe", "ShellExperienceHost.exe", "LockApp.exe", "ScreenClippingHost.exe",
+        "SnippingTool.exe", "TextInputHost.exe", "dwm.exe", "LogonUI.exe",
+    };
+    static readonly Dictionary<uint, string> ExeCache = new();
+
+    [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr h);
+    const int GWL_STYLE = -16;
+    const int WS_CAPTION = 0x00C00000;
+
+    static string ExeOf(IntPtr hwnd)
+    {
+        W.GetWindowThreadProcessId(hwnd, out var pid);
+        lock (ExeCache)
+        {
+            if (ExeCache.TryGetValue(pid, out var e)) return e;
+            if (ExeCache.Count > 256) ExeCache.Clear();
+            var path = W.ExePath(pid);
+            return ExeCache[pid] = path.Length == 0 ? "" : System.IO.Path.GetFileName(path);
+        }
+    }
+
+    /// <summary>True only when a normal app window covers its whole monitor. Never for the desktop, shell surfaces, maximised captioned windows, or our own/Electron windows.</summary>
     public static bool IsRealFullscreen(IntPtr hwnd)
     {
         if (hwnd == IntPtr.Zero || !W.IsWindowVisible(hwnd)) return false;
         if (IsOwn(hwnd)) return false;
-        if (W.ClassOf(hwnd) is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd") return false;
+        if (ShellClasses.Contains(W.ClassOf(hwnd))) return false;
+        if (ShellExes.Contains(ExeOf(hwnd))) return false;
+        // a maximised normal window (with a title bar) is not fullscreen, even when the taskbar auto-hides
+        if (IsZoomed(hwnd) && (W.GetWindowLong(hwnd, GWL_STYLE) & WS_CAPTION) == WS_CAPTION) return false;
         if (W.DwmGetWindowAttribute(hwnd, 9 /* DWMWA_EXTENDED_FRAME_BOUNDS */, out var r, Marshal.SizeOf<W.RECT>()) != 0) return false;
         var mi = new W.MONITORINFO { cbSize = Marshal.SizeOf<W.MONITORINFO>() };
         if (!W.GetMonitorInfo(W.MonitorFromWindow(hwnd, 2 /* NEAREST */), ref mi)) return false;

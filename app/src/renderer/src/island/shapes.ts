@@ -2,7 +2,8 @@ import type { TabId } from '@shared/bridge'
 import type { ShapeParams } from './shapePath'
 
 export type Shape = 'sleep' | 'awake' | 'held' | 'menu'
-export type View = 'music' | TabId
+export type Flyout = 'wifi' | 'bluetooth' | 'audio'
+export type View = 'music' | TabId | Flyout
 
 /** Menu content size in design pixels (the content is laid out at this size, then scaled by `menuK`). */
 export const MENU_SIZE: Record<View, { w: number; h: number }> = {
@@ -14,6 +15,9 @@ export const MENU_SIZE: Record<View, { w: number; h: number }> = {
   apps: { w: 720, h: 638 },
   wallpaper: { w: 1040, h: 314 },
   power: { w: 640, h: 166 },
+  wifi: { w: 400, h: 440 },
+  bluetooth: { w: 400, h: 440 },
+  audio: { w: 400, h: 330 },
 }
 
 // Notch shapes in design pixels (before the user's size multiplier).
