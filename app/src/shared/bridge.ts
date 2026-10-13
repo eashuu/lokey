@@ -43,6 +43,8 @@ export interface Settings {
   }
   focusTimerMinutes: number
   startWithWindows: boolean
+  /** settings upgrade level applied so far (see SettingsStore.load) */
+  migrated: number
 }
 
 export const defaultSettings: Settings = {
@@ -76,6 +78,7 @@ export const defaultSettings: Settings = {
   },
   focusTimerMinutes: 25,
   startWithWindows: false,
+  migrated: 0,
 }
 
 /** Where the overlay window sits, in CSS pixels of the overlay itself (so the renderer lays out against it). */

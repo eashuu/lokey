@@ -21,6 +21,13 @@ class SettingsStore extends EventEmitter {
 
   load() {
     try { this.value = merge(defaultSettings, JSON.parse(readFileSync(file, 'utf8'))) } catch { this.value = structuredClone(defaultSettings) }
+    // one-time upgrade: the new default spirit (puffball) and "follow Windows" theme replace values saved by older builds
+    if ((this.value.migrated ?? 0) < 1) {
+      this.value.loadout.soul = 'puff'
+      this.value.appearance.theme = 'auto'
+      this.value.migrated = 1
+      try { mkdirSync(dataDir, { recursive: true }); writeFileSync(file, JSON.stringify(this.value, null, 2)) } catch { /* in-memory only */ }
+    }
     return this.value
   }
 
