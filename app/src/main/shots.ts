@@ -16,7 +16,16 @@ export async function runShots(win: BrowserWindow, dir: string, done: () => void
   const open = (view: string) => js(`window.__island.getState().openMenu(${JSON.stringify(view)}, 'hover')`)
   const closeMenu = () => js('window.__island.getState().closeMenu()')
   const theme = (t: 'dark' | 'light') => js(`window.__demoBridge.settings.set({ appearance: { theme: ${JSON.stringify(t)} } })`)
-  const tab = async (name: string, view: string, wait = 1100) => { await open(view); await sleep(wait); await still(name) }
+  // opens the view and only takes the picture once the island really is that menu (retries if a transition swallowed the call)
+  const tab = async (name: string, view: string, wait = 1100) => {
+    for (let i = 0; i < 4; i++) {
+      await open(view)
+      await sleep(wait + i * 400)
+      const st = await js<{ shape: string; view: string }>('(() => { const s = window.__island.getState(); return { shape: s.shape, view: s.view } })()')
+      if (st.shape === 'menu' && st.view === view) break
+    }
+    await still(name)
+  }
 
   /** captures as fast as the machine allows while `script` runs; writes frames + an ffconcat file with real timings */
   async function record(name: string, script: () => Promise<void>) {

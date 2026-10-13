@@ -23,12 +23,18 @@ async function getJson(url: string): Promise<any> {
   } catch { return null } finally { clearTimeout(t) }
 }
 
+/** README art and demos use fixed fake data: never look up (or show) the real location. */
+const DEMO: Weather = { temp: 24, code: 2, isDay: true, city: 'Sampletown' }
+const isDemo = () => !!window.lokeyFlags?.demo
+
 export function cachedWeather(): Weather | null {
+  if (isDemo()) return DEMO
   const c = read<Weather>(WX_KEY)
   return c && Date.now() - c.at < WX_TTL ? c.v : null
 }
 
 async function fetchWeather(): Promise<Weather | null> {
+  if (isDemo()) return DEMO
   let geo = read<Geo>(GEO_KEY)
   if (!geo || Date.now() - geo.at > GEO_TTL) {
     const j = await getJson('https://ipwho.is/')

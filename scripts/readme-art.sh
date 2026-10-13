@@ -20,6 +20,9 @@ dark_bg()  { ffmpeg -v error -y -f lavfi -i "gradients=s=${1}x${2}:c0=0x101a38:c
 light_bg() { ffmpeg -v error -y -f lavfi -i "gradients=s=${1}x${2}:c0=0xcfe3ff:c1=0xe6d9ff:c2=0xffdbe6:x0=0:y0=0:x1=$1:y1=$2:n=3:d=1" -frames:v 1 -update 1 "$3"; }
 probe() { ffprobe -v error -select_streams v -show_entries "stream=$1" -of csv=p=0 "$2"; }
 
+# height of the island's opaque content in a capture (from its alpha channel)
+content_h() { ffmpeg -v info -i "$1" -vf "alphaextract,format=gray,cropdetect=limit=30:round=2:skip=0" -frames:v 2 -f null - 2>&1 | grep -o 'y2:[0-9]*' | tail -1 | cut -d: -f2; }
+
 shots() {
   rm -rf "$TMP/shots"
   electron --shots "$(win "$TMP/shots")"
@@ -33,10 +36,12 @@ stills() {
   dark_bg "$w" "$h" "$TMP/bg-dark.png"; light_bg "$w" "$h" "$TMP/bg-light.png"
   x=$(( (w - 1040) / 2 ))
   for n in controls today stats clipboard apps wallpaper power music wifi bluetooth audio; do
-    ffmpeg -v error -y -i "$TMP/bg-dark.png" -i "$TMP/shots/$n.png" -filter_complex "[0][1]overlay=0:0,crop=1040:720:$x:0" -frames:v 1 -update 1 "$OUT/screenshots/$n.png"
+    ch=$(( $(content_h "$TMP/shots/$n.png") + 64 ))
+    ffmpeg -v error -y -i "$TMP/bg-dark.png" -i "$TMP/shots/$n.png" -filter_complex "[0][1]overlay=0:0,crop=1040:$ch:$x:0" -frames:v 1 -update 1 "$OUT/screenshots/$n.png"
   done
   for n in light-controls light-today light-clipboard light-apps; do
-    ffmpeg -v error -y -i "$TMP/bg-light.png" -i "$TMP/shots/$n.png" -filter_complex "[0][1]overlay=0:0,crop=1040:720:$x:0" -frames:v 1 -update 1 "$OUT/screenshots/$n.png"
+    ch=$(( $(content_h "$TMP/shots/$n.png") + 64 ))
+    ffmpeg -v error -y -i "$TMP/bg-light.png" -i "$TMP/shots/$n.png" -filter_complex "[0][1]overlay=0:0,crop=1040:$ch:$x:0" -frames:v 1 -update 1 "$OUT/screenshots/$n.png"
   done
   for n in sleep awake; do
     ffmpeg -v error -y -i "$TMP/bg-dark.png" -i "$TMP/shots/$n.png" -filter_complex "[0][1]overlay=0:0,crop=520:150:$(( (w - 520) / 2 )):0" -frames:v 1 -update 1 "$OUT/screenshots/notch-$n.png"

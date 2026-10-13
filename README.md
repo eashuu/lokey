@@ -14,11 +14,11 @@
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![.NET](https://img.shields.io/badge/.NET-8-512bd4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com)
-[![WebGL2](https://img.shields.io/badge/WebGL2-raymarched%20spirit-990000?logo=webgl&logoColor=white)](#-the-spirit)
+[![WebGL2](https://img.shields.io/badge/WebGL2-raymarched%20spirit-990000?logo=webgl&logoColor=white)](#spirit)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-4cd27a)](CONTRIBUTING.md)
 [![Stars](https://img.shields.io/github/stars/eashuu/lokey?style=social)](https://github.com/eashuu/lokey/stargazers)
 
-**[Install](#install)** &nbsp;·&nbsp; **[Features](#-features)** &nbsp;·&nbsp; **[Voice](#-voice-assistant)** &nbsp;·&nbsp; **[Spirit](#-the-spirit)** &nbsp;·&nbsp; **[Shortcuts](#-keyboard-shortcuts)** &nbsp;·&nbsp; **[Build](#-build-from-source)** &nbsp;·&nbsp; **[Architecture](#-architecture)** &nbsp;·&nbsp; **[Roadmap](#-roadmap)**
+**[Install](#install)** &nbsp;·&nbsp; **[Features](#features)** &nbsp;·&nbsp; **[Voice](#voice)** &nbsp;·&nbsp; **[Spirit](#spirit)** &nbsp;·&nbsp; **[Shortcuts](#shortcuts)** &nbsp;·&nbsp; **[Build](#build)** &nbsp;·&nbsp; **[Architecture](#architecture)** &nbsp;·&nbsp; **[Roadmap](#roadmap)**
 
 <br>
 
@@ -35,9 +35,11 @@
 It is also a **voice assistant**. Hold a key and talk: lokey opens apps and sites, searches, schedules things for later, dictates cleaned-up text into any text field, and answers questions about whatever you circle on screen. Your assistant has a face: a round, bouncy 3D **spirit** that listens, thinks, talks, jumps, sits down and falls asleep.
 
 > [!NOTE]
-> lokey is a young open-source project (working name, version 0.1). The island and its tabs are daily-driver quality; the voice features need your own free Google AI Studio key and are still being hardened. See [Status](#-status-and-known-limits) for what is and is not verified.
+> lokey is a young open-source project (working name, version 0.1). The island and its tabs are daily-driver quality; the voice features need your own free Google AI Studio key and are still being hardened. See [Status](#status) for what is and is not verified.
 
 <br>
+
+<a id="features"></a>
 
 ## ✨ Features
 
@@ -60,6 +62,8 @@ It is also a **voice assistant**. Hold a key and talk: lokey opens apps and site
 | ⚙️ | **Everything configurable** | Per-tab global hotkeys, trigger mode, size, animation speed, skins, personalities. |
 
 <br>
+
+<a id="screenshots"></a>
 
 ## 🖼️ Screenshots
 
@@ -101,6 +105,8 @@ The island adapts to its content. Dark theme on a dark wallpaper:
 
 <br>
 
+<a id="voice"></a>
+
 ## 🎙️ Voice assistant
 
 Everything below needs a **free Google AI Studio key** (paste it in *Settings → Voice*). It is stored encrypted on your PC and only ever sent to Google.
@@ -125,6 +131,8 @@ Everything below needs a **free Google AI Studio key** (paste it in *Settings �
 
 <br>
 
+<a id="spirit"></a>
+
 ## 🫧 The spirit
 
 The island's face is a 3D character drawn by a small WebGL2 raymarcher: no models, no textures, no dependencies. A spring-driven rig, a behaviour brain and 14 floating emote reactions make it feel alive: it looks at your pointer, blinks, fidgets, sits down when you are away, and lies down to sleep.
@@ -141,6 +149,8 @@ The island's face is a 3D character drawn by a small WebGL2 raymarcher: no model
 <sub>Every state and action, rendered by `lokey --lab`: idle, asleep, listening, thinking, talking, writing, looking, humming, wave, nod, shrug, celebrate, cheer, point, search, sad, startled, love, nervous, peek, spin, stretch, curious, look around, bounce, yawn, alert, inhale, waddle, roll, belly bounce, jump, stand tall, sit, lie down and crouch. Open *Open lokey → Soul* to preview them all.</sub>
 
 <br>
+
+<a id="install"></a>
 
 ## 📥 Install
 
@@ -168,9 +178,11 @@ The island's face is a 3D character drawn by a small WebGL2 raymarcher: no model
 
 ### Option 2: build it yourself
 
-See [Build from source](#-build-from-source). It takes about five minutes.
+See [Build from source](#build). It takes about five minutes.
 
 <br>
+
+<a id="shortcuts"></a>
 
 ## ⌨️ Keyboard shortcuts
 
@@ -189,6 +201,8 @@ Every shortcut can be changed (or cleared) in *Settings → Shortcuts*, which al
 In the island: scroll down on the bar for the music island, scroll again for the menu; <kbd>↑</kbd><kbd>↓</kbd> move in lists, <kbd>Enter</kbd> acts, <kbd>Tab</kbd> cycles clipboard filters.
 
 <br>
+
+<a id="build"></a>
 
 ## 🛠️ Build from source
 
@@ -232,6 +246,8 @@ pnpm dev            # runs the app with hot reload
 More in **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** and **[docs/TESTING.md](docs/TESTING.md)**.
 
 <br>
+
+<a id="architecture"></a>
 
 ## 🧱 Architecture
 
@@ -281,6 +297,8 @@ Deep dive: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
 <br>
 
+<a id="privacy"></a>
+
 ## 🔒 Privacy and security
 
 - **No telemetry, no accounts, no cloud service of ours.** The only network traffic is what you enable: Gemini (voice features, with *your* key), weather in the Today tab (Open-Meteo, with an IP-based location lookup) and the speed test in the Stats tab (Cloudflare).
@@ -291,6 +309,8 @@ Deep dive: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 - Found a vulnerability? See **[SECURITY.md](SECURITY.md)**.
 
 <br>
+
+<a id="status"></a>
 
 ## 🚧 Status and known limits
 
@@ -309,6 +329,8 @@ A prioritised bug and risk list from a full code review lives in **[docs/REVIEW-
 
 <br>
 
+<a id="roadmap"></a>
+
 ## 🗺️ Roadmap
 
 - [x] Morphing island with 7 tabs, flyouts, themes and per-tab hotkeys
@@ -324,6 +346,8 @@ A prioritised bug and risk list from a full code review lives in **[docs/REVIEW-
 Full plan: **[docs/REVIEW-AND-ROADMAP.md](docs/REVIEW-AND-ROADMAP.md)**.
 
 <br>
+
+<a id="contributing"></a>
 
 ## 🤝 Contributing
 
