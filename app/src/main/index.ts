@@ -9,12 +9,22 @@ import { createTray, openMain, openSettings } from './windows'
 import { initEffects, revealWallpaper, setGlow, setGlowSuppressed } from './effects'
 import { runUiTest } from './uitest'
 import { runLab } from './lab'
+import { runDemo } from './agent/demo'
+import { Scheduler } from './agent/scheduler'
+import { readMemory, toolsSelfCheck, writeMemory } from './agent/tools'
+import { Agent } from './agent/agent'
+import type { VoiceEvent } from '@shared/voice'
 
 // ---- args -----------------------------------------------------------------------------------------
 const argv = process.argv.slice(1)
 const useMock = argv.includes('--mock')
 const uiTestIdx = argv.indexOf('--uitest')
 const uiTestDir = uiTestIdx >= 0 ? (argv[uiTestIdx + 1] && !argv[uiTestIdx + 1].startsWith('--') ? argv[uiTestIdx + 1] : join(dataDir, 'uitest')) : null
+const selfCheck = argv.includes('--selfcheck')
+const demoIdx = argv.indexOf('--demo')
+const demoName = demoIdx >= 0 ? argv[demoIdx + 1] : null
+const capIdx = argv.indexOf('--capture')
+const captureDir = capIdx >= 0 ? argv[capIdx + 1] : null
 const labIdx = argv.indexOf('--lab')
 const labDir = labIdx >= 0 ? argv[labIdx + 1] : null
 const labQuery = argv.indexOf('--lab-query') >= 0 ? argv[argv.indexOf('--lab-query') + 1] : ''
@@ -31,7 +41,7 @@ process.on('uncaughtException', e => log(`uncaught ${e.stack ?? e}`))
 process.on('unhandledRejection', e => log(`unhandled ${e}`))
 
 // ---- single instance (a second launch opens Settings in the first) --------------------------------
-if (!benchDir && !uiTestDir && !labDir && !app.requestSingleInstanceLock()) { app.quit() }
+if (!benchDir && !uiTestDir && !labDir && !demoName && !selfCheck && !app.requestSingleInstanceLock()) { app.quit() }
 app.on('second-instance', () => openSettings())
 
 // Compositor-friendly defaults for a transparent always-on-top overlay.
@@ -69,6 +79,8 @@ let stage: Stage = { width: 1200, height: 720, scale: 1, workTop: 0 }
 const sidecar = new Sidecar()
 sidecar.setMaxListeners(64)
 initEffects(sidecar)
+const agent = new Agent(sidecar, (e: VoiceEvent) => { for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('lokey:voice', e) })
+agent.on('tasks', t => { for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('lokey:voice:tasks', t) })
 const eventCounts: Record<string, number> = {}
 sidecar.on('log', log)
 
@@ -152,6 +164,15 @@ function registerIpc() {
   ipcMain.on('lokey:external', (_e, url: string) => { if (/^https?:\/\//.test(url)) void shell.openExternal(url) })
   ipcMain.on('lokey:openSettings', () => openSettings())
   ipcMain.on('lokey:openMain', (_e, page?: string) => openMain(page))
+  ipcMain.handle('lokey:voice:info', () => agent.info())
+  ipcMain.handle('lokey:voice:setKey', (_e, key: string) => agent.setKey(String(key ?? '')))
+  ipcMain.handle('lokey:voice:clearKey', () => agent.clearKey())
+  ipcMain.on('lokey:voice:say', (_e, text: string) => { void agent.say(String(text ?? '')) })
+  ipcMain.on('lokey:voice:hold', (_e, on: boolean) => { if (on) void agent.begin('assistant'); else void agent.end() })
+  ipcMain.handle('lokey:voice:memory', () => readMemory())
+  ipcMain.handle('lokey:voice:forget', (_e, fact: string) => { const m = readMemory().filter(x => x !== fact); writeMemory(m); return m })
+  ipcMain.handle('lokey:voice:cancelTask', (_e, id: string) => agent.scheduler.cancel(String(id)))
+  ipcMain.handle('lokey:voice:runTaskNow', (_e, id: string) => agent.scheduler.runNow(String(id)))
   ipcMain.handle('lokey:effects:reveal', (_e, path: string, x: number, y: number) => revealWallpaper(path, x, y))
   ipcMain.on('lokey:effects:glow', (_e, state) => { setGlow(state); setTimeout(raise, 120) }) // keep the island above the glow window
   ipcMain.handle('lokey:pickFolder', async () => {
@@ -187,6 +208,7 @@ const FWD: EventName[] = [
   'media.changed', 'audio.changed', 'audio.bands', 'stats.tick', 'system.changed', 'clipboard.changed', 'desktops.changed', 'apps.changed',
 ]
 const HOTKEY_ISLAND = 1
+const HOLD_TALK = 2
 
 async function registerHotkeys() {
   if (!sidecar.ready) return
@@ -195,10 +217,17 @@ async function registerHotkeys() {
     const r = await sidecar.call('hotkey.register', { id: HOTKEY_ISLAND, combo: settings.value.island.hotkey }).catch(() => ({ ok: false, reason: 'call failed' }))
     if (!r.ok) log(`island hotkey failed: ${r.reason}`)
   }
+  const v = settings.value.voice
+  if (v.enabled) {
+    const r = await sidecar.call('hotkey.registerHold', { id: HOLD_TALK, combo: v.pushToTalk }).catch(() => ({ ok: false, reason: 'call failed' }))
+    if (!r.ok) log(`push-to-talk chord failed: ${r.reason}`)
+  }
 }
 
 function wireSidecar() {
   for (const name of FWD) sidecar.onEvent(name, data => { eventCounts[name] = (eventCounts[name] ?? 0) + 1; overlay?.webContents.send('lokey:event', name, data) })
+  sidecar.onEvent('hotkey.down', ({ id }) => { if (id === HOLD_TALK) void agent.begin('assistant') })
+  sidecar.onEvent('hotkey.up', ({ id }) => { if (id === HOLD_TALK) void agent.end() })
   sidecar.onEvent('hotkey.pressed', ({ id }) => { if (id === HOTKEY_ISLAND) send({ type: 'toggle-island' }) })
   sidecar.onEvent('fullscreen.changed', ({ full }) => {
     if (!overlay || overlay.isDestroyed()) return
@@ -220,17 +249,26 @@ function wireSidecar() {
 app.whenReady().then(async () => {
   settings.load()
   if (labDir) { await runLab(labDir, labQuery); return }
+  if (selfCheck) {
+    const out: string[] = []
+    for (const [n, f] of [['scheduler', Scheduler.selfCheck], ['tools', toolsSelfCheck]] as const) { try { out.push(`${n}: ${f()}`) } catch (e) { out.push(`${n}: FAIL ${e instanceof Error ? e.message : e}`) } }
+    writeFileSync(join(dataDir, 'selfcheck.txt'), out.join(String.fromCharCode(10)))
+    app.exit(out.some(l => l.includes('FAIL')) ? 1 : 0)
+    return
+  }
   registerIpc()
   wireSidecar()
   if (benchDir || argv.includes('--diag')) startLagMonitor()
   createOverlay()
+  if (!benchDir && !uiTestDir) agent.start()
   screen.on('display-metrics-changed', () => raise())
   if (!benchDir) tray = createTray({ toggleIsland: () => send({ type: 'toggle-island' }), quit: () => app.quit() })
   if (argv.includes('--settings')) openSettings()
+  if (demoName) overlay?.webContents.once('did-finish-load', () => { void runDemo(demoName, agent, overlay, captureDir).then(() => app.quit()) })
   if (uiTestDir) overlay?.webContents.once('did-finish-load', () => { void runUiTest(overlay!, uiTestDir, () => app.quit()) })
   const ok = await sidecar.start()
   if (!ok) log('running without sidecar (mock data only)')
 })
 
 app.on('window-all-closed', () => { /* the overlay lives for the whole session */ })
-app.on('before-quit', () => { tray?.destroy(); void sidecar.stop() })
+app.on('before-quit', () => { agent.dispose(); tray?.destroy(); void sidecar.stop() })

@@ -163,5 +163,6 @@ export function createMockBridge(): Bridge {
     onApp: cb => { appCbs.add(cb); return () => { appCbs.delete(cb) } },
     app: { openSettings() {}, quit() {}, log: m => console.log('[lokey]', m), openExternal: u => { window.open(u, '_blank') }, pickFolder: async () => null, openMain() {} },
     effects: { revealWallpaper: async () => undefined, glow() {} },
+    voice: { info: async () => ({ hasKey: false, state: 'idle' as const, tasks: [] }), onEvent: () => () => undefined, setKey: async () => false, clearKey: async () => undefined, say() {}, hold() {}, cancelTask: async () => [], runTaskNow: async () => [], onTasks: () => () => undefined, memory: async () => [], forget: async () => [] },
   }
 }

@@ -6,7 +6,8 @@ import { initData } from '@/lib/data'
 import { dur } from '@/lib/motion'
 import { Mascot } from '@/island/Mascot'
 import { Loadout } from './Loadout'
-import { Home, Placeholder, SettingsPage } from './pages'
+import { Home, SettingsPage } from './pages'
+import { Bond, Desk } from './DeskBond'
 import { useThemeBoot } from './useThemeBoot'
 import './mainwin.css'
 
@@ -49,8 +50,8 @@ export function MainApp() {
             {page === 'soul' && <Loadout />}
             {page === 'settings' && <SettingsPage />}
             {page === 'home' && <Home />}
-            {page === 'bond' && <Placeholder title="Bond" line="Bond: how your assistant knows you (arrives with voice)" />}
-            {page === 'desk' && <Placeholder title="Desk" line="Desk: your desktop at a glance (coming soon)" />}
+            {page === 'bond' && <Bond />}
+            {page === 'desk' && <Desk />}
           </motion.div>
         </AnimatePresence>
       </main>

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { AppEvent, Bridge, Settings } from '@shared/bridge'
+import type { ScheduledTask, VoiceEvent } from '@shared/voice'
 
 function subscribe<T>(channel: string, cb: (...a: T[]) => void) {
   const h = (_: unknown, ...a: unknown[]) => cb(...(a as T[]))
@@ -40,6 +41,19 @@ const bridge: Bridge = {
     revealWallpaper: (path, x, y) => ipcRenderer.invoke('lokey:effects:reveal', path, x, y),
     glow: state => ipcRenderer.send('lokey:effects:glow', state),
   },
+  voice: {
+    info: () => ipcRenderer.invoke('lokey:voice:info'),
+    onEvent: cb => subscribe<VoiceEvent>('lokey:voice', cb),
+    setKey: key => ipcRenderer.invoke('lokey:voice:setKey', key),
+    clearKey: () => ipcRenderer.invoke('lokey:voice:clearKey'),
+    say: text => ipcRenderer.send('lokey:voice:say', text),
+    hold: on => ipcRenderer.send('lokey:voice:hold', on),
+    cancelTask: id => ipcRenderer.invoke('lokey:voice:cancelTask', id),
+    runTaskNow: id => ipcRenderer.invoke('lokey:voice:runTaskNow', id),
+    onTasks: cb => subscribe<ScheduledTask[]>('lokey:voice:tasks', cb),
+    memory: () => ipcRenderer.invoke('lokey:voice:memory'),
+    forget: fact => ipcRenderer.invoke('lokey:voice:forget', fact),
+  },
   bench: {
     config: () => ipcRenderer.invoke('lokey:bench:config'),
     capture: name => ipcRenderer.invoke('lokey:bench:capture', name),
@@ -52,3 +66,16 @@ contextBridge.exposeInMainWorld('lokey', bridge)
 contextBridge.exposeInMainWorld('lokeyFlags', { mock: process.argv.includes('--lokey-mock') })
 // whole-screen effect pages (#reveal / #glow): last message is buffered so a late subscriber still gets it
 contextBridge.exposeInMainWorld('lokeyFx', ((last: Record<string, unknown>) => { for (const c of ['reveal:start', 'glow:state']) ipcRenderer.on(`lokey:${c}`, (_e, d) => { last[c] = d }); const sub = (c: string) => (cb: (d: any) => void) => { ipcRenderer.on(`lokey:${c}`, (_e, d) => cb(d)); if (c in last) cb(last[c]) }; return { ready: () => ipcRenderer.send('lokey:reveal:ready'), done: () => ipcRenderer.send('lokey:reveal:done'), onStart: sub('reveal:start'), onGlow: sub('glow:state') } })({}))
+
+// hidden audio window (#agent) and the transient overlays (#caption, #dictation, #lasso): small, fixed channels
+contextBridge.exposeInMainWorld('lokeyAgent', {
+  onCmd: (cb: (c: unknown) => void) => { ipcRenderer.on('lokey:agent:cmd', (_e, c) => cb(c)) },
+  mic: (b: ArrayBuffer) => ipcRenderer.send('lokey:agent:mic', b),
+  level: (kind: 'mic' | 'out', v: number) => ipcRenderer.send('lokey:agent:level', kind, v),
+  ready: () => ipcRenderer.send('lokey:agent:ready'),
+  fail: (m: string) => ipcRenderer.send('lokey:agent:fail', m),
+})
+contextBridge.exposeInMainWorld('lokeyOverlay', {
+  on: (channel: 'caption' | 'dictation' | 'lasso', cb: (d: any) => void) => { ipcRenderer.on(`lokey:ov:${channel}`, (_e, d) => cb(d)) },
+  ready: (channel: string) => ipcRenderer.send('lokey:ov:ready', channel),
+})

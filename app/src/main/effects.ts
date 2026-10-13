@@ -9,7 +9,7 @@ import { settings } from './settings'
 let sidecar: Sidecar | null = null
 export function initEffects(s: Sidecar) { sidecar = s }
 
-function effectWindow(hash: string, bounds: Electron.Rectangle) {
+export function effectWindow(hash: string, bounds: Electron.Rectangle) {
   const win = new BrowserWindow({
     ...bounds,
     transparent: true, frame: false, focusable: false, skipTaskbar: true, hasShadow: false, show: false,

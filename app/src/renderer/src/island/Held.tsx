@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import { useData } from '@/lib/data'
 import { mascot } from '@/mascot/bus'
 import { Soul } from './Soul'
+import { voiceLevel } from './voice'
 import type { HeldPhase } from './store'
 
 const SHAPE = [0.35, 0.62, 0.85, 1, 0.85, 0.62, 0.35]
@@ -25,7 +26,7 @@ export function Held({ width, height, phase, level }: { width: number; height: n
       raf = requestAnimationFrame(tick)
       if (phase === 'listening') {
         const b = useData.getState().bands
-        const target = level ? level() : b.length ? b.reduce((s, v) => s + v, 0) / b.length : 0.15 + 0.35 * Math.abs(Math.sin((now - t0) / 260))
+        const target = level ? level() : performance.now() - voiceLevel.at < 300 ? voiceLevel.v : b.length ? b.reduce((s, v) => s + v, 0) / b.length : 0.15 + 0.35 * Math.abs(Math.sin((now - t0) / 260))
         smooth += (target - smooth) * 0.25
         bars.current.forEach((el, i) => {
           if (!el) return

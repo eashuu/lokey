@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, FolderOpen, Info, LayoutPanelTop, Palette, Settings2, Image as ImageIcon } from 'lucide-react'
+import { ArrowDown, ArrowUp, FolderOpen, Info, LayoutPanelTop, Mic, Palette, Settings2, Image as ImageIcon } from 'lucide-react'
 import type { DeepPartial, Settings, TabId } from '@shared/bridge'
 import { bridge } from '@/bridge'
 import { applyTheme, accentFromHex, FALLBACK_ACCENT } from '@/lib/theme'
@@ -15,6 +15,7 @@ const SECTIONS = [
   { id: 'general', label: 'General', icon: Settings2 },
   { id: 'island', label: 'Island', icon: LayoutPanelTop },
   { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'voice', label: 'Voice', icon: Mic },
   { id: 'wallpaper', label: 'Wallpaper', icon: ImageIcon },
   { id: 'about', label: 'About', icon: Info },
 ] as const
@@ -58,6 +59,7 @@ export function SettingsApp() {
         {section === 'general' && <General s={s} set={set} />}
         {section === 'island' && <Island s={s} set={set} />}
         {section === 'appearance' && <Appearance s={s} set={set} />}
+        {section === 'voice' && <Voice s={s} set={set} />}
         {section === 'wallpaper' && <Wallpaper s={s} set={set} />}
         {section === 'about' && <About />}
       </main>
@@ -182,6 +184,53 @@ function Island({ s, set }: P) {
             <Toggle on={false} onChange={() => set({ island: { tabs: [...order, t.id] } })} />
           </Row>
         ))}
+      </Group>
+    </>
+  )
+}
+
+const textField: React.CSSProperties = { background: 'var(--s2)', color: 'var(--text)', border: '1px solid var(--line)', borderRadius: '0.5rem', padding: '0.375rem 0.625rem', fontSize: '0.8125rem', width: '15rem', userSelect: 'text' }
+const smallBtn: React.CSSProperties = { padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 600, background: 'var(--s2)', border: '1px solid var(--line)' }
+
+function Voice({ s, set }: P) {
+  const [has, setHas] = useState<boolean | null>(null)
+  const [key, setKey] = useState('')
+  const [msg, setMsg] = useState('')
+  const [ask, setAsk] = useState('')
+  useEffect(() => { void bridge.voice.info().then(i => setHas(i.hasKey)) }, [])
+  const save = async () => {
+    const ok = await bridge.voice.setKey(key)
+    setMsg(ok ? 'Saved (encrypted on this PC).' : 'That does not look like an AI Studio key.')
+    if (ok) { setHas(true); setKey('') }
+  }
+  const v = s.voice
+  return (
+    <>
+      <Group>
+        <Row title="Voice assistant" hint="Hold the talk key, speak, let go."><Toggle on={v.enabled} onChange={x => set({ voice: { enabled: x } })} /></Row>
+        <Row title="Google AI Studio key" hint={has ? 'A key is saved. Paste a new one to replace it.' : 'Free from aistudio.google.com. Stored encrypted; only ever sent to Google.'}>
+          <input type="password" value={key} onChange={e => setKey(e.target.value)} placeholder={has ? '••••••••••••' : 'AIza…'} style={textField} autoComplete="off" spellCheck={false} />
+          <button onClick={() => void save()} disabled={!key} style={{ ...smallBtn, opacity: key ? 1 : 0.4 }}>Save</button>
+          {has && <button onClick={() => { void bridge.voice.clearKey(); setHas(false); setMsg('Key removed.') }} style={smallBtn}>Remove</button>}
+        </Row>
+        {msg && <div style={{ padding: '0 1rem 0.75rem', fontSize: '0.6875rem', color: 'var(--dim)' }}>{msg}</div>}
+        <Row title="Talk key" hint="Hold to speak, release to send.">
+          <HotkeyInput value={v.pushToTalk} onChange={x => set({ voice: { pushToTalk: x } })} />
+        </Row>
+        <Row title="Speak replies aloud" hint="Off = captions only."><Toggle on={v.speakReplies} onChange={x => set({ voice: { speakReplies: x } })} /></Row>
+        <Row title="Model" hint="Gemini Live model id."><input value={v.model} onChange={e => set({ voice: { model: e.target.value.trim() } })} style={textField} spellCheck={false} /></Row>
+      </Group>
+      <Group>
+        <Row title="Dictation" hint="Hold the key anywhere, talk, let go: the cleaned-up sentence is typed into the focused field."><Toggle on={v.dictation} onChange={x => set({ voice: { dictation: x } })} /></Row>
+        <Row title="Dictation key"><Select value={v.dictationKey} options={[{ v: 'Ctrl+Win', l: 'Ctrl + Win' }, { v: 'Ctrl+Alt+D', l: 'Ctrl + Alt + D' }, { v: 'Win+Shift', l: 'Win + Shift' }]} onChange={x => set({ voice: { dictationKey: x } })} /></Row>
+        <Row title="Circle to ask" hint="Hold the key, draw a loop around anything on screen, ask about it out loud."><Toggle on={v.lasso} onChange={x => set({ voice: { lasso: x } })} /></Row>
+        <Row title="Circle key"><Select value={v.lassoKey} options={[{ v: 'Ctrl+Shift', l: 'Ctrl + Shift' }, { v: 'Ctrl+Alt+L', l: 'Ctrl + Alt + L' }]} onChange={x => set({ voice: { lassoKey: x } })} /></Row>
+      </Group>
+      <Group>
+        <Row title="Try it by typing" hint="Same as speaking, without the microphone.">
+          <input value={ask} onChange={e => setAsk(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && ask.trim()) { bridge.voice.say(ask); setAsk('') } }} placeholder="Open Netflix in 10 minutes" style={textField} spellCheck={false} />
+          <button onClick={() => { if (ask.trim()) { bridge.voice.say(ask); setAsk('') } }} style={smallBtn}>Send</button>
+        </Row>
       </Group>
     </>
   )

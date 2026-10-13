@@ -32,8 +32,8 @@ export const POSES: Record<string, Pose> = {
   hear: {
     emote: 'alert',
     f: (t, c) => ({
-      roll: 0.11 + s(t * 2.1) * 0.02, yaw: c.gx * 0.2, tip: 1 + s(t * 3) * 0.2, eyeL: 1.18, eyeR: 1.18, browL: 0.55, browR: 0.55,
-      aLr: 0.28, aLb: 0.95, aLf: 0.5, aRr: 0.05, smile: 0.25, mouthRound: 0.15, mouthOpen: 0.1, squash: -0.06, blush: 0.3,
+      roll: 0.11 + s(t * 2.1) * 0.02, yaw: c.gx * 0.2, tip: 1 + s(t * 3) * 0.2 + c.level * 1.5, squash: -0.06 - c.level * 0.08, hop: c.level * 0.12, eyeL: 1.18 + c.level * 0.1, eyeR: 1.18 + c.level * 0.1, browL: 0.55, browR: 0.55,
+      aLr: 0.28, aLb: 0.95, aLf: 0.5, aRr: 0.05, smile: 0.25, mouthRound: 0.15, mouthOpen: 0.1 + c.level * 0.2, blush: 0.3,
       gazeX: c.gx * 0.5, gazeY: 0.1,
     }),
   },

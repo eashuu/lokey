@@ -7,6 +7,8 @@ import { RevealApp } from './effects/RevealApp'
 import { GlowApp } from './effects/GlowApp'
 import { MainApp } from './mainwin/MainApp'
 import { Lab } from './mascot/Lab'
+import { AgentApp } from './agent/AgentApp'
+import { CaptionApp } from './agent/CaptionApp'
 
 function route() {
   const h = location.hash.split('?')[0]
@@ -15,6 +17,8 @@ function route() {
   if (h === '#reveal') return <RevealApp />
   if (h === '#glow') return <GlowApp />
   if (h === '#lab') return <Lab />
+  if (h === '#agent') return <AgentApp />
+  if (h === '#caption') return <CaptionApp />
   return <App />
 }
 

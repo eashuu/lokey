@@ -6,6 +6,7 @@ import { accentFromHex, accentFromImage, applyTheme, FALLBACK_ACCENT } from '@/l
 import { Island } from '@/island/Island'
 import { useIsland } from '@/island/store'
 import { runBench } from '@/bench'
+import { initVoiceBridge } from '@/island/voice'
 
 export function App() {
   const appearance = useData(s => s.settings.appearance)
@@ -13,6 +14,8 @@ export function App() {
   const wallpaper = useData(s => s.wallpaper)
 
   useEffect(() => { void initData().then(async () => { if (await bridge.bench?.config()) void runBench() }) }, [])
+
+  useEffect(() => initVoiceBridge(), [])
 
   // screen-edge glow follows what the assistant is doing (voice mode drives `soul`; today only the preview does)
   useEffect(() => {

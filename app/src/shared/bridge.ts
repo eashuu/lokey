@@ -1,6 +1,7 @@
 // The ONLY surface the renderer uses to talk to the outside world. Electron implements it through the
 // preload script; a later Tauri port implements the same interface. The renderer never imports electron or node.
 import type { EventName, Events, MethodName, Methods } from './protocol'
+import type { ScheduledTask, VoiceEvent, VoiceInfo } from './voice'
 
 export type TabId = 'controls' | 'today' | 'stats' | 'clipboard' | 'apps' | 'wallpaper' | 'power'
 
@@ -27,6 +28,17 @@ export interface Settings {
   }
   wallpaper: { folder: string | null }
   loadout: { soul: string; personality: string; voice: string; abilities: string[]; personalities: { id: string; name: string; prompt: string }[] }
+  voice: {
+    enabled: boolean
+    model: string                  // Gemini Live model id
+    pushToTalk: string             // hold-to-talk chord
+    dictation: boolean
+    dictationKey: string           // hold chord for dictation
+    lasso: boolean
+    lassoKey: string               // hold chord for circle-to-ask
+    speakReplies: boolean          // play the assistant's voice (otherwise captions only)
+    cleanupModel: string           // plain Gemini model used to tidy dictation
+  }
   focusTimerMinutes: number
   startWithWindows: boolean
 }
@@ -48,6 +60,17 @@ export const defaultSettings: Settings = {
   appearance: { theme: 'dark', accent: 'wallpaper', scale: 1, animSpeed: 1, reduceMotion: false },
   wallpaper: { folder: null },
   loadout: { soul: 'drop', personality: 'chad', voice: 'Charon', abilities: [], personalities: [{ id: 'chad', name: 'True Chad', prompt: 'Confident, direct, a little cheeky. Short answers. Gets things done.' }] },
+  voice: {
+    enabled: true,
+    model: 'gemini-3.8-live',
+    pushToTalk: 'Ctrl+Alt+V',
+    dictation: true,
+    dictationKey: 'Ctrl+Win',
+    lasso: true,
+    lassoKey: 'Ctrl+Shift',
+    speakReplies: true,
+    cleanupModel: 'gemini-flash-latest',
+  },
   focusTimerMinutes: 25,
   startWithWindows: false,
 }
@@ -96,6 +119,23 @@ export interface Bridge {
     revealWallpaper(path: string, x: number, y: number): Promise<void>
     /** Screen-edge glow while the assistant thinks or speaks. */
     glow(state: GlowState): void
+  }
+  voice: {
+    info(): Promise<VoiceInfo>
+    onEvent(cb: (e: VoiceEvent) => void): () => void
+    /** Google AI Studio key; stored encrypted on this PC, never sent anywhere but Google. */
+    setKey(key: string): Promise<boolean>
+    clearKey(): Promise<void>
+    /** type a request instead of speaking it */
+    say(text: string): void
+    /** push-to-talk from the UI (the mic button / held shape) */
+    hold(on: boolean): void
+    cancelTask(id: string): Promise<ScheduledTask[]>
+    runTaskNow(id: string): Promise<ScheduledTask[]>
+    onTasks(cb: (t: ScheduledTask[]) => void): () => void
+    /** facts the assistant remembers about you */
+    memory(): Promise<string[]>
+    forget(fact: string): Promise<string[]>
   }
   /** Present only under `--bench <dir>`: the renderer drives the run, main captures screenshots and process metrics. */
   bench?: {

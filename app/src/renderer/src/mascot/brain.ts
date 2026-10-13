@@ -84,7 +84,7 @@ export class Brain {
     }
 
     const fresh = performance.now() - mascot.levelAt < 300
-    const level = this.state === 'talk' ? (fresh ? mascot.level : 0.25 + 0.4 * Math.abs(Math.sin(this.t * 7.3)) * (0.6 + 0.4 * Math.sin(this.t * 2.1))) : 0
+    const level = this.state === 'hear' ? (fresh ? mascot.level : 0) : this.state === 'talk' ? (fresh ? mascot.level : 0.25 + 0.4 * Math.abs(Math.sin(this.t * 7.3)) * (0.6 + 0.4 * Math.sin(this.t * 2.1))) : 0
     const ctx: Ctx = { gx, gy, level }
 
     // idle fidgets
