@@ -47,6 +47,7 @@ internal static class Clipboard
     public static void Register()
     {
         Dispatcher.Add("clipboard.list", p => List(Args.OptStr(p, "query"), Args.OptStr(p, "kind"), Args.OptInt(p, "limit") ?? 100));
+        Dispatcher.Add("clipboard.get", p => Get(Args.Str(p, "id")));
         Dispatcher.Add("clipboard.pin", p => { Pin(Args.Str(p, "id"), Args.Bool(p, "on")); return Dispatcher.Ok; });
         Dispatcher.Add("clipboard.delete", p => { Delete(Args.Str(p, "id")); return Dispatcher.Ok; });
         Dispatcher.Add("clipboard.clear", p => { Clear(Args.Bool(p, "keepPinned")); return Dispatcher.Ok; });
@@ -253,6 +254,16 @@ internal static class Clipboard
         return snap.Select(ToClip).ToArray();
     }
 
+    /// <summary>The whole item (the list only carries a 400-character preview and a thumbnail). Images above 12 MB are not sent over the pipe.</summary>
+    static object? Get(string id)
+    {
+        Item it;
+        lock (L) it = Items.FirstOrDefault(i => i.Id == id) ?? throw new ArgumentException("unknown clipboard item");
+        string? image = null;
+        if (it.Kind == "image" && ReadBlob(it, ".png") is { Length: > 0 and <= 12_000_000 } png) image = Imaging.DataUrl("image/png", png);
+        return new ClipFull(it.Id, it.Kind == "image" ? null : it.Text, image);
+    }
+
     static void Pin(string id, bool on)
     {
         lock (L)
@@ -455,6 +466,12 @@ internal static class Clipboard
         Need(Items.Count == 1, "consecutive duplicate must be merged");
         Add(Text("https://example.com/page?q=1", "link"), null, null);
         Need(IsLink("https://example.com/a") && !IsLink("see https://example.com") && !IsLink("ftp://x.y"), "link classification");
+        var longText = Text(marker + " " + new string('x', 5000) + " END");
+        Add(longText, null, null);
+        var full = Get(longText.Id) as ClipFull;
+        Need(full?.Text is { } ft && ft.Length == longText.Text!.Length && ft.EndsWith(" END"), "clipboard.get returns the whole text");
+        Need(ToClip(longText).Preview.Length == 400, "list preview stays 400 chars");
+        Delete(longText.Id);
 
         byte[] png, thumb;
         using (var bmp = new Bitmap(600, 400)) using (var g = Graphics.FromImage(bmp)) using (var th = new Bitmap(1, 1))

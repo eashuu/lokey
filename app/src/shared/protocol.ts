@@ -154,6 +154,7 @@ export interface Methods {
   'apps.openPath': [{ path: string }, {}]
 
   'clipboard.list': [{ query?: string; kind?: 'text' | 'image' | 'link'; limit?: number }, ClipItem[]]
+  'clipboard.get': [{ id: string }, { id: string; text: string | null; image: string | null }]   // the whole item (list items carry a 400-char preview)
   'clipboard.pin': [{ id: string; on: boolean }, {}]
   'clipboard.delete': [{ id: string }, {}]
   'clipboard.clear': [{ keepPinned: boolean }, {}]

@@ -18,6 +18,8 @@ export interface Settings {
     size: number                   // 0.7..1.2, scales the island (on top of appearance.scale)
     trigger: 'scroll' | 'hover' | 'both'
     rest: 'sleep' | 'awake'        // the shape the island rests in when closed
+    /** global shortcut that opens the island straight on a tab ('' = none); pressing it again closes the island */
+    tabHotkeys: Record<TabId, string>
   }
   appearance: {
     theme: 'dark' | 'light' | 'auto'
@@ -56,6 +58,7 @@ export const defaultSettings: Settings = {
     size: 1,
     trigger: 'both',
     rest: 'sleep',
+    tabHotkeys: { controls: '', today: '', stats: '', clipboard: 'Ctrl+Alt+C', apps: 'Ctrl+Alt+A', wallpaper: '', power: '' },
   },
   appearance: { theme: 'dark', accent: 'wallpaper', scale: 1, animSpeed: 1, reduceMotion: false },
   wallpaper: { folder: null },
@@ -137,6 +140,8 @@ export interface Bridge {
     memory(): Promise<string[]>
     forget(fact: string): Promise<string[]>
   }
+  /** Why a global shortcut could not be registered (empty string = fine), keyed island | talk | dictation | lasso | tab:<id>. */
+  hotkeyStatus(): Promise<Record<string, string>>
   /** Present only under `--bench <dir>`: the renderer drives the run, main captures screenshots and process metrics. */
   bench?: {
     config(): Promise<{ dir: string } | null>
@@ -148,7 +153,7 @@ export interface Bridge {
 
 export type AppEvent =
   | { type: 'toggle-island' }
-  | { type: 'open-island'; tab?: TabId }
+  | { type: 'open-island'; tab?: TabId; toggle?: boolean }
   | { type: 'close-island' }
   | { type: 'blur' }
   | { type: 'fullscreen'; full: boolean }

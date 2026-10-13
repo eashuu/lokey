@@ -122,6 +122,7 @@ export function createMockBridge(): Bridge {
     'apps.star': ({ id, on }) => { const a = apps.find(x => x.id === id); if (a) a.starred = on; return {} },
     'apps.searchFiles': ({ query }) => [{ name: `${query}-notes.txt`, path: `C:\\Users\\you\\Documents\\${query}-notes.txt` }],
     'clipboard.list': ({ query, kind }) => clips.filter(c => (!kind || c.kind === kind) && (!query || c.preview.toLowerCase().includes(query.toLowerCase()))),
+    'clipboard.get': ({ id }) => { const c = clips.find(x => x.id === id); return { id, text: c && c.kind !== 'image' ? c.preview.repeat(6) : null, image: c?.image ?? null } },
     'clipboard.delete': ({ id }) => { const i = clips.findIndex(x => x.id === id); if (i >= 0) clips.splice(i, 1); return {} },
     'clipboard.clear': ({ keepPinned }) => { for (let i = clips.length - 1; i >= 0; i--) if (!keepPinned || !clips[i].pinned) clips.splice(i, 1); return {} },
     'clipboard.paste': () => ({}),
@@ -162,6 +163,7 @@ export function createMockBridge(): Bridge {
     },
     onApp: cb => { appCbs.add(cb); return () => { appCbs.delete(cb) } },
     app: { openSettings() {}, quit() {}, log: m => console.log('[lokey]', m), openExternal: u => { window.open(u, '_blank') }, pickFolder: async () => null, openMain() {} },
+    hotkeyStatus: async () => ({}),
     effects: { revealWallpaper: async () => undefined, glow() {} },
     voice: { info: async () => ({ hasKey: false, state: 'idle' as const, tasks: [] }), onEvent: () => () => undefined, setKey: async () => false, clearKey: async () => undefined, say() {}, hold() {}, cancelTask: async () => [], runTaskNow: async () => [], onTasks: () => () => undefined, memory: async () => [], forget: async () => [] },
   }

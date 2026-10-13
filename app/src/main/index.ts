@@ -30,6 +30,7 @@ const captureDir = capIdx >= 0 ? argv[capIdx + 1] : null
 const labIdx = argv.indexOf('--lab')
 const labDir = labIdx >= 0 ? argv[labIdx + 1] : null
 const labQuery = argv.indexOf('--lab-query') >= 0 ? argv[argv.indexOf('--lab-query') + 1] : ''
+const labPage = argv.indexOf('--lab-page') >= 0 ? argv[argv.indexOf('--lab-page') + 1] : 'lab'
 const benchIdx = argv.indexOf('--bench')
 const benchDir = benchIdx >= 0 ? (argv[benchIdx + 1] && !argv[benchIdx + 1].startsWith('--') ? argv[benchIdx + 1] : join(dataDir, 'bench')) : null
 
@@ -168,6 +169,7 @@ function registerIpc() {
   ipcMain.on('lokey:external', (_e, url: string) => { if (/^https?:\/\//.test(url)) void shell.openExternal(url) })
   ipcMain.on('lokey:openSettings', () => openSettings())
   ipcMain.on('lokey:openMain', (_e, page?: string) => openMain(page))
+  ipcMain.handle('lokey:hotkeys:status', () => hotkeyStatus)
   ipcMain.handle('lokey:voice:info', () => agent.info())
   ipcMain.handle('lokey:voice:setKey', (_e, key: string) => agent.setKey(String(key ?? '')))
   ipcMain.handle('lokey:voice:clearKey', () => agent.clearKey())
@@ -215,26 +217,34 @@ const HOTKEY_ISLAND = 1
 const HOLD_TALK = 2
 const HOLD_DICT = 3
 const HOLD_LASSO = 4
+const HOTKEY_TAB_BASE = 20
+const TAB_IDS = ['controls', 'today', 'stats', 'clipboard', 'apps', 'wallpaper', 'power'] as const
+const hotkeyStatus: Record<string, string> = {}
 
 async function registerHotkeys() {
   if (!sidecar.ready) return
   await sidecar.call('hotkey.unregisterAll', {}).catch(() => undefined)
+  for (const k of Object.keys(hotkeyStatus)) delete hotkeyStatus[k]
+  const note = (key: string, r: { ok: boolean; reason?: string }, what: string) => {
+    hotkeyStatus[key] = r.ok ? '' : r.reason ?? 'could not be registered'
+    if (!r.ok) log(`${what} failed: ${r.reason}`)
+  }
+  const fail = { ok: false, reason: 'call failed' }
+  const one = (id: number, combo: string) => sidecar.call('hotkey.register', { id, combo }).catch(() => fail)
+  const hold = (id: number, combo: string) => sidecar.call('hotkey.registerHold', { id, combo }).catch(() => fail)
   if (settings.value.island.enabled) {
-    const r = await sidecar.call('hotkey.register', { id: HOTKEY_ISLAND, combo: settings.value.island.hotkey }).catch(() => ({ ok: false, reason: 'call failed' }))
-    if (!r.ok) log(`island hotkey failed: ${r.reason}`)
+    note('island', await one(HOTKEY_ISLAND, settings.value.island.hotkey), 'island hotkey')
+    const th = settings.value.island.tabHotkeys
+    for (const [i, tab] of TAB_IDS.entries()) {
+      const combo = th?.[tab]?.trim()
+      if (combo) note(`tab:${tab}`, await one(HOTKEY_TAB_BASE + i, combo), `${tab} hotkey`)
+    }
   }
   const v = settings.value.voice
   if (v.enabled) {
-    const r = await sidecar.call('hotkey.registerHold', { id: HOLD_TALK, combo: v.pushToTalk }).catch(() => ({ ok: false, reason: 'call failed' }))
-    if (!r.ok) log(`push-to-talk chord failed: ${r.reason}`)
-    if (v.dictation) {
-      const d = await sidecar.call('hotkey.registerHold', { id: HOLD_DICT, combo: v.dictationKey }).catch(() => ({ ok: false, reason: 'call failed' }))
-      if (!d.ok) log(`dictation chord failed: ${d.reason}`)
-    }
-    if (v.lasso) {
-      const l = await sidecar.call('hotkey.registerHold', { id: HOLD_LASSO, combo: v.lassoKey }).catch(() => ({ ok: false, reason: 'call failed' }))
-      if (!l.ok) log(`lasso chord failed: ${l.reason}`)
-    }
+    note('talk', await hold(HOLD_TALK, v.pushToTalk), 'push-to-talk chord')
+    if (v.dictation) note('dictation', await hold(HOLD_DICT, v.dictationKey), 'dictation chord')
+    if (v.lasso) note('lasso', await hold(HOLD_LASSO, v.lassoKey), 'lasso chord')
   }
 }
 
@@ -250,7 +260,10 @@ function wireSidecar() {
     else if (id === HOLD_DICT) void dictation.end()
     else if (id === HOLD_LASSO) void lasso.up()
   })
-  sidecar.onEvent('hotkey.pressed', ({ id }) => { if (id === HOTKEY_ISLAND) send({ type: 'toggle-island' }) })
+  sidecar.onEvent('hotkey.pressed', ({ id }) => {
+    if (id === HOTKEY_ISLAND) send({ type: 'toggle-island' })
+    else if (id >= HOTKEY_TAB_BASE && id < HOTKEY_TAB_BASE + TAB_IDS.length) send({ type: 'open-island', tab: TAB_IDS[id - HOTKEY_TAB_BASE], toggle: true })
+  })
   sidecar.onEvent('fullscreen.changed', ({ full }) => {
     if (!overlay || overlay.isDestroyed()) return
     hiddenForFullscreen = full
@@ -270,7 +283,7 @@ function wireSidecar() {
 // ---- lifecycle ---------------------------------------------------------------------------------------------
 app.whenReady().then(async () => {
   settings.load()
-  if (labDir) { await runLab(labDir, labQuery); return }
+  if (labDir) { registerIpc(); await runLab(labDir, labQuery, labPage); return }
   if (selfCheck) {
     const out: string[] = []
     for (const [n, f] of [['scheduler', Scheduler.selfCheck], ['tools', toolsSelfCheck]] as const) { try { out.push(`${n}: ${f()}`) } catch (e) { out.push(`${n}: FAIL ${e instanceof Error ? e.message : e}`) } }

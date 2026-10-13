@@ -54,6 +54,7 @@ const bridge: Bridge = {
     memory: () => ipcRenderer.invoke('lokey:voice:memory'),
     forget: fact => ipcRenderer.invoke('lokey:voice:forget', fact),
   },
+  hotkeyStatus: () => ipcRenderer.invoke('lokey:hotkeys:status'),
   bench: {
     config: () => ipcRenderer.invoke('lokey:bench:config'),
     capture: name => ipcRenderer.invoke('lokey:bench:capture', name),

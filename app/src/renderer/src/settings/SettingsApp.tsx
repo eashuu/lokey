@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, FolderOpen, Info, LayoutPanelTop, Mic, Palette, Settings2, Image as ImageIcon } from 'lucide-react'
+import { ArrowDown, ArrowUp, FolderOpen, Info, Keyboard, LayoutPanelTop, Mic, Palette, Settings2, Image as ImageIcon } from 'lucide-react'
 import type { DeepPartial, Settings, TabId } from '@shared/bridge'
 import { bridge } from '@/bridge'
 import { applyTheme, accentFromHex, FALLBACK_ACCENT } from '@/lib/theme'
@@ -16,6 +16,7 @@ const SECTIONS = [
   { id: 'island', label: 'Island', icon: LayoutPanelTop },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'voice', label: 'Voice', icon: Mic },
+  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
   { id: 'wallpaper', label: 'Wallpaper', icon: ImageIcon },
   { id: 'about', label: 'About', icon: Info },
 ] as const
@@ -23,7 +24,7 @@ type SectionId = (typeof SECTIONS)[number]['id']
 
 export function SettingsApp() {
   const [s, setS] = useState<Settings | null>(null)
-  const [section, setSection] = useState<SectionId>('general')
+  const [section, setSection] = useState<SectionId>(() => (new URLSearchParams(location.hash.split('?')[1] ?? '').get('section') as SectionId | null) ?? 'general')
 
   useEffect(() => {
     void bridge.settings.get().then(setS)
@@ -60,6 +61,7 @@ export function SettingsApp() {
         {section === 'island' && <Island s={s} set={set} />}
         {section === 'appearance' && <Appearance s={s} set={set} />}
         {section === 'voice' && <Voice s={s} set={set} />}
+        {section === 'shortcuts' && <Shortcuts s={s} set={set} />}
         {section === 'wallpaper' && <Wallpaper s={s} set={set} />}
         {section === 'about' && <About />}
       </main>
@@ -136,7 +138,6 @@ function General({ s, set }: P) {
   return (
     <Group>
       <Row title="Island" hint="The pill at the top of the screen."><Toggle on={s.island.enabled} onChange={v => set({ island: { enabled: v } })} /></Row>
-      <Row title="Toggle hotkey" hint="Opens or closes the island from anywhere."><HotkeyInput value={s.island.hotkey} onChange={v => set({ island: { hotkey: v } })} /></Row>
       <Row title="Start with Windows"><Toggle on={s.startWithWindows} onChange={v => set({ startWithWindows: v })} /></Row>
       <Row title="Focus timer length" hint="Used by the Today tab."><NumberSlider value={s.focusTimerMinutes} min={5} max={90} step={5} onChange={v => set({ focusTimerMinutes: v })} format={v => `${v} min`} /></Row>
     </Group>
@@ -214,22 +215,80 @@ function Voice({ s, set }: P) {
           {has && <button onClick={() => { void bridge.voice.clearKey(); setHas(false); setMsg('Key removed.') }} style={smallBtn}>Remove</button>}
         </Row>
         {msg && <div style={{ padding: '0 1rem 0.75rem', fontSize: '0.6875rem', color: 'var(--dim)' }}>{msg}</div>}
-        <Row title="Talk key" hint="Hold to speak, release to send.">
-          <HotkeyInput value={v.pushToTalk} onChange={x => set({ voice: { pushToTalk: x } })} />
-        </Row>
         <Row title="Speak replies aloud" hint="Off = captions only."><Toggle on={v.speakReplies} onChange={x => set({ voice: { speakReplies: x } })} /></Row>
         <Row title="Model" hint="Gemini Live model id."><input value={v.model} onChange={e => set({ voice: { model: e.target.value.trim() } })} style={textField} spellCheck={false} /></Row>
       </Group>
       <Group>
         <Row title="Dictation" hint="Hold the key anywhere, talk, let go: the cleaned-up sentence is typed into the focused field."><Toggle on={v.dictation} onChange={x => set({ voice: { dictation: x } })} /></Row>
-        <Row title="Dictation key"><Select value={v.dictationKey} options={[{ v: 'Ctrl+Win', l: 'Ctrl + Win' }, { v: 'Ctrl+Alt+D', l: 'Ctrl + Alt + D' }, { v: 'Win+Shift', l: 'Win + Shift' }]} onChange={x => set({ voice: { dictationKey: x } })} /></Row>
         <Row title="Circle to ask" hint="Hold the key, draw a loop around anything on screen, ask about it out loud."><Toggle on={v.lasso} onChange={x => set({ voice: { lasso: x } })} /></Row>
-        <Row title="Circle key"><Select value={v.lassoKey} options={[{ v: 'Ctrl+Shift', l: 'Ctrl + Shift' }, { v: 'Ctrl+Alt+L', l: 'Ctrl + Alt + L' }]} onChange={x => set({ voice: { lassoKey: x } })} /></Row>
       </Group>
       <Group>
         <Row title="Try it by typing" hint="Same as speaking, without the microphone.">
           <input value={ask} onChange={e => setAsk(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && ask.trim()) { bridge.voice.say(ask); setAsk('') } }} placeholder="Open Netflix in 10 minutes" style={textField} spellCheck={false} />
           <button onClick={() => { if (ask.trim()) { bridge.voice.say(ask); setAsk('') } }} style={smallBtn}>Send</button>
+        </Row>
+      </Group>
+    </>
+  )
+}
+
+const HOLD_PRESETS = [
+  { v: 'Ctrl+Win', l: 'Ctrl + Win' }, { v: 'Ctrl+Shift', l: 'Ctrl + Shift' }, { v: 'Ctrl+Alt', l: 'Ctrl + Alt' }, { v: 'Win+Shift', l: 'Win + Shift' }, { v: 'Ctrl+Alt+V', l: 'Ctrl + Alt + V' },
+  { v: 'Ctrl+Alt+D', l: 'Ctrl + Alt + D' }, { v: 'Ctrl+Alt+L', l: 'Ctrl + Alt + L' },
+]
+
+function ShortcutRow({ title, hint, value, onChange, status, clash, presets, clearable }: {
+  title: string; hint?: string; value: string; onChange: (v: string) => void; status?: string; clash?: boolean
+  presets?: { v: string; l: string }[]; clearable?: boolean
+}) {
+  const problem = clash ? 'Used twice: only one of them will work.' : status
+  return (
+    <Row title={title} hint={problem ? undefined : hint}>
+      {problem && <span style={{ fontSize: '0.6875rem', color: '#e8a04a', maxWidth: '14rem', textAlign: 'right' }}>{problem === 'already registered by another application' ? 'Taken by another app' : problem}</span>}
+      {presets && (
+        <Select value={presets.some(p => p.v === value) ? value : ''} options={[{ v: '', l: 'Presets…' }, ...presets]} onChange={v => { if (v) onChange(v) }} />
+      )}
+      <HotkeyInput value={value || 'None'} onChange={onChange} />
+      {clearable && value && <button onClick={() => onChange('')} style={{ ...smallBtn, padding: '0.375rem 0.625rem' }}>Clear</button>}
+    </Row>
+  )
+}
+
+function Shortcuts({ s, set }: P) {
+  const [status, setStatus] = useState<Record<string, string>>({})
+  const sig = JSON.stringify([s.island.hotkey, s.island.tabHotkeys, s.voice.pushToTalk, s.voice.dictationKey, s.voice.lassoKey, s.voice.enabled, s.voice.dictation, s.voice.lasso])
+  useEffect(() => {
+    const t = setTimeout(() => { void bridge.hotkeyStatus().then(setStatus) }, 700) // main re-registers after a change
+    return () => clearTimeout(t)
+  }, [sig])
+  const all = [s.island.hotkey, s.voice.pushToTalk, s.voice.dictationKey, s.voice.lassoKey, ...Object.values(s.island.tabHotkeys)].filter(Boolean).map(x => x.toLowerCase())
+  const clash = (v: string) => !!v && all.filter(x => x === v.toLowerCase()).length > 1
+  const th = s.island.tabHotkeys
+  return (
+    <>
+      <div style={{ fontSize: '0.75rem', color: 'var(--dim)', margin: '-0.5rem 0 1rem', lineHeight: 1.5 }}>
+        Click a shortcut, then press the new keys. Windows already uses some combinations (Win+A, Win+V, Win+S...): if one is taken you will see it here. Hold shortcuts (voice) can also be a bare modifier pair: pick one from Presets.
+      </div>
+      <Group>
+        <ShortcutRow title="Open or close the island" value={s.island.hotkey} onChange={v => set({ island: { hotkey: v } })} status={status.island} clash={clash(s.island.hotkey)} />
+      </Group>
+      <Group>
+        {ALL_TABS.map(t => (
+          <ShortcutRow key={t.id} title={`Open ${t.label}`} hint="Opens the island on this tab; press again to close." value={th[t.id] ?? ''} onChange={v => set({ island: { tabHotkeys: { [t.id]: v } as Record<TabId, string> } })}
+            status={status[`tab:${t.id}`]} clash={clash(th[t.id] ?? '')} clearable />
+        ))}
+      </Group>
+      <Group>
+        <ShortcutRow title="Hold to talk" hint="Hold, speak, release." value={s.voice.pushToTalk} onChange={v => set({ voice: { pushToTalk: v } })} status={s.voice.enabled ? status.talk : undefined} clash={clash(s.voice.pushToTalk)} presets={HOLD_PRESETS} />
+        <ShortcutRow title="Dictation" hint="Hold in any text field, talk, release." value={s.voice.dictationKey} onChange={v => set({ voice: { dictationKey: v } })} status={s.voice.dictation ? status.dictation : undefined} clash={clash(s.voice.dictationKey)} presets={HOLD_PRESETS} />
+        <ShortcutRow title="Circle to ask" hint="Hold, draw a loop, ask." value={s.voice.lassoKey} onChange={v => set({ voice: { lassoKey: v } })} status={s.voice.lasso ? status.lasso : undefined} clash={clash(s.voice.lassoKey)} presets={HOLD_PRESETS} />
+      </Group>
+      <Group>
+        <Row title="Reset shortcuts" hint="Back to the defaults.">
+          <button style={smallBtn} onClick={() => set({
+            island: { hotkey: 'Ctrl+Alt+Space', tabHotkeys: { controls: '', today: '', stats: '', clipboard: 'Ctrl+Alt+C', apps: 'Ctrl+Alt+A', wallpaper: '', power: '' } },
+            voice: { pushToTalk: 'Ctrl+Alt+V', dictationKey: 'Ctrl+Win', lassoKey: 'Ctrl+Shift' },
+          })}>Reset</button>
         </Row>
       </Group>
     </>

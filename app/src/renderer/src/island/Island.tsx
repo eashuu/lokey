@@ -141,7 +141,11 @@ export function Island() {
   useEffect(() => bridge.onApp(e => {
     const s = st()
     if (e.type === 'toggle-island') { if (s.shape === 'menu') s.closeMenu(); else s.openMenu(isl.startTab, 'pinned') }
-    else if (e.type === 'open-island') s.openMenu(e.tab ?? isl.startTab, 'pinned')
+    else if (e.type === 'open-island') {
+      const tab = e.tab ?? isl.startTab
+      if (e.toggle && s.shape === 'menu' && s.view === tab) s.closeMenu() // the same shortcut again closes it
+      else s.openMenu(tab, 'pinned')
+    }
     else if (e.type === 'close-island') { if (s.shape === 'menu') s.closeMenu(); else if (s.shape === 'awake' && s.rest === 'sleep') s.sleep() }
     else if (e.type === 'blur') { if (s.shape === 'menu' && s.mode === 'pinned') s.closeMenu() }
     else if (e.type === 'fullscreen' && e.full) { if (s.shape === 'menu') s.closeMenu() }

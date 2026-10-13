@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Zap } from 'lucide-react'
 import type { AppEntry } from '@shared/protocol'
 import { bridge } from '@/bridge'
+import { useData } from '@/lib/data'
 import { useIsland } from '@/island/store'
 import { AppRow, FileRow } from './apps/AppRow'
 import { rank } from './apps/search'
@@ -65,6 +66,7 @@ function Chip({ x, term, onClick }: { x: number; term: string; onClick: () => vo
 }
 
 export function AppsTab() {
+  const hint = useData(s => s.settings.island.tabHotkeys?.apps) ?? ''
   const [apps, star] = useApps()
   const [query, setQuery] = useState('')
   const [recent, setRecent] = useState(loadRecent)
@@ -186,7 +188,7 @@ export function AppsTab() {
         iconSize={18}
         textLeft={40}
         rightPad={72}
-        right={!query && <span style={{ position: 'absolute', right: 12, top: 0, height: 46, lineHeight: '46px', fontSize: 11, color: 'var(--muted)', pointerEvents: 'none' }}>Win+A</span>}
+        right={!query && hint !== '' && <span style={{ position: 'absolute', right: 12, top: 0, height: 46, lineHeight: '46px', fontSize: 11, color: 'var(--muted)', pointerEvents: 'none' }}>{hint}</span>}
       />
       {chips.length > 0 && (
         <div style={{ position: 'absolute', left: 0, top: 56, width: 684, height: 32 }}>

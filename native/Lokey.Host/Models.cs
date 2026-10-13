@@ -31,6 +31,7 @@ internal sealed record SystemStatus(NetworkStat Network, BluetoothStat Bluetooth
 
 internal sealed record UserInfo(string Name, string? Avatar, string Machine);
 internal sealed record AppEntry(string Id, string Name, string Kind, bool Starred, long? LastUsed);
+internal sealed record ClipFull(string Id, string? Text, string? Image);
 internal sealed record ClipItem(string Id, string Kind, string Preview, string? Image, string Source, long At, bool Pinned, long Size);
 internal sealed record WallpaperItem(string Path, string Name, string? Thumb);
 internal sealed record DesktopsState(int Count, int Current, bool[] Occupied);
