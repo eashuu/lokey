@@ -6,6 +6,7 @@
   "main": "./out/main/index.js",
   "license": "GPL-3.0-only",
   "scripts": {
+    "postinstall": "node ./node_modules/electron/install.js",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "start": "electron-vite preview",
