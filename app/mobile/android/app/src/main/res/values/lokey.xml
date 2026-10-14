@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_ask">Ask Lokey</string>
+    <string name="tile_listen">Lokey listen</string>
+    <string name="widget_desc">Ask Lokey, now playing and approvals</string>
+    <string name="access_desc">Lets Lokey read what is on screen, tap, type and scroll when you ask it to use your phone.</string>
+    <string name="assist_label">Lokey</string>
+    <style name="WidgetBtn">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:background">@drawable/btn_bg</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textColor">#ECEDEF</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+</resources>

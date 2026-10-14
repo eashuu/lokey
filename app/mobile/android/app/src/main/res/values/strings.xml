@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lokey</string>
+    <string name="title_activity_main">Lokey</string>
+    <string name="package_name">app.lokey.link</string>
+    <string name="custom_url_scheme">app.lokey.link</string>
+</resources>

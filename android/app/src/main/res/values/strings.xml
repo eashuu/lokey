@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Lokey</string>
+    <string name="tile_ask">Ask Lokey</string>
+    <string name="widget_desc">PC status, approvals and quick ask</string>
+</resources>
