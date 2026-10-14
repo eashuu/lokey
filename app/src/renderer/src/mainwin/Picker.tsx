@@ -8,6 +8,8 @@ import { dur } from '@/lib/motion'
 import { Soul } from '@/island/Soul'
 import { SOUL_SKINS } from '@/island/skins'
 import { Toggle } from '@/ui'
+import { isPhone } from '@/lib/platform'
+import { skinThumbs } from '@/phone/spirit'
 import { SLOTS, type SlotId } from './slots'
 
 type Loadout = Settings['loadout']
@@ -78,15 +80,23 @@ export function Picker({ slot, onClose }: { slot: SlotId; onClose: () => void })
   )
 }
 
-const grid = (min: number): React.CSSProperties => ({ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))`, gap: 8 })
+const grid = (min: number): React.CSSProperties => ({ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isPhone ? Math.min(min, 140) : min}px, 1fr))`, gap: 8 })
 const optStyle: React.CSSProperties = { borderRadius: 12, background: 'var(--fill-1)', padding: 10 }
 
+/** phone: the skins are stills from the one shared spirit context (a WebGL context per thumbnail would not survive on a phone) */
+function useThumbs() {
+  const [t, setT] = useState<Record<string, string>>({})
+  useEffect(() => { if (isPhone) void skinThumbs(SOUL_SKINS).then(setT) }, [])
+  return t
+}
+
 function SoulGrid({ lo }: { lo: Loadout }) {
+  const thumbs = useThumbs()
   return (
     <div style={grid(170)}>
       {Object.entries(SOUL_SKINS).map(([id, s]) => (
         <div key={id} className="lk-opt" onClick={() => write({ soul: id })} style={{ ...optStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-          <Soul width={96} height={96} mode="LISTENING" active quiet palette={s.palette} />
+          {isPhone ? <div style={{ width: 96, height: 96 }}>{thumbs[id] && <img src={thumbs[id]} alt={s.name} width={96} height={96} draggable={false} />}</div> : <Soul width={96} height={96} mode="LISTENING" active quiet palette={s.palette} />}
           <div style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</div>
           <UseBtn on={lo.soul === id} onClick={() => write({ soul: id })} />
         </div>

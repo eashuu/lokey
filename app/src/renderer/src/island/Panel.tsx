@@ -16,20 +16,21 @@ export const CONTENT_Y = 56
  * Menu content for one view, laid out at its design size (w x h) and scaled by `scale` as a whole, so every
  * measurement in the design spec applies as written. The clip-path morph reveals it; this box never animates.
  */
-export function MenuContent({ view, scale, left }: { view: View; scale: number; left: number }) {
+export function MenuContent({ view, scale, left, top = 0 }: { view: View; scale: number; left: number; top?: number }) {
   const { w, h } = MENU_SIZE[view]
   return (
-    <div style={{ position: 'absolute', top: 0, left, width: w * scale, height: h * scale }}>
+    <div style={{ position: 'absolute', top, left, width: w * scale, height: h * scale }}>
       <div style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: '0 0', position: 'relative', fontFamily: 'var(--font-island)', color: 'var(--text)' }}>
-        {view === 'music' ? <MusicView /> : view === 'wifi' || view === 'bluetooth' || view === 'audio' ? <FlyoutView view={view} w={w} h={h} /> : <TabbedView view={view} w={w} />}
+        {view === 'music' ? <MusicView /> :  view === 'wifi' || view === 'bluetooth' || view === 'audio' ? <FlyoutView view={view} w={w} h={h} /> : <TabbedView view={view} w={w} />}
       </div>
     </div>
   )
 }
 
 function TabbedView({ view, w }: { view: TabId; w: number }) {
-  const order = useData(s => s.settings.island.tabs)
-  const Active = tabs[view].Component
+  const saved = useData(s => s.settings.island.tabs)
+  const order = saved.filter(id => id in tabs) // ids from an old or hand-edited settings file are ignored
+  const Active = (tabs[view] ?? tabs.controls).Component
   return (
     <>
       <TabBar current={view} order={order} w={w} />

@@ -55,6 +55,14 @@ export class Rig {
     }
   }
 
+  /** after a spin or roll the body is at 2*pi; the target is 0, so without this it would unwind a full turn backwards */
+  wrapTurns() {
+    for (const k of ['yaw', 'roll'] as const) {
+      const n = Math.round(this.v[k] / (2 * Math.PI))
+      if (n) this.v[k] -= n * 2 * Math.PI
+    }
+  }
+
   snap(p: Params) {
     for (const k of KEYS) { this.v[k] = p[k]; this.vel[k] = 0 }
   }

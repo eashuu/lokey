@@ -31,6 +31,7 @@ export class Sidecar extends EventEmitter {
   private pending = new Map<number, Pending>()
   private buffer = ''
   private stopping = false
+  private statsSub: unknown = null // replayed after a restart so the stats tab keeps ticking
   private restarts = 0
   ready = false
   failed = false
@@ -57,6 +58,7 @@ export class Sidecar extends EventEmitter {
     this.ready = true
     const hello = await this.call('sys.hello', { version: 1 }).catch(() => null)
     this.emit('log', `sidecar ready ${hello ? JSON.stringify(hello) : '(no hello)'}`)
+    if (this.statsSub) void this.call('stats.subscribe', this.statsSub as Methods['stats.subscribe'][0]).catch(() => undefined)
     this.emit('ready')
     return true
   }
@@ -112,6 +114,8 @@ export class Sidecar extends EventEmitter {
 
   call<M extends MethodName>(method: M, params: Methods[M][0], timeoutMs = 15000): Promise<Methods[M][1]> {
     if (!this.sock || !this.ready) return Promise.reject(new Error('sidecar not connected'))
+    if (method === 'stats.subscribe') this.statsSub = params
+    else if (method === 'stats.unsubscribe') this.statsSub = null
     const id = this.nextId++
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { this.pending.delete(id); reject(new Error(`${method} timed out`)) }, timeoutMs)

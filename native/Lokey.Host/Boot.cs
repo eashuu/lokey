@@ -26,11 +26,14 @@ internal static class Boot
         Desktops.Register();
         Foreground.Register();
         TextInput.Register();
+        Control.Register();
+        Listener.Register();
     }
 
     static async Task Step(string name, Func<Task> f)
     {
-        try { await f(); } catch (Exception e) { Log.Error("start " + name, e); }
+        // a hung service must never hold Dispatcher.Ready: give each init 15 s, then log and move on (it keeps running in the background)
+        try { await Task.Run(f).WaitAsync(TimeSpan.FromSeconds(15)); } catch (Exception e) { Log.Error("start " + name, e); }
     }
     static Task Step(string name, Action a) => Step(name, () => { a(); return Task.CompletedTask; });
 
@@ -56,6 +59,7 @@ internal static class Boot
     public static void Shutdown()
     {
         try { Hotkeys.Shutdown(); } catch { }
+        try { Listener.Shutdown(); } catch { }
         try { Visualiser.Set(false); } catch { }
         try { Foreground.Shutdown(); } catch { }
         try { Desktops.Shutdown(); } catch { }

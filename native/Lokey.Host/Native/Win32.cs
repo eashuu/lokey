@@ -26,6 +26,7 @@ internal static class W
     public static extern IntPtr CreateWindowEx(uint ex, string cls, string name, uint style, int x, int y, int w, int h, IntPtr parent, IntPtr menu, IntPtr inst, IntPtr param);
     [DllImport("user32.dll", EntryPoint = "DefWindowProcW")] public static extern IntPtr DefWindowProc(IntPtr h, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern bool DestroyWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern UIntPtr SetTimer(IntPtr hwnd, UIntPtr id, uint ms, IntPtr proc);
     [DllImport("user32.dll", EntryPoint = "GetMessageW")] public static extern int GetMessage(out MSG m, IntPtr hwnd, uint min, uint max);
     [DllImport("user32.dll")] public static extern bool TranslateMessage(ref MSG m);
     [DllImport("user32.dll", EntryPoint = "DispatchMessageW")] public static extern IntPtr DispatchMessage(ref MSG m);
@@ -54,6 +55,8 @@ internal static class W
     [StructLayout(LayoutKind.Sequential)] public struct INPUT { public uint type; public INPUTUNION u; }
     [DllImport("user32.dll", SetLastError = true)] public static extern uint SendInput(uint n, INPUT[] inputs, int size);
 
+    public static readonly UIntPtr Magic = new(0x4C4B4859); // "LKHY": marks our own injected keys so the chord hook ignores them
+
     public static INPUT Key(ushort vk, bool up, UIntPtr extra = default) =>
         new() { type = 1, u = new INPUTUNION { ki = new KEYBDINPUT { wVk = vk, dwFlags = up ? 2u : 0u, extra = extra } } };
 
@@ -61,9 +64,9 @@ internal static class W
     public static void SendChord(ushort[] mods, ushort key)
     {
         var l = new List<INPUT>();
-        foreach (var m in mods) l.Add(Key(m, false));
-        l.Add(Key(key, false)); l.Add(Key(key, true));
-        for (int i = mods.Length - 1; i >= 0; i--) l.Add(Key(mods[i], true));
+        foreach (var m in mods) l.Add(Key(m, false, Magic));
+        l.Add(Key(key, false, Magic)); l.Add(Key(key, true, Magic));
+        for (int i = mods.Length - 1; i >= 0; i--) l.Add(Key(mods[i], true, Magic));
         SendInput((uint)l.Count, l.ToArray(), Marshal.SizeOf<INPUT>());
     }
 

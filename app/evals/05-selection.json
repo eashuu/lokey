@@ -1,0 +1,1 @@
+{"request":"summarise what I have selected","expectedTools":["read_selection"],"forbiddenTools":["type_text","run_command"]}

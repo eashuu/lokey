@@ -50,7 +50,7 @@ export interface StatsTick {
 }
 
 export interface SystemStatus {
-  network: { kind: 'wifi' | 'ethernet' | 'none'; name: string; signal: number | null }
+  network: { kind: 'wifi' | 'ethernet' | 'cellular' | 'none'; name: string; signal: number | null }
   bluetooth: { available: boolean; on: boolean }
   battery: { present: boolean; pct: number; charging: boolean; minutesLeft: number | null }
   keyboard: string      // layout tag e.g. "ENG"
@@ -97,6 +97,10 @@ export interface WifiState {
 export interface BtDevice { id: string; name: string; kind: 'audio' | 'input' | 'phone' | 'computer' | 'other'; paired: boolean; connected: boolean; battery: number | null }
 export interface BtState { available: boolean; on: boolean }
 export interface AudioDevice { id: string; name: string; kind: 'output' | 'input'; isDefault: boolean }
+
+export interface WakeStatus { listening: boolean; speech: boolean; claps: boolean; recogniser: string | null; error: string | null; available: boolean }
+export interface ProcessInfo { pid: number; name: string; title: string; memMb: number }
+export interface WindowInfo { hwnd: number; title: string; exe: string; app: string; minimized: boolean; active: boolean }
 
 export type PowerAction = 'lock' | 'sleep' | 'hibernate' | 'signout' | 'restart' | 'shutdown'
 
@@ -176,6 +180,23 @@ export interface Methods {
   // dictation: where the focused text field is (physical screen px), and typing into it
   'text.focusRect': [{}, { x: number; y: number; w: number; h: number; source: 'uia' | 'focus' | 'caret' | 'window' | 'screen'; password: boolean; hwnd: number }]
   'text.insert': [{ text: string; hwnd?: number }, { ok: boolean; reason?: string }]
+  /** the text selected in the foreground app (Ctrl+C under the hood; the clipboard is put back) */
+  'text.selection': [{}, { text: string | null; reason?: string }]
+
+  // voice-assistant desktop control
+  'windows.list': [{}, WindowInfo[]]                                      // top-level app windows, most recently used first
+  'windows.focus': [{ hwnd: number }, { ok: boolean; reason?: string }]
+  'windows.forceForeground': [{ hwnd: number }, { ok: boolean; reason?: string }]   // also our own windows (island search box)
+  'input.chord': [{ name: string }, { ok: boolean; reason?: string }]     // a named shortcut from a fixed table (new_tab, snap_left, ...)
+  'input.keys': [{ combo: string }, { ok: boolean; reason?: string }]     // any combination, "ctrl+shift+t" (permission-checked by the app)
+  /** physical screen pixels; `amount` = wheel notches (positive = down) */
+  'input.mouse': [{ action: 'move' | 'click' | 'double' | 'right' | 'middle' | 'scroll' | 'drag'; x?: number; y?: number; toX?: number; toY?: number; amount?: number }, { ok: boolean; reason?: string }]
+  /** wake-up listening (claps, phrases): all analysed on this PC */
+  'wake.set': [{ claps: boolean; phrases: string[]; confidence: number; clapSensitivity: number; paused: boolean }, WakeStatus]
+  'wake.status': [{}, WakeStatus]
+  'process.list': [{}, ProcessInfo[]]
+  'process.close': [{ pid: number }, { ok: boolean; reason?: string }]     // asks the app to close (like the X button)
+  'process.kill': [{ pid: number }, { ok: boolean; reason?: string }]
 }
 
 // ---- events: name -> data ---------------------------------------------------------------------
@@ -186,7 +207,7 @@ export interface Events {
   'wallpaper.changed': { path: string | null }
   'hotkey.pressed': { id: number }
   'hotkey.down': { id: number }
-  'hotkey.up': { id: number }
+  'hotkey.up': { id: number; cancelled?: boolean }   // cancelled: another key ended the chord (Esc, typing)
   'media.changed': MediaState
   'audio.changed': AudioState
   'audio.bands': { bands: number[] }                // 32 values 0..1
@@ -198,6 +219,7 @@ export interface Events {
   'bt.changed': {}                                  // re-fetch bt.get / bt.devices
   'audio.devices.changed': {}                       // re-fetch audio.devices
   'apps.changed': {}                                // installed-apps list changed, re-fetch
+  'wake.detected': { kind: 'clap' | 'phrase'; phrase: string | null; confidence: number }
 }
 
 export type MethodName = keyof Methods

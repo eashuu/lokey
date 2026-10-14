@@ -40,6 +40,8 @@ internal sealed record ForegroundInfo(string Title, string Exe, int Pid);
 internal sealed record HelloResult(int Version, string Host);
 internal sealed record HotkeyResult(bool Ok, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Reason = null);
 internal sealed record IdEvent(int Id);
+/// <summary>hotkey.up: `Cancelled` = another key ended the chord (Esc, typing) rather than the user letting go.</summary>
+internal sealed record UpEvent(int Id, bool Cancelled);
 internal sealed record FullEvent(bool Full);
 internal sealed record PathResult(string? Path);
 internal sealed record ThumbResult(string? Thumb);

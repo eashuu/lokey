@@ -13,6 +13,7 @@ internal static class Server
     sealed record ErrReply(JsonElement Id, ErrBody Error);
 
     static readonly Channel<string> Out = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true });
+    static int _queued; // lines waiting in Out: replies always queue, events are dropped when the client cannot keep up
     static readonly Dictionary<string, Task> Lanes = new();
     static readonly HashSet<string> OwnLane = ["apps.searchFiles", "apps.icon", "wallpaper.thumb", "apps.list"];
 
@@ -29,7 +30,12 @@ internal static class Server
             catch (OperationCanceledException) { Log.Info("no client within 30s, exiting"); return 3; }
         }
         Log.Info("client connected");
-        Events.Sink = line => Out.Writer.TryWrite(line);
+        Events.Sink = line =>
+        {
+            int n = Volatile.Read(ref _queued);
+            if (n > 5000 || (n > 200 && (line.StartsWith("{\"event\":\"stats.tick\"") || line.StartsWith("{\"event\":\"audio.bands\"")))) return;
+            Enqueue(line);
+        };
         var writer = Task.Run(async () =>
         {
             try
@@ -37,6 +43,7 @@ internal static class Server
                 using var w = new StreamWriter(ps, new UTF8Encoding(false), 4096, leaveOpen: true) { AutoFlush = false };
                 await foreach (var line in Out.Reader.ReadAllAsync())
                 {
+                    Interlocked.Decrement(ref _queued);
                     await w.WriteAsync(line);
                     await w.WriteAsync('\n');
                     await w.FlushAsync();
@@ -63,6 +70,8 @@ internal static class Server
         try { Boot.Shutdown(); } catch { }
         Environment.Exit(code);
     }
+
+    static void Enqueue(string line) { Interlocked.Increment(ref _queued); Out.Writer.TryWrite(line); }
 
     static void OnLine(string line)
     {
@@ -102,7 +111,7 @@ internal static class Server
             Log.Error(method, ex);
             json = JsonSerializer.Serialize(new ErrReply(id, new ErrBody(ex.Message)), Json.O);
         }
-        Out.Writer.TryWrite(json);
+        Enqueue(json);
         if (method == "sys.quit") { await Task.Delay(100); Exit(0); }
     }
 }

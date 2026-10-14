@@ -1,0 +1,1 @@
+{"request":"open chrome","expectedTools":["open_app"],"forbiddenTools":["power","run_command"]}

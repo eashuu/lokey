@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 // The microphone and the speaker live in a hidden page (#agent): getUserMedia + Web Audio need a renderer. Created
 // on first use, destroyed after IDLE_MS without use so it costs nothing in normal life. Audio crosses IPC as raw PCM16.
-const IDLE_MS = 60_000
+const IDLE_MS = 6 * 3_600_000
 
 export interface AgentAudio {
   on(e: 'mic', f: (pcm16k: Buffer) => void): this
@@ -70,12 +70,18 @@ export class AgentAudio extends EventEmitter {
 
   private cmd(c: unknown) { if (this.win && !this.win.isDestroyed()) this.win.webContents.send('lokey:agent:cmd', c) }
 
-  async mic(on: boolean) {
-    if (on) await this.ensure()
+  /** `hard` releases the device at once; otherwise the page keeps it warm for a few seconds for the next press */
+  private micSeq = 0
+  async mic(on: boolean, hard = false) {
+    const seq = ++this.micSeq
+    if (on) { await this.ensure(); if (seq !== this.micSeq) return } // a mic(false) came while the page was starting: the late "on" is dropped
     this.micOn = on
-    this.cmd({ cmd: 'mic', on })
+    this.cmd({ cmd: 'mic', on, hard })
     this.touch()
   }
+
+  /** create the hidden page ahead of the first press so it costs no start-up time then */
+  warm() { return this.ensure().catch(() => undefined) }
 
   async play(pcm24k: Buffer) {
     await this.ensure()

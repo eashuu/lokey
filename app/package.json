@@ -1,6 +1,6 @@
 {
   "name": "lokey",
-  "version": "0.1.0",
+  "version": "0.5.1",
   "private": true,
   "description": "Voice-first AI island for Windows",
   "main": "./out/main/index.js",
@@ -12,9 +12,13 @@
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "package": "node scripts/package.mjs",
-    "sidecar": "dotnet build ../native/Lokey.Host -c Release"
+    "sidecar": "dotnet build ../native/Lokey.Host -c Release",
+    "mobile:web": "vite build -c vite.mobile.config.ts",
+    "mobile:sync": "pnpm mobile:web && cap sync android",
+    "mobile:check": "node scripts/mobile-selfcheck.mjs"
   },
   "dependencies": {
+    "@capacitor/app": "^7.1.2",
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/rubik": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
@@ -26,6 +30,9 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",

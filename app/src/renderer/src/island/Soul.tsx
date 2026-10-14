@@ -6,6 +6,7 @@ import { MascotGL } from '@/mascot/gl'
 import { useData } from '@/lib/data'
 import { DEFAULT_PALETTE, Soul2D, type SoulPalette } from './Soul2D'
 import type { SoulMode } from './store'
+import { isPhone } from '@/lib/platform'
 
 export { DEFAULT_PALETTE }
 export type { SoulPalette }
@@ -62,7 +63,7 @@ function Soul3D({ width, height, mode, active, palette = DEFAULT_PALETTE, quiet,
     if (!el || !active) return
     let gl: MascotGL
     const cv = document.createElement('canvas')
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const dpr = Math.min(window.devicePixelRatio || 1, isPhone ? 1.5 : 2) // phone: fewer pixels to shade
     cv.style.cssText = `width:${width}px;height:${height}px;display:block;opacity:0;transition:opacity .18s linear`
     try {
       gl = new MascotGL(cv)
@@ -76,7 +77,7 @@ function Soul3D({ width, height, mode, active, palette = DEFAULT_PALETTE, quiet,
     const fr = frame ?? (Math.min(width, height) < 60 ? 0.9 : 1.08)
     const b = (brain.current ??= new Brain(k => { if (!quiet) mascot.emote(k) }))
     b.wake()
-    const off = quiet ? () => undefined : mascot.on(e => { if (e.type === 'play') b.play(e.name) })
+    const off = quiet ? () => undefined : mascot.on(e => { if (e.type === 'play') b.play(e.name, e.opts) })
 
     // pointer -> eye contact (read in the loop, never measured per event)
     let px = NaN
@@ -90,7 +91,7 @@ function Soul3D({ width, height, mode, active, palette = DEFAULT_PALETTE, quiet,
     let t0 = performance.now()
     const draw = (now: number) => {
       raf = requestAnimationFrame(draw)
-      if (now - last < 15) return // 60 fps cap on high-refresh displays
+      if (now - last < (isPhone ? 30 : 15)) return // 60 fps cap on high-refresh displays; ~30 fps on the phone (battery, mid GPUs)
       try { if (!gl.ready()) return } catch (e) { console.warn('3D mascot unavailable, using 2D:', e); cancelAnimationFrame(raf); failRef.current(); return }
       const dt = Math.min(0.05, last ? (now - last) / 1000 : 0.016)
       last = now

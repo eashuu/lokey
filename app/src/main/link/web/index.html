@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lokey Link</title><meta name="theme-color" content="#0b0b10"><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon.svg">
+<style>
+:root{--bg:#0b0b10;--card:#16161f;--line:#262633;--text:#ececf4;--muted:#8d8da0;--acc:#8b7bff;--ok:#3ecf8e;--bad:#ff6b6b}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,sans-serif}
+body{min-height:100dvh;padding:env(safe-area-inset-top) 16px calc(76px + env(safe-area-inset-bottom))}
+h1{font-size:1.2rem;margin:18px 0 4px}p.m{color:var(--muted);margin:4px 0 14px;font-size:.9rem}
+input,textarea,button{font:inherit;color:inherit}input,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:6px 0}
+button{background:var(--acc);color:#0b0b10;border:0;border-radius:12px;padding:12px 16px;font-weight:600;min-height:44px}button.g{background:var(--card);color:var(--text);border:1px solid var(--line)}button.d{background:var(--bad)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}.row{display:flex;gap:10px}.row>*{flex:1}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;color:var(--muted);border-radius:0;min-height:56px}nav button[aria-selected=true]{color:var(--acc)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bad);margin-right:6px}.dot.on{background:var(--ok)}
+.hide{display:none}pre{white-space:pre-wrap;word-break:break-word;margin:0;color:var(--muted);font-size:.85rem}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .15s ease-out}@keyframes in{from{opacity:0;transform:translateY(4px)}}}
+</style></head><body>
+<section id="pair" class="hide"><h1>Pair with your PC</h1><p class="m">On the PC: Lokey Settings, Devices, then Pair a phone. Enter the 6-digit code (valid 2 minutes).</p>
+<input id="code" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code"><input id="name" placeholder="Device name" value="My phone"><button id="go" style="width:100%">Pair</button><p id="perr" class="m"></p></section>
+<main id="app" class="hide">
+<p class="m"><span id="dot" class="dot"></span><span id="conn">connecting</span> <button class="g" id="unpair" style="float:right;padding:4px 10px;min-height:0">Unpair</button></p>
+<section id="t-appr"><h1>Approvals</h1><div id="cards"><p class="m">Nothing waiting. When Lokey on the PC asks permission, it shows here.</p></div></section>
+<section id="t-say" class="hide"><h1>Say it</h1><textarea id="say" rows="4" placeholder="Ask Lokey on your PC..."></textarea><div class="row"><button class="g" id="mic">Mic</button><button id="send">Send</button></div><p id="sayr" class="m"></p>
+<h1>Memory</h1><input id="q" placeholder="Search what Lokey remembers"><div id="mem"></div></section>
+<section id="t-stat" class="hide"><h1>Status</h1><div class="card"><pre id="stat">loading</pre></div><button class="g" id="refresh" style="width:100%">Refresh</button></section>
+<section id="t-clip" class="hide"><h1>Send to PC clipboard</h1><textarea id="clip" rows="5" placeholder="Text or link"></textarea><button id="csend" style="width:100%">Send</button><p id="cr" class="m"></p></section>
+<nav><button data-t="appr" aria-selected="true">Approvals</button><button data-t="say" aria-selected="false">Say it</button><button data-t="stat" aria-selected="false">Status</button><button data-t="clip" aria-selected="false">Clipboard</button></nav>
+</main><script src="/app.js"></script></body></html>

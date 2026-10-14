@@ -1,7 +1,11 @@
 import { useRef, useState, type CSSProperties } from 'react'
-import { Music, Pause, Play, SkipBack, SkipForward } from 'lucide-react'
+import { Music, MicVocal, Pause, Play, SkipBack, SkipForward } from 'lucide-react'
+import { bridge } from '@/bridge'
 import { clamp, mmss } from '@/lib/format'
 import { mediaControl, mediaSeek, useMediaPosition } from '@/lib/media'
+
+/** touch target of the round buttons (the phone's own cards have their own controls) */
+const HIT = 32
 
 const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
 const time: CSSProperties = { position: 'absolute', top: 54, width: 36, height: 16, lineHeight: '16px', fontSize: 10, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }
@@ -13,7 +17,7 @@ function Icon({ cx, cy, label, onClick, disabled, children }: { cx: number; cy: 
       aria-label={label}
       onClick={onClick}
       className="hover:brightness-[1.15] active:scale-[0.94]"
-      style={{ position: 'absolute', left: cx - 16, top: cy - 16, width: 32, height: 32, display: 'grid', placeItems: 'center', color: 'var(--text)', opacity: disabled ? 0.4 : 1, transition: 'filter .1s linear, transform .1s linear, opacity .1s linear' }}
+      style={{ position: 'absolute', left: cx - HIT / 2, top: cy - HIT / 2, width: HIT, height: HIT, display: 'grid', placeItems: 'center', color: 'var(--text)', opacity: disabled ? 0.4 : 1, transition: 'filter .1s linear, transform .1s linear, opacity .1s linear' }}
     >
       {children}
     </button>
@@ -48,6 +52,7 @@ export function MusicView() {
         onPointerDown={e => { if (!has || !dur) return; e.currentTarget.setPointerCapture(e.pointerId); setDrag(at(e)) }}
         onPointerMove={e => { if (drag != null && e.currentTarget.hasPointerCapture(e.pointerId)) setDrag(at(e)) }}
         onPointerUp={e => { if (drag == null) return; e.currentTarget.releasePointerCapture(e.pointerId); mediaSeek(at(e) * dur); setDrag(null) }}
+        onPointerCancel={() => setDrag(null)}
         style={{ position: 'absolute', left: 40, top: 52, width: 264, height: 19, cursor: has && dur ? 'pointer' : 'default', touchAction: 'none' }}
       >
         <div style={{ position: 'absolute', left: 0, top: 8.5, width: 264, height: 3, borderRadius: 1.5, background: 'var(--fill-4)', overflow: 'hidden' }}>
@@ -55,6 +60,10 @@ export function MusicView() {
         </div>
       </div>
       <span style={{ ...time, right: 0, textAlign: 'right' }}>{mmss(dur)}</span>
+      {has && (
+        <button aria-label="Open lyrics" title="Lyrics" onClick={() => bridge.lyrics.openWindow()} className="hover:brightness-[1.25] active:scale-[0.94]"
+          style={{ position: 'absolute', left: 312, top: 78, width: HIT, height: HIT, display: 'grid', placeItems: 'center', color: 'var(--muted)', transition: 'filter .1s linear, transform .1s linear' }}><MicVocal size={17} /></button>
+      )}
       <Icon cx={116} cy={98} label="Previous" onClick={() => mediaControl('prev')} disabled={!has || !media!.canPrev}><SkipBack size={18} fill="currentColor" /></Icon>
       <Icon cx={172} cy={98} label={playing ? 'Pause' : 'Play'} onClick={() => mediaControl('toggle')} disabled={!has}>{playing ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}</Icon>
       <Icon cx={228} cy={98} label="Next" onClick={() => mediaControl('next')} disabled={!has || !media!.canNext}><SkipForward size={18} fill="currentColor" /></Icon>

@@ -1,0 +1,77 @@
+/* Phone only: everything here is under html.phone (set by lib/platform.ts), so the Windows UI never sees it. */
+html.phone {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --page-x: 16px;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+html.phone, html.phone body, html.phone #root { background: var(--bg); touch-action: manipulation; }
+html.phone body { -webkit-touch-callout: none; }
+/* text can be selected where it is content (inputs, transcript); the rest stays unselectable like a native app */
+html.phone input, html.phone textarea { font-size: 16px; user-select: text; }
+html.phone .scroll-y { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+html.phone .scroll-y::-webkit-scrollbar { display: none; }
+html.phone .scroll-x { touch-action: pan-x; }
+/* no hover-only controls: hover styles must not stick after a tap */
+@media (hover: none) { html.phone *:hover { filter: none; } }
+
+@keyframes ph-spin { to { transform: rotate(360deg); } }
+html.phone .ph-spin { animation: ph-spin 1s linear infinite; }
+
+/* shell */
+html.phone .ph-nav { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px 8px calc(var(--sab) + 6px); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
+html.phone .ph-nav button { min-height: 52px; border-radius: 16px; display: grid; justify-items: center; align-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--muted); transition: color .15s, background-color .15s; }
+html.phone .ph-nav button[aria-current="page"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+/* every ordinary button in a page is at least a thumb wide */
+html.phone .ph-body button:not(.ph-keep):not([role="switch"]) { min-height: 40px; min-width: 40px; }
+html.phone .ph-body { --page-x: 16px; }
+html.phone .ph-body .card { border-radius: 16px; }
+
+/* settings sections embedded in the You page: one column of rows, the section list is hidden (the page has its own list) */
+html.phone .lk-set { flex-direction: column; }
+html.phone .lk-set-nav { display: none !important; }
+html.phone .lk-set-main { padding: 4px 0 24px !important; }
+html.phone .lk-set-main h1 { display: none; }
+html.phone .lk-set-row { flex-wrap: wrap; gap: 8px 12px !important; padding: 12px 14px !important; min-height: 56px; }
+html.phone .lk-set-row > div:last-child { flex: 0 1 auto !important; flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }
+html.phone .lk-set-row > div:first-child { flex: 1 1 150px; min-width: 150px; }
+html.phone .lk-set-row:has(input:not([type="color"]):not([type="range"])) > div { flex: 1 1 100% !important; }
+html.phone .lk-set-main input:not([type="color"]):not([type="range"]) { flex: 1 1 140px; width: auto !important; min-width: 0; }
+html.phone .lk-set-main input:not([type="color"]):not([type="range"]), html.phone .lk-set-main select { min-height: 44px; max-width: 100%; font-size: 16px !important; }
+html.phone .lk-set-main button:not([role="switch"]):not(.row-hover) { min-height: 44px; }
+html.phone .lk-set-main [role="switch"] { position: relative; }
+html.phone .lk-set-main [role="switch"]::after { content: ""; position: absolute; inset: -14px -8px; }
+html.phone .lk-set-main .card { border-radius: 28px; }
+
+/* lyrics */
+html.phone .lw-bar { height: calc(52px + var(--sat)); padding-top: var(--sat); }
+html.phone .lw-bar .tools { opacity: 1; }
+html.phone .lw-btn { width: 44px; height: 44px; border-radius: 22px; }
+html.phone .lw-btn[aria-label="Keep on top"], html.phone .lw-btn[aria-label="Unpin"] { display: none; }
+html.phone .lw-plain { inset: calc(56px + var(--sat)) 0 0; }
+html.phone .lw-credit { bottom: calc(10px + var(--sab)); }
+html.phone .lw-track { padding-bottom: var(--sab); }
+
+/* onboarding */
+html.phone .ob-btn { min-height: 52px; border-radius: 26px; padding: 0 22px; font-size: 16px; font-weight: 600; background: var(--fill-3); color: var(--text); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+html.phone .ob-btn.pri { background: var(--accent); color: var(--accent-ink); }
+html.phone .ob-btn:disabled { opacity: .45; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.phone *, html.phone *::before, html.phone *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
+
+/* Origin Island + cards */
+@keyframes ih-eq { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+html.phone .ih-eq { display: flex; align-items: center; gap: 2px; height: 16px; }
+html.phone .ih-eq i { display: block; width: 3px; height: 100%; border-radius: 2px; background: #fff; transform: scaleY(.3); transform-origin: center; animation: ih-eq .9s ease-in-out infinite; animation-play-state: paused; }
+html.phone .ih-eq[data-on="true"] i { animation-play-state: running; }
+@keyframes ih-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+html.phone .ih-pulse { animation: ih-pulse 1.4s ease-in-out infinite; }
+html.phone .ih-btn:active { transform: scale(.96); }
+html.phone .ph-pill { min-height: 48px; border-radius: 24px; padding: 0 18px; font-size: 14px; font-weight: 600; background: var(--fill-3); color: var(--text); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+html.phone .ph-pill.pri { background: var(--accent); color: var(--accent-ink); }
+html.phone .ph-pill:disabled { opacity: .45; }

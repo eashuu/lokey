@@ -18,17 +18,24 @@ export function initVoiceBridge() {
       clearTimeout(flashTimer)
       const menu = is.shape === 'menu'
       // like the reference demos: the notch opens to its awake shape with the mascot reacting; the caption lives at the bottom
-      const awake = (soul: 'HEARING' | 'LOOKING' | 'THINKING' | 'TALKING') => { if (!menu && is.shape !== 'awake') is.wake('pinned'); is.setSoul(soul) }
+      // while a voice turn runs the notch stays awake whatever the pointer does (pinned), and this bridge is the only writer of the soul
+      const awake = (soul: 'HEARING' | 'LOOKING' | 'THINKING' | 'TALKING') => { is.setVoiceBusy(true); if (!menu) { if (is.shape !== 'awake') is.wake('pinned'); else useIsland.setState({ mode: 'pinned' }) } is.setSoul(soul) }
       if (e.state === 'listening' || e.state === 'connecting') awake(e.kind === 'lasso' ? 'LOOKING' : 'HEARING')
       else if (e.state === 'thinking') awake('THINKING')
       else if (e.state === 'speaking') awake('TALKING')
       else { // idle / error
+        is.setVoiceBusy(false)
         useIsland.setState({ mode: 'hover' })
         if (is.shape === 'held' || is.shape === 'awake') is.release()
         is.setSoul(is.rest === 'awake' || is.shape === 'menu' ? 'LISTENING' : 'MUTED')
       }
     } else if (e.type === 'mascot') {
-      if (e.play) mascot.play(e.play)
+      if (e.flash && is.shape === 'sleep' && !is.voiceBusy) {
+        is.wake('hover')
+        clearTimeout(flashTimer)
+        flashTimer = setTimeout(() => { const s = useIsland.getState(); if (s.shape === 'awake' && s.rest === 'sleep' && !s.voiceBusy) s.sleep() }, 3800)
+      }
+      if (e.play) mascot.play(e.play, { prio: 3 })
       if (e.emote) mascot.emote(e.emote as EmoteKind)
     } else if (e.type === 'reply' && is.shape === 'sleep') {
       // a scheduled task spoke up while the island sleeps: show the mascot for a moment

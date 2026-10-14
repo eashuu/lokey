@@ -26,19 +26,21 @@ const NOTCH: Record<'sleep' | 'awake' | 'held', ShapeParams> = {
   awake: { depth: 75, width: 210, corner: 17, rampW: 18, rampH: 22 },
   held: { depth: 36, width: 168, corner: 16, rampW: 10.8, rampH: 13.2 },
 }
+// the sleeping shape in "hairline" mode: ~3 px tall, so it hardly covers anything at the top edge but can still be hovered
+const HAIRLINE: ShapeParams = { depth: 4, width: 190, corner: 4, rampW: 3, rampH: 3 }
 const MENU = { corner: 25.5, rampW: 30.6, rampH: 28.9 }
 
 /** The menu is drawn at 0.9 of its design size, like the reference; notches at 0.8 so they feel small on a real desktop. */
 export const MENU_BASE = 0.9
 export const NOTCH_BASE = 0.8
 
-export function paramsFor(shape: Shape, view: View, k: number): ShapeParams {
+export function paramsFor(shape: Shape, view: View, k: number, hairline = false): ShapeParams {
   if (shape === 'menu') {
     const m = MENU_SIZE[view]
     const s = MENU_BASE * k
     return { depth: m.h * s, width: m.w * s, corner: MENU.corner * s, rampW: MENU.rampW * s, rampH: MENU.rampH * s }
   }
-  const n = NOTCH[shape]
+  const n = shape === 'sleep' && hairline ? HAIRLINE : NOTCH[shape]
   const s = NOTCH_BASE * k
   return { depth: n.depth * s, width: n.width * s, corner: n.corner * s, rampW: n.rampW * s, rampH: n.rampH * s }
 }

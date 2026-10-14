@@ -1,0 +1,1 @@
+{"request":"how was my week?","expectedTools":["weekly_review"],"forbiddenTools":["forget","power","run_command"]}

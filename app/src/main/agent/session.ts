@@ -13,8 +13,10 @@ export interface SessionOptions {
   voice: string
   system: string
   tools: FunctionDecl[]
-  /** produce spoken audio; false = text-only replies */
-  audio: boolean
+  /** push-to-talk: the server's own voice detection is off; the client marks where speech starts and ends */
+  manual?: boolean
+  /** a resumption handle from an earlier connection: the server restores that conversation's context */
+  resume?: string
 }
 
 export declare interface GeminiSession {
@@ -25,6 +27,8 @@ export declare interface GeminiSession {
   on(e: 'turnComplete', f: () => void): this
   on(e: 'interrupted', f: () => void): this
   on(e: 'closed', f: (reason: string) => void): this
+  on(e: 'handle', f: (h: string) => void): this
+  on(e: 'goAway', f: () => void): this
 }
 
 export class GeminiSession extends EventEmitter {
@@ -39,7 +43,7 @@ export class GeminiSession extends EventEmitter {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       let settled = false
-      const fail = (m: string) => { if (!settled) { settled = true; reject(new Error(m)) } this.close(m) }
+      const fail = (m: string) => { const was = this.open; if (!settled) { settled = true; reject(new Error(m)) } this.close(m); if (was) this.emit('closed', m) } // a socket error on a live session is a close too
       const timer = setTimeout(() => fail('timed out waiting for the model'), 12_000)
       const ws = new WebSocket(`${URL_BASE}?key=${encodeURIComponent(this.o.key)}`)
       this.ws = ws
@@ -49,10 +53,11 @@ export class GeminiSession extends EventEmitter {
         this.send({
           setup: {
             model,
-            generationConfig: {
-              responseModalities: [this.o.audio ? 'AUDIO' : 'TEXT'],
-              ...(this.o.audio ? { speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.o.voice } } } } : {}),
-            },
+            // native-audio models only answer in AUDIO; "captions only" just means we do not play it
+            generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.o.voice } } } },
+            sessionResumption: this.o.resume ? { handle: this.o.resume } : {},
+            contextWindowCompression: { slidingWindow: {} },
+            ...(this.o.manual ? { realtimeInputConfig: { automaticActivityDetection: { disabled: true }, activityHandling: 'START_OF_ACTIVITY_INTERRUPTS', turnCoverage: 'TURN_INCLUDES_ONLY_ACTIVITY' } } : {}),
             systemInstruction: { parts: [{ text: this.o.system }] },
             tools: this.o.tools.length ? [{ functionDeclarations: this.o.tools }] : undefined,
             inputAudioTranscription: {},
@@ -92,21 +97,34 @@ export class GeminiSession extends EventEmitter {
       if (sc.outputTranscription?.text) this.emit('outText', String(sc.outputTranscription.text))
       for (const p of sc.modelTurn?.parts ?? []) {
         if (p.inlineData?.data && String(p.inlineData.mimeType ?? '').startsWith('audio/')) this.emit('audio', Buffer.from(p.inlineData.data, 'base64'))
-        else if (typeof p.text === 'string' && !this.o.audio) this.emit('outText', p.text)
       }
       if (sc.turnComplete) this.emit('turnComplete')
     }
     if (m.toolCall?.functionCalls?.length) {
       this.emit('toolCall', (m.toolCall.functionCalls as ToolCall[]).map(c => ({ id: c.id, name: c.name, args: c.args ?? {} })))
     }
-    if (m.goAway) this.emit('closed', 'the server is closing this session')
+    if (m.sessionResumptionUpdate?.newHandle) this.emit('handle', String(m.sessionResumptionUpdate.newHandle))
+    // the server will close this connection soon: finish the current turn, reconnect (with the handle) for the next one
+    if (m.goAway) this.emit('goAway')
   }
 
   private send(o: unknown) { if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(o)) }
 
   sendAudio(pcm16k: Buffer) { if (this.open) this.send({ realtimeInput: { audio: { mimeType: 'audio/pcm;rate=16000', data: pcm16k.toString('base64') } } }) }
-  audioEnd() { if (this.open) this.send({ realtimeInput: { audioStreamEnd: true } }) }
-  sendText(text: string) { if (this.open) this.send({ realtimeInput: { text } }) }
+  /** push-to-talk down / up (the model only answers after activityEnd) */
+  activityStart() { if (this.open && this.o.manual) this.send({ realtimeInput: { activityStart: {} } }) }
+  /** without manual turns (server-side voice detection) the end of the audio stream is the closest thing to a release */
+  activityEnd() { if (this.open) this.send({ realtimeInput: this.o.manual ? { activityEnd: {} } : { audioStreamEnd: true } }) }
+  /** a typed turn. Newer Live models take text only as realtime input (client content is for seeding history), and with manual turns
+   *  a message is a turn only between activityStart and activityEnd. */
+  sendText(text: string) {
+    if (!this.open) return
+    if (this.o.manual) this.send({ realtimeInput: { activityStart: {} } })
+    this.send({ realtimeInput: { text } })
+    if (this.o.manual) this.send({ realtimeInput: { activityEnd: {} } })
+  }
+  /** a line of text inside the current turn (what the pictures show) */
+  sendNote(text: string) { if (this.open) this.send({ realtimeInput: { text } }) }
   sendImage(jpeg: Buffer) { if (this.open) this.send({ realtimeInput: { video: { mimeType: 'image/jpeg', data: jpeg.toString('base64') } } }) }
   toolResponse(id: string, name: string, response: Record<string, unknown>) { this.send({ toolResponse: { functionResponses: [{ id, name, response }] } }) }
 

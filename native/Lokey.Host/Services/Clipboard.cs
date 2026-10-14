@@ -35,8 +35,8 @@ internal static class Clipboard
     static readonly SemaphoreSlim CaptureGate = new(1, 1);
     static readonly List<Item> Items = new();           // newest first
     static Settings _s = new();
-    static readonly string Dir = Paths.Dir("clipboard");
-    static readonly string ImgDir = Paths.Dir("clipboard", "img");
+    static readonly string Dir = Path.Combine(Paths.Root, "clipboard"); // created on first write
+    static readonly string ImgDir = Path.Combine(Paths.Root, "clipboard", "img");
     static readonly Debounce Save = new(1500, SaveNow);
     static Timer? _daily;
     static volatile uint _selfSeq;
@@ -311,6 +311,45 @@ internal static class Clipboard
         Save.Poke();
     }
 
+    // ============================== selection (voice assistant) ==============================
+    static string? ReadTextNow()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            if (!W.OpenClipboard(IntPtr.Zero)) { Thread.Sleep(20); continue; }
+            try
+            {
+                if (!W.IsClipboardFormatAvailable(CF_UNICODETEXT)) return null;
+                var h = W.GetClipboardData(CF_UNICODETEXT);
+                var p = h == IntPtr.Zero ? IntPtr.Zero : W.GlobalLock(h);
+                if (p == IntPtr.Zero) return null;
+                try { return Marshal.PtrToStringUni(p); } finally { W.GlobalUnlock(h); }
+            }
+            finally { W.CloseClipboard(); }
+        }
+        return null;
+    }
+
+    /// <summary>Ctrl+C in the foreground app and read what arrived; the user's previous clipboard text is put back and the temporary copy is not history.</summary>
+    internal static async Task<string?> CopySelectionAsync()
+    {
+        var before = W.GetClipboardSequenceNumber();
+        var prev = ReadTextNow();
+        W.SendChord([0x11], 0x43);
+        string? got = null;
+        for (int i = 0; i < 24; i++)
+        {
+            await Task.Delay(25);
+            if (W.GetClipboardSequenceNumber() == before) continue;
+            await Task.Delay(30);
+            got = ReadTextNow();
+            break;
+        }
+        if (got is not null && prev is not null) SetClipboard(new Item { Id = NewId(), Kind = "text", Text = prev });
+        _selfSeq = W.GetClipboardSequenceNumber();
+        return got is { Length: > 0 } ? (got.Length > 20_000 ? got[..20_000] : got) : null;
+    }
+
     // ============================== paste ==============================
     static async Task PasteAsync(string id)
     {
@@ -383,7 +422,7 @@ internal static class Clipboard
 
     static void WriteBlob(Item i, string ext, byte[] data)
     {
-        try { File.WriteAllBytes(BlobPath(i, ext), i.Pinned ? data : W.Protect(data)); } catch (Exception e) { Log.Error("clip blob write", e); }
+        try { Directory.CreateDirectory(ImgDir); File.WriteAllBytes(BlobPath(i, ext), i.Pinned ? data : W.Protect(data)); } catch (Exception e) { Log.Error("clip blob write", e); }
     }
 
     static byte[]? ReadBlob(Item i, string ext)
@@ -422,13 +461,14 @@ internal static class Clipboard
     static void WriteAtomic(string path, byte[] data)
     {
         var tmp = path + ".tmp";
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllBytes(tmp, data);
         File.Move(tmp, path, true);
     }
 
     static void SaveSettings()
     {
-        try { File.WriteAllText(Path.Combine(Dir, "settings.json"), JsonSerializer.Serialize(_s, Json.O)); } catch { }
+        try { Directory.CreateDirectory(Dir); File.WriteAllText(Path.Combine(Dir, "settings.json"), JsonSerializer.Serialize(_s, Json.O)); } catch { }
     }
 
     static void LoadAll()

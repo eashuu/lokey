@@ -33,3 +33,34 @@ export function clearKey() {
   cached = null
   try { rmSync(file, { force: true }) } catch { /* nothing to remove */ }
 }
+
+// ---- other providers' keys (FreeLLMAPI, OpenRouter, Groq...), same protection, one file per name ----------------------------------
+const secrets = new Map<string, string | null>()
+const safeName = (ref: string) => ref.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40)
+
+export function getSecret(ref: string): string | null {
+  if (ref === 'gemini') return getKey()
+  const n = safeName(ref)
+  if (!n) return null
+  if (secrets.has(n)) return secrets.get(n) ?? null
+  let v: string | null = null
+  try { const f = join(dataDir, `secret-${n}.key`); v = existsSync(f) && safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(readFileSync(f)) : null } catch { v = null }
+  secrets.set(n, v)
+  return v
+}
+
+export function hasSecret(ref: string) { return getSecret(ref) !== null }
+
+export function setSecret(ref: string, value: string): boolean {
+  if (ref === 'gemini') return setKey(value)
+  const n = safeName(ref), v = value.trim()
+  if (!n || v.length < 4 || !safeStorage.isEncryptionAvailable()) return false
+  try { mkdirSync(dataDir, { recursive: true }); writeFileSync(join(dataDir, `secret-${n}.key`), safeStorage.encryptString(v)); secrets.set(n, v); return true } catch { return false }
+}
+
+export function clearSecret(ref: string) {
+  if (ref === 'gemini') { clearKey(); return }
+  const n = safeName(ref)
+  secrets.set(n, null)
+  try { rmSync(join(dataDir, `secret-${n}.key`), { force: true }) } catch { /* nothing to remove */ }
+}

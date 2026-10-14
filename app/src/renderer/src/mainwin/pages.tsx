@@ -20,10 +20,10 @@ export function Placeholder({ title, line }: { title: string; line: string }) {
 }
 
 /** SettingsApp assumes a full window with room for the OS title bar; trim its top padding for ours. */
-export function SettingsPage() {
+export function SettingsPage({ section }: { section?: string }) {
   return (
     <div style={{ ...pageBox, overflow: 'hidden' }}>
-      <div style={{ height: 'calc(100% + 36px)', marginTop: -36 }}><SettingsApp /></div>
+      <div style={{ height: 'calc(100% + 36px)', marginTop: -36 }}><SettingsApp section={section} /></div>
     </div>
   )
 }

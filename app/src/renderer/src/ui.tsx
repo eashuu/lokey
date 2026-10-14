@@ -74,6 +74,7 @@ export function Slider({ value, onChange, onCommit, label }: { value: number; on
       onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); onChange(set(e)) }}
       onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(set(e)) }}
       onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit?.(set(e)) }}
+      onPointerCancel={e => onCommit?.(set(e))} // a cancelled drag (touch, pen, focus loss) still ends where it was
       style={{ position: 'relative', height: '1.25rem', display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
     >
       <div style={{ position: 'absolute', left: 0, right: 0, height: '0.3125rem', borderRadius: 999, background: 'var(--s3)' }} />
@@ -148,6 +149,7 @@ export function PillSlider({ value, onChange, onCommit, label, icon, text }: { v
       onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); onChange(at(e)) }}
       onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(at(e)) }}
       onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit?.(at(e)) }}
+      onPointerCancel={e => onCommit?.(at(e))} // a cancelled drag (touch, pen, focus loss) still ends where it was
       style={{ position: 'relative', height: 38, borderRadius: 19, background: 'rgb(var(--ov) / .063)', overflow: 'hidden', touchAction: 'none', cursor: 'pointer' }}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${value * 100}%`, borderRadius: 19, background: 'var(--accent)' }} />

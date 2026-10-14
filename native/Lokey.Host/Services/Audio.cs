@@ -39,9 +39,10 @@ internal static class Audio
 
     static void Acquire()
     {
+        MMDevice? oldOut, oldMic;
         lock (L)
         {
-            Release();
+            oldOut = _out; oldMic = _mic; _out = _mic = null;
             try
             {
                 _out = _enum!.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
@@ -56,13 +57,9 @@ internal static class Audio
             }
             catch { _mic = null; }
         }
-    }
-
-    static void Release()
-    {
-        try { if (_out is not null) { _out.AudioEndpointVolume.OnVolumeNotification -= OnVol; _out.Dispose(); } } catch { }
-        try { if (_mic is not null) { _mic.AudioEndpointVolume.OnVolumeNotification -= OnVol; _mic.Dispose(); } } catch { }
-        _out = _mic = null;
+        // outside L: unsubscribing waits for an in-flight OnVol callback, which takes L
+        try { if (oldOut is not null) { oldOut.AudioEndpointVolume.OnVolumeNotification -= OnVol; oldOut.Dispose(); } } catch { }
+        try { if (oldMic is not null) { oldMic.AudioEndpointVolume.OnVolumeNotification -= OnVol; oldMic.Dispose(); } } catch { }
     }
 
     public static AudioState Get()

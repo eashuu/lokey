@@ -17,7 +17,7 @@ internal static class Apps
     static Task<Dictionary<string, Raw>>? _cache;
     static readonly object L = new();
     static Persist _p = new();
-    static readonly string StateFile = Paths.Sub("apps.json");
+    static readonly string StateFile = Path.Combine(Paths.Root, "apps.json"); // the folder is created on first write, not at startup
     static readonly List<FileSystemWatcher> Watchers = new();
     static readonly Debounce Changed = new(1500, () => { lock (L) _cache = null; Events.Emit("apps.changed", Dispatcher.Ok); });
 
@@ -67,7 +67,7 @@ internal static class Apps
     // ---- enumeration ----
     static Task<Dictionary<string, Raw>> Cache()
     {
-        lock (L) return _cache ??= Sta.Run(Enumerate);
+        lock (L) { if (_cache is { IsFaulted: true } or { IsCanceled: true }) _cache = null; return _cache ??= Sta.Run(Enumerate); } // never cache a failure
     }
 
     static Dictionary<string, Raw> Enumerate()
@@ -164,7 +164,7 @@ internal static class Apps
 
     static void Save()
     {
-        try { File.WriteAllText(StateFile, JsonSerializer.Serialize(_p, Json.O)); } catch (Exception e) { Log.Error("apps.json", e); }
+        try { Directory.CreateDirectory(Paths.Root); File.WriteAllText(StateFile, JsonSerializer.Serialize(_p, Json.O)); } catch (Exception e) { Log.Error("apps.json", e); }
     }
 
     // ---- Windows Search ----

@@ -51,6 +51,7 @@ function Seek({ frac, onChange, onCommit }: { frac: number; onChange: (v: number
       onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); onChange(at(e)) }}
       onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(at(e)) }}
       onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit(at(e)) }}
+      onPointerCancel={e => onCommit(at(e))} // a cancelled drag (touch, pen, focus loss) still ends where it was
       style={{ position: 'absolute', left: 58, top: 100, width: 488, height: 19, cursor: 'pointer', touchAction: 'none' }}
     >
       <div style={{ position: 'absolute', left: 0, top: 8.5, width: 488, height: 3, borderRadius: 1.5, background: 'var(--fill-3)', overflow: 'hidden' }}>

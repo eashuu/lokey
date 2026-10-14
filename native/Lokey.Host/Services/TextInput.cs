@@ -18,6 +18,7 @@ internal static class TextInput
     public static void Register()
     {
         Dispatcher.AddAsync("text.focusRect", async _ => await FocusRectAsync());
+        Dispatcher.AddAsync("text.selection", async _ => await SelectionAsync());
         Dispatcher.AddAsync("text.insert", async p => await InsertAsync(Args.Str(p, "text"), (long)(Args.OptNum(p, "hwnd") ?? 0)));
     }
 
@@ -117,16 +118,18 @@ internal static class TextInput
     static async Task<object?> InsertAsync(string text, long hwnd)
     {
         if (string.IsNullOrEmpty(text)) return new InsertResult(true);
-        if (text.Length > 4000) text = text[..4000];
-        if (hwnd != 0 && W.GetForegroundWindow().ToInt64() != hwnd) return new InsertResult(false, "focus moved");
+        if (text.Length > 4000) return new InsertResult(false, "truncated: text is longer than 4000 characters");
+        if (hwnd == 0) return new InsertResult(false, "no target window");
+        if (W.GetForegroundWindow().ToInt64() != hwnd) return new InsertResult(false, "focus moved");
         // modifiers must be physically up, or the characters become shortcuts
         for (int i = 0; i < 40 && AnyModifierDown(); i++) await Task.Delay(50);
         if (AnyModifierDown()) return new InsertResult(false, "release Ctrl/Alt/Shift/Win first");
-        if (hwnd != 0 && W.GetForegroundWindow().ToInt64() != hwnd) return new InsertResult(false, "focus moved");
+        var guard = await GuardAsync(hwnd);
+        if (guard is not null) return new InsertResult(false, guard);
         var inputs = new List<W.INPUT>(text.Length * 2);
         foreach (var ch in text.Replace("\r\n", "\n"))
         {
-            if (ch == '\n') { inputs.Add(W.Key(0x0D, false, Magic)); inputs.Add(W.Key(0x0D, true, Magic)); continue; }
+            if (ch == '\n') { inputs.Add(W.Key(0x10, false, Magic)); inputs.Add(W.Key(0x0D, false, Magic)); inputs.Add(W.Key(0x0D, true, Magic)); inputs.Add(W.Key(0x10, true, Magic)); continue; } // Shift+Enter: a line break, never "send"
             if (ch == '\t') { inputs.Add(W.Key(0x09, false, Magic)); inputs.Add(W.Key(0x09, true, Magic)); continue; }
             if (char.IsControl(ch)) continue;
             inputs.Add(Unicode(ch, false));
@@ -135,6 +138,7 @@ internal static class TextInput
         // chunks keep a slow app's input queue from overflowing
         for (int i = 0; i < inputs.Count; i += 200)
         {
+            if (i > 0 && await GuardAsync(hwnd) is { } why) return new InsertResult(false, why);
             var chunk = inputs.GetRange(i, Math.Min(200, inputs.Count - i)).ToArray();
             if (W.SendInput((uint)chunk.Length, chunk, Marshal.SizeOf<W.INPUT>()) != chunk.Length) return new InsertResult(false, "the app blocked input (is it running as administrator?)");
             await Task.Delay(8);
@@ -142,10 +146,40 @@ internal static class TextInput
         return new InsertResult(true);
     }
 
+    /// <summary>Right before typing (and between chunks): still the same app in front, not Lokey itself, not a password field, and a sane focus rect. Null = fine.</summary>
+    static async Task<string?> GuardAsync(long hwnd)
+    {
+        var fg = W.GetForegroundWindow();
+        if (hwnd == 0 || fg.ToInt64() != hwnd) return "focus moved";
+        if (Foreground.IsOwn(fg)) return "Lokey is in front";
+        var uia = await Task.Run(() => Uia(a => { var hr = a.GetFocusedElement(out var e); return (hr, e); })).WaitAsync(TimeSpan.FromMilliseconds(700)).ContinueWith(t => t.IsCompletedSuccessfully ? t.Result : null);
+        if (uia is { } u)
+        {
+            if (u.password) return "password field";
+            int w = u.rect.r - u.rect.l, h = u.rect.b - u.rect.t;
+            if (w <= 0 || h <= 0) return "cannot verify the focused field"; // odd rect: fail closed
+        }
+        return W.GetForegroundWindow().ToInt64() == hwnd ? null : "focus moved";
+    }
+
+    internal sealed record SelectionResult(string? Text, string? Reason = null);
+
+    /// <summary>The text selected in the foreground app: Ctrl+C, read it, put the user's previous text back. Never in password fields; the
+    /// temporary copy is not recorded in the clipboard history.</summary>
+    static async Task<object?> SelectionAsync()
+    {
+        var fi = await FocusRectAsync() as FocusInfo;
+        if (fi is not null && fi.Password) return new SelectionResult(null, "password field");
+        var fg = W.GetForegroundWindow();
+        if (fg == IntPtr.Zero || Foreground.IsOwn(fg)) return new SelectionResult(null, "no app in front");
+        for (int i = 0; i < 30 && AnyModifierDown(); i++) await Task.Delay(50);
+        return new SelectionResult(await Clipboard.CopySelectionAsync(), null);
+    }
+
     static W.INPUT Unicode(char ch, bool up) =>
         new() { type = 1, u = new W.INPUTUNION { ki = new W.KEYBDINPUT { wVk = 0, wScan = ch, dwFlags = KEYEVENTF_UNICODE | (up ? KEYEVENTF_KEYUP : 0u), extra = Magic } } };
 
-    static bool AnyModifierDown()
+    internal static bool AnyModifierDown()
     {
         foreach (var vk in new[] { 0x11, 0x12, 0x10, 0x5B, 0x5C }) if ((W.GetAsyncKeyState(vk) & 0x8000) != 0) return true;
         return false;

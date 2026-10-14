@@ -20,7 +20,7 @@ export function PoseBar({ mode, onMode }: { mode: SoulMode; onMode: (m: SoulMode
         {STATE_CHIPS.map(c => <button key={c.mode} onClick={() => onMode(c.mode)} style={chip(c.mode === mode)}>{c.label}</button>)}
       </div>
       <div className="scroll-x" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
-        {GALLERY.map(g => <button key={g.name} onClick={() => mascot.play(g.name)} style={chip(false)}>{g.label}</button>)}
+        {GALLERY.map(g => <button key={g.name} onClick={() => mascot.play(g.name, { prio: 3 })} style={chip(false)}>{g.label}</button>)}
       </div>
     </div>
   )

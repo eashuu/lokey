@@ -1,0 +1,55 @@
+/* The lyrics window. Dark, art-tinted, large bold left-aligned lines (see LyricsStage.tsx for what moves). */
+.lw { position: absolute; inset: 0; overflow: hidden; color: #fff; background: #0b0b10; font-family: "Segoe UI Variable Display", "Segoe UI", "Nirmala UI", Inter, system-ui, sans-serif; container-type: size; user-select: none; }
+
+.lw-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.lw-bg.none { background: radial-gradient(60% 50% at 30% 20%, color-mix(in srgb, var(--accent, #62b6ff) 60%, #0b0b10), transparent 70%), radial-gradient(50% 50% at 80% 80%, color-mix(in srgb, var(--accent, #62b6ff) 35%, #120a1c), transparent 70%); }
+.lw-shade { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(8,8,12,.55), rgba(8,8,12,.1) 30%, rgba(8,8,12,.1) 70%, rgba(8,8,12,.6)); pointer-events: none; }
+
+/* top bar: drags the window; the buttons appear on hover */
+.lw-bar { position: absolute; left: 0; right: 0; top: 0; height: 46px; z-index: 5; display: flex; align-items: center; gap: 4px; padding: 0 8px 0 18px; -webkit-app-region: drag; }
+.lw-bar .meta { flex: 1; min-width: 0; font-size: 12px; line-height: 15px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lw-bar .meta b { font-weight: 650; }
+.lw-bar .tools { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity .2s; -webkit-app-region: no-drag; }
+.lw:hover .lw-bar .tools { opacity: 1; }
+.lw-btn { all: unset; box-sizing: border-box; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 15px; cursor: pointer; color: rgba(255,255,255,.82); transition: background-color .15s, color .15s; -webkit-app-region: no-drag; }
+.lw-btn:hover { background: rgba(255,255,255,.14); color: #fff; }
+.lw-btn.on { color: var(--accent, #62b6ff); }
+.lw-btn.close:hover { background: rgba(232,64,64,.85); }
+.lw-sync { font-size: 11px; min-width: 38px; text-align: center; font-variant-numeric: tabular-nums; opacity: .8; cursor: pointer; padding: 0 2px; -webkit-app-region: no-drag; }
+
+/* the stage */
+.lw-stage { position: absolute; inset: 0; z-index: 2; overflow: hidden; container-type: inline-size; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 88%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 88%, transparent 100%); cursor: default; }
+.lw-track { position: absolute; left: 0; right: 0; top: 0; padding: 0 6cqw 0 7cqw; will-change: transform; --fs: calc(6.6cqw * var(--ls, 1)); font-size: var(--fs); font-weight: 700; line-height: 1.18; letter-spacing: -.01em; }
+
+.ln { position: relative; margin: .16em 0; padding: .06em 0; display: flex; flex-wrap: wrap; column-gap: .3em; transform-origin: left center; cursor: pointer;
+  opacity: .5; filter: blur(var(--b, 0px)); scale: 1;
+  transition: opacity .32s cubic-bezier(.61,1,.88,1), scale .32s cubic-bezier(.37,0,.63,1), filter .4s ease; }
+.ln.act { opacity: 1; scale: 1.045; filter: none; }
+.ln.sung { opacity: .5; }
+.ln.ns { opacity: .52; }
+
+/* a word is lit by a soft gradient that sweeps across it as it is sung */
+.wd { display: inline-block; white-space: pre; transform-origin: center bottom; will-change: transform;
+  background-image: linear-gradient(90deg, rgba(255,255,255,1) calc(var(--gp, -20) * 1%), rgba(255,255,255,.36) calc(var(--gp, -20) * 1% + 20%));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+
+/* instrumental break / intro: three dots, collapsed until it is time */
+.ln.gap { filter: none; opacity: 1; scale: 1; cursor: default; max-height: 0; margin: 0; padding: 0; overflow: visible; column-gap: .5em; align-items: center; transition: max-height .45s cubic-bezier(.22,1,.36,1), margin .45s, opacity .3s; }
+.ln.gap.show { max-height: 1.6em; margin: .25em 0; }
+.ln.gap:not(.show) { opacity: 0; pointer-events: none; }
+.dt { display: block; width: .46em; height: .46em; border-radius: 50%; background: #fff; opacity: .35; will-change: transform; }
+
+.lw-msg { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; text-align: center; padding: 40px; font-size: 15px; opacity: .8; }
+.lw-plain { position: absolute; inset: 56px 0 0; z-index: 2; overflow-y: auto; padding: 8px 7cqw 60px; font-size: 20px; line-height: 1.5; font-weight: 600; white-space: pre-wrap; opacity: .9; user-select: text; }
+.lw-credit { position: absolute; left: 18px; bottom: 10px; z-index: 5; font-size: 10.5px; opacity: .45; }
+
+@media (prefers-reduced-motion: reduce) { .lw-bg-layer { animation: none !important; } }
+
+/* hovering a line: a soft pill behind it (click seeks to it) */
+.ln:not(.gap)::before { content: ""; position: absolute; inset: -.05em -.3em; border-radius: 16px; background: rgba(255,255,255,.1); backdrop-filter: blur(2px); opacity: 0; scale: .92; z-index: -1; pointer-events: none; transition: opacity .2s, scale .25s cubic-bezier(.22,1,.36,1); }
+.ln:not(.gap):hover::before { opacity: 1; scale: 1.02; }
+.lw-bg-layer { position: absolute; inset: -12%; z-index: 0; background-size: cover; background-position: center; filter: blur(46px) saturate(1.7) brightness(.55) contrast(1.05); transform: scale(1.25); }
+.lw-bg-layer.in { animation: lw-in .85s cubic-bezier(.66,0,.34,1) both; }
+.lw-bg-layer.out { animation: lw-out .85s cubic-bezier(.66,0,.34,1) both; }
+@keyframes lw-in { from { translate: 100% 0; } to { translate: 0 0; } }
+@keyframes lw-out { from { translate: 0 0; } to { translate: -100% 0; } }

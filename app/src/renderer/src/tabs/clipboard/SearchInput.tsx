@@ -26,7 +26,7 @@ export function SearchInput({ value, onChange, placeholder, height, fontSize, ic
   const focusSoon = () => {
     queueMicrotask(() => ref.current?.focus())
     // the window only becomes focusable after main reacts to `pinned`, so retry twice
-    timers.current.push(setTimeout(() => ref.current?.focus(), 50), setTimeout(() => ref.current?.focus(), 250))
+    timers.current.push(setTimeout(() => ref.current?.focus(), 50), setTimeout(() => ref.current?.focus(), 250), setTimeout(() => ref.current?.focus(), 600))
   }
   const pin = () => {
     if (useIsland.getState().mode !== 'pinned') useIsland.setState({ mode: 'pinned' })
@@ -34,8 +34,11 @@ export function SearchInput({ value, onChange, placeholder, height, fontSize, ic
   }
   useEffect(() => {
     if (useIsland.getState().mode === 'pinned') focusSoon()
+    // after a global shortcut the window gets the keyboard a moment after the box mounts: put the caret in as soon as it does
+    const onWinFocus = () => { if (useIsland.getState().mode === 'pinned') ref.current?.focus() }
+    window.addEventListener('focus', onWinFocus)
     const t = timers.current
-    return () => t.forEach(clearTimeout)
+    return () => { t.forEach(clearTimeout); window.removeEventListener('focus', onWinFocus) }
   }, [])
   return (
     <div style={{ position: 'relative', height, borderRadius: 14, background: 'var(--fill-1)' }}>

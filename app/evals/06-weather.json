@@ -1,0 +1,1 @@
+{"request":"give me my morning briefing","expectedTools":["briefing"],"forbiddenTools":["power","run_command"]}

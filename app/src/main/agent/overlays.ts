@@ -9,6 +9,7 @@ class Overlay {
   private ready = false
   private queue: unknown[] = []
   private kill: ReturnType<typeof setTimeout> | null = null
+  private clickable = false
 
   constructor(private name: 'caption' | 'dictation' | 'lasso', private bounds: () => Electron.Rectangle, private focusableLevel: 'floating' | 'screen-saver' = 'floating') {
     ipcMain.on('lokey:ov:ready', (e, ch: string) => {
@@ -24,12 +25,24 @@ class Overlay {
     if (!this.win || this.win.isDestroyed()) {
       const w = (this.win = effectWindow(this.name, this.bounds()))
       if (this.focusableLevel === 'screen-saver') w.setAlwaysOnTop(true, 'screen-saver')
+      w.setIgnoreMouseEvents(!this.clickable)
       this.ready = false
       w.on('closed', () => { if (this.win === w) { this.win = null; this.ready = false } })
     }
-    if (this.ready) this.win.webContents.send(`lokey:ov:${this.name}`, msg)
-    else this.queue.push(msg)
+    if (this.ready) {
+      if (!this.win.isVisible()) this.win.showInactive() // a kept-alive window that was hidden between uses
+      this.win.webContents.send(`lokey:ov:${this.name}`, msg)
+    } else this.queue.push(msg)
   }
+
+  /** let the window receive the mouse (lasso drawing). It still never takes keyboard focus. */
+  interactive(on: boolean) {
+    this.clickable = on
+    if (this.win && !this.win.isDestroyed()) this.win.setIgnoreMouseEvents(!on)
+  }
+
+  /** is this webContents our page (only it may report strokes) */
+  owns(wc: Electron.WebContents) { return !!this.win && !this.win.isDestroyed() && this.win.webContents === wc }
 
   /** a screenshot of the window as it is now (null when closed); used by --demo */
   async capture() { return this.win && !this.win.isDestroyed() && this.ready ? this.win.webContents.capturePage() : null }

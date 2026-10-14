@@ -60,6 +60,8 @@ internal static class SelfTest
         await T("bt.discover", """{"seconds":2}""");
         await T("audio.devices");
         await T("foreground.get");
+        await T("windows.list");
+        await T("process.list");
         await T("desktops.get");
         await T("hotkey.unregisterAll");
         await T("clipboard.list", """{"limit":20}""");
@@ -97,6 +99,8 @@ internal static class SelfTest
         await Check("hotkeys.selfcheck", Services.Hotkeys.SelfCheck);
         await Check("visualiser.selfcheck", Services.Visualiser.SelfCheck);
         await Check("textinput.uia", Services.TextInput.SelfCheck);
+        await Check("control.selfcheck", () => Services.Control.SelfCheck());
+        await Check("wake.selfcheck", () => Services.Listener.SelfCheck());
         // read-only: state + blob length only (never contents); the toggle check runs on in-memory copies. The registry is never written here.
         await Check("nightlight.read", () => $"state={Services.NightLight.Get()?.ToString().ToLowerInvariant() ?? "null"} blobLength={Services.NightLight.BlobLength()?.ToString() ?? "none"}");
         await Check("nightlight.selfcheck", Services.NightLight.SelfCheck);

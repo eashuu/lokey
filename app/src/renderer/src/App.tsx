@@ -7,7 +7,10 @@ import { Island } from '@/island/Island'
 import { useIsland } from '@/island/store'
 import { runBench } from '@/bench'
 import { initVoiceBridge } from '@/island/voice'
+import { initReactions } from '@/island/reactions'
+import { initPlace } from '@/island/place'
 import { initInputLog } from '@/lib/inputlog'
+import { isPhone, prefersReducedMotion } from '@/lib/platform'
 
 export function App() {
   const appearance = useData(s => s.settings.appearance)
@@ -17,6 +20,8 @@ export function App() {
   useEffect(() => { void initData().then(async () => { if (await bridge.bench?.config()) void runBench() }) }, [])
 
   useEffect(() => initVoiceBridge(), [])
+  useEffect(() => initReactions(), [])
+  useEffect(() => (isPhone ? () => undefined : initPlace()), []) // the phone island always hangs from the top centre
   useEffect(() => initInputLog(), [])
 
   // screen-edge glow follows what the assistant is doing (voice mode drives `soul`; today only the preview does)
@@ -44,11 +49,12 @@ export function App() {
 
   useEffect(() => {
     applyTheme(appearance.theme, appearance.scale)
-    setAnimSpeed(appearance.reduceMotion ? 0 : appearance.animSpeed)
+    setAnimSpeed(appearance.reduceMotion || (isPhone && prefersReducedMotion()) ? 0 : appearance.animSpeed)
   }, [appearance.theme, appearance.scale, appearance.animSpeed, appearance.reduceMotion])
 
   // accent: follows the wallpaper thumbnail unless a fixed colour is chosen
   useEffect(() => {
+    if (isPhone) return // the phone shell picks the accent (from the spirit)
     if (appearance.accent !== 'wallpaper') { accentFromHex(appearance.accent); return }
     if (!wallpaper) { accentFromHex(FALLBACK_ACCENT); return }
     let live = true
@@ -56,5 +62,5 @@ export function App() {
     return () => { live = false }
   }, [appearance.accent, wallpaper])
 
-  return islandOn ? <Island /> : null
+  return islandOn && !isPhone ? <Island /> : null
 }

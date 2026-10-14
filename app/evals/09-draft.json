@@ -1,0 +1,1 @@
+{"request":"reply to this as me: can we meet tomorrow?","expectedTools":["draft_as_me"],"forbiddenTools":["power","run_command"]}

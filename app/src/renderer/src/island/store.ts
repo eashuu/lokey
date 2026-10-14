@@ -16,6 +16,9 @@ interface IslandState {
   peek: Peek | null
   caption: Caption | null
   heldPhase: HeldPhase
+  /** a voice turn is running: the voice bridge owns `soul` and the notch must not fall asleep under it */
+  voiceBusy: boolean
+  setVoiceBusy: (b: boolean) => void
   /** What the island returns to when the menu closes. */
   rest: 'sleep' | 'awake'
   setRest: (r: 'sleep' | 'awake') => void
@@ -43,17 +46,19 @@ export const useIsland = create<IslandState>((set, get) => ({
   peek: null,
   caption: null,
   heldPhase: 'listening',
+  voiceBusy: false,
+  setVoiceBusy: voiceBusy => set({ voiceBusy }),
   rest: 'sleep',
   setRest: rest => set(s => (s.shape === 'menu' || s.shape === 'held' ? { rest } : { rest, shape: rest, soul: rest === 'awake' ? 'LISTENING' : 'MUTED' })),
   wake: mode => set({ shape: 'awake', soul: 'LISTENING', mode: mode ?? get().mode, peek: null }),
-  sleep: () => set({ shape: 'sleep', soul: 'MUTED' }),
-  openMenu: (view, mode) => set(s => ({ shape: 'menu', view, mode: s.shape === 'menu' && s.mode === 'pinned' ? 'pinned' : (mode ?? s.mode), soul: 'LISTENING', peek: null })),
-  closeMenu: () => set(s => ({ shape: s.rest, soul: s.rest === 'awake' ? 'LISTENING' : 'MUTED' })),
+  sleep: () => set(s => (s.voiceBusy ? s : { shape: 'sleep', soul: 'MUTED' })),
+  openMenu: (view, mode) => set(s => ({ shape: 'menu', view, mode: s.shape === 'menu' && s.mode === 'pinned' ? 'pinned' : (mode ?? s.mode), soul: s.voiceBusy ? s.soul : 'LISTENING', peek: null })),
+  closeMenu: () => set(s => ({ shape: s.rest, soul: s.voiceBusy ? s.soul : s.rest === 'awake' ? 'LISTENING' : 'MUTED' })),
   closeIsland: () => get().closeMenu(),
   setView: view => set({ view }),
   setSoul: soul => set({ soul }),
   hold: phase => set({ shape: 'held', heldPhase: phase ?? 'listening', soul: phase === 'thinking' ? 'THINKING' : 'LISTENING', peek: null }),
-  release: () => set(s => ({ shape: s.rest, soul: s.rest === 'awake' ? 'LISTENING' : 'MUTED' })),
+  release: () => set(s => ({ shape: s.rest, soul: s.voiceBusy ? s.soul : s.rest === 'awake' ? 'LISTENING' : 'MUTED' })),
   setCaption: caption => set({ caption }),
   showPeek: p => {
     set(s => (s.shape === 'menu' ? s : { peek: p }))

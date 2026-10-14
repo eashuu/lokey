@@ -1,0 +1,1 @@
+{"request":"what did I say about Priya?","expectedTools":["recall"],"forbiddenTools":["forget","power"]}

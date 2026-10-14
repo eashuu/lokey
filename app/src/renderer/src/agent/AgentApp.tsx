@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 // Hidden page: microphone capture (16 kHz PCM16 chunks to main) and speaker playback (24 kHz PCM16 chunks from main).
 // No UI. ScriptProcessor is used (not a worklet) so no script has to be loaded from a blob under the page CSP.
-const CHUNK = 1024 // samples per mic message (64 ms at 16 kHz)
+const CHUNK = 512 // samples per mic message (32 ms at 16 kHz)
 
 export function AgentApp() {
   useEffect(() => {
@@ -14,14 +14,20 @@ export function AgentApp() {
     let sources: AudioBufferSourceNode[] = []
     let lastLevelAt = 0
 
-    const startMic = async () => {
-      if (mic) return
+    // The stream stays open for WARM_MS after a release, so the next press starts instantly and loses no first word;
+    // chunks are only forwarded while `want` is true.
+    let want = false
+    let starting: Promise<void> | null = null
+    let cool: ReturnType<typeof setTimeout> | null = null
+    const WARM_MS = 12_000
+    const openMic = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
-        const ctx = new AudioContext({ sampleRate: 16000 })
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: false, autoGainControl: true } })
+        const ctx = new AudioContext({ sampleRate: 16000, latencyHint: 'interactive' })
         const src = ctx.createMediaStreamSource(stream)
         const node = ctx.createScriptProcessor(CHUNK, 1, 1)
         node.onaudioprocess = e => {
+          if (!want) return
           const f = e.inputBuffer.getChannelData(0)
           const pcm = new Int16Array(f.length)
           let sum = 0
@@ -33,16 +39,30 @@ export function AgentApp() {
         node.connect(ctx.destination) // a processor only runs while connected; it outputs silence
         mic = { ctx, stream, node, src }
       } catch (e) {
+        want = false
         A.fail(`microphone: ${e instanceof Error ? e.message : String(e)}`)
       }
     }
-    const stopMic = () => {
+    const startMic = async () => {
+      want = true
+      if (cool) { clearTimeout(cool); cool = null }
+      if (mic) { if (mic.ctx.state === 'suspended') void mic.ctx.resume(); return }
+      starting ??= openMic().finally(() => { starting = null })
+      await starting
+      if (!want) scheduleClose() // released while the permission/device was still opening
+    }
+    const closeMic = () => {
       if (!mic) return
       mic.node.onaudioprocess = null
       mic.src.disconnect(); mic.node.disconnect()
       mic.stream.getTracks().forEach(t => t.stop())
       void mic.ctx.close()
       mic = null
+    }
+    const scheduleClose = () => { if (cool) clearTimeout(cool); cool = setTimeout(() => { cool = null; if (!want) closeMic() }, WARM_MS) }
+    const stopMic = (hard = false) => {
+      want = false
+      if (hard) { if (cool) clearTimeout(cool); cool = null; closeMic() } else scheduleClose()
     }
 
     const play = (data: Uint8Array) => {
@@ -78,12 +98,12 @@ export function AgentApp() {
     }
 
     A.onCmd(c => {
-      if (c.cmd === 'mic') { if (c.on) void startMic(); else stopMic() }
+      if (c.cmd === 'mic') { if (c.on) void startMic(); else stopMic(!!c.hard) }
       else if (c.cmd === 'play') play(c.data)
       else if (c.cmd === 'flush') flush()
     })
     A.ready()
-    return () => { stopMic(); void out?.close() }
+    return () => { stopMic(true); void out?.close() }
   }, [])
   return null
 }

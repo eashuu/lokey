@@ -29,6 +29,13 @@ jobs:
         run: pnpm --dir app typecheck
       - name: Build
         run: pnpm --dir app build
+      - name: Self-checks
+        shell: bash
+        run: |
+          cd app
+          node_modules/.bin/electron . --selfcheck || true
+          cat "$LOCALAPPDATA/Lokey/selfcheck.txt"
+          ! grep -q FAIL "$LOCALAPPDATA/Lokey/selfcheck.txt"
 
   sidecar:
     name: Sidecar (.NET build)
@@ -40,3 +47,5 @@ jobs:
           dotnet-version: 8.0.x
       - name: Build
         run: dotnet build native/Lokey.Host -c Release
+      - name: Self-test
+        run: dotnet run --project native/Lokey.Host -c Release -- --selftest

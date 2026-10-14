@@ -198,7 +198,7 @@ export function ClipboardTab() {
             <button
               title="Settings"
               aria-label="Settings"
-              onClick={() => bridge.app.openSettings()}
+              onClick={() => bridge.app.openSettings('general')}
               className="transition duration-100 ease-linear active:scale-[.96]"
               style={{ position: 'absolute', left: 814, top: 13, width: 16, height: 16, display: 'grid', placeItems: 'center', color: 'var(--soft)' }}
             >

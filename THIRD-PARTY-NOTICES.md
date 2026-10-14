@@ -30,6 +30,7 @@ lokey is licensed under GPL-3.0. It uses the following open-source components un
 | Component | Licence |
 |---|---|
 | [NAudio](https://github.com/naudio/NAudio) (`NAudio.Wasapi`) | MIT |
+| [System.Speech](https://www.nuget.org/packages/System.Speech) (wake phrases, Windows speech recogniser) | MIT |
 | System.Management, System.Drawing.Common, System.Data.OleDb | MIT (.NET) |
 | .NET 8 runtime (bundled in the self-contained build) | MIT |
 
@@ -45,3 +46,9 @@ The licence texts for these fonts are kept next to them in `legacy/winui-prototy
 ## Artwork
 
 The spirit (3D character), the logo and all README art are original work, generated from this repository's own code, and are covered by the repository licence.
+
+## Lyrics
+
+- **LRCLIB** (https://lrclib.net): free, open lyrics database queried over HTTPS for synced lyrics (title, artist, album and length are sent; nothing else). Each song's result is cached locally.
+- **Spicy Lyrics** (https://github.com/Spikerko/spicy-lyrics, AGPL-3.0, by Spikerko): the lyrics window's look (gradient-lit words, the swell/float/glow keyframes and spring tuning, distance blur, three-dot interludes, art-tinted sliding background) is modelled on its behaviour, which the author of this project uses in Spotify. Lokey's implementation (`app/src/shared/lyricsAnim.ts`, `app/src/renderer/src/lyrics/`) is written from scratch for this app; no source code was copied. If you copy any part of Spicy Lyrics itself into this project, its AGPL-3.0 terms apply to that part.
+- The spring formulation is the standard damped harmonic oscillator (the same maths as Fraktality's MIT-licensed `spr`).

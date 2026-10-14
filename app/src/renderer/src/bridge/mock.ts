@@ -48,6 +48,9 @@ export function createMockBridge(): Bridge {
     ['#2c5364', '#0f2027'], ['#f7971e', '#8e2de2'], ['#4b79a1', '#283e51'], ['#134e5e', '#71b280'], ['#614385', '#516395'],
   ].map(([a, b], i) => ({ path: `C:\\Wallpapers\\wall${i}.jpg`, name: `wall${i}.jpg`, thumb: gradient(a, b, 320, 160) }))
 
+  let paired = /[?&]pc=1/.test(location.search)
+  const linkCbs = new Set<(e: { type: string; data?: unknown }) => void>()
+  ;(window as unknown as { __mockLink?: unknown }).__mockLink = (e: { type: string; data?: unknown }) => linkCbs.forEach(f => f(e))
   let statsTimer: ReturnType<typeof setInterval> | null = null
   const tick = (): StatsTick => {
     const t = (Date.now() - started) / 1000
@@ -135,10 +138,49 @@ export function createMockBridge(): Bridge {
     'foreground.get': () => ({ title: 'lokey', exe: 'lokey.exe', pid: 1 }),
   }
 
+
+  // phone-only plugin methods (app/mobile/android/PLUGIN.md), fake data for browser testing
+  const ago = (min: number) => Date.now() - min * 60_000
+  const notifs = [
+    { key: 'n1', package: 'com.whatsapp', app: 'WhatsApp', title: 'Amma', text: 'Did you eat? Come home early today, Appa is bringing sweets.', time: ago(3), canReply: true },
+    { key: 'n2', package: 'com.whatsapp', app: 'WhatsApp', title: 'Dev', text: 'bro the match is at 8, are you coming?', time: ago(11), canReply: true },
+    { key: 'n3', package: 'com.google.android.apps.messaging', app: 'Messages', title: 'HDFC Bank', text: 'Rs 1,240.00 debited at Swiggy. Avl bal 12,880.', time: ago(40), canReply: false },
+    { key: 'n4', package: 'com.google.android.gm', app: 'Gmail', title: 'GitHub', text: '[lokey] A new pull request needs your review', time: ago(95), canReply: false },
+  ]
+  const reminders: { id: string; at: number; title: string }[] = [{ id: 'r1', at: Date.now() + 3_600_000, title: 'Call the plumber' }]
+  const extra: Record<string, (p: any) => unknown> = {
+    'notifications.list': () => notifs.slice(),
+    'notifications.reply': () => ({ ok: true }),
+    'notifications.dismiss': ({ key }: { key: string }) => { const i = notifs.findIndex(n => n.key === key); if (i >= 0) notifs.splice(i, 1); return { ok: true } },
+    'calendar.list': () => [
+      { id: 1, title: 'Standup', startMs: Date.now() + 40 * 60_000, endMs: Date.now() + 70 * 60_000, location: 'Meet' },
+      { id: 2, title: 'Dentist', startMs: Date.now() + 26 * 3_600_000, endMs: Date.now() + 27 * 3_600_000, location: 'Anna Nagar' },
+      { id: 3, title: 'Pongal holiday', startMs: Date.now() + 50 * 3_600_000, allDay: true },
+    ],
+    'reminder.list': () => reminders,
+    'reminder.set': ({ title, inMs, at }: { title: string; inMs?: number; at?: number }) => { reminders.push({ id: 'r' + Date.now(), at: at ?? Date.now() + (inMs ?? 0), title }); return { ok: true, id: 'r' } },
+    'reminder.cancel': ({ id }: { id: string }) => { const i = reminders.findIndex(r => r.id === id); if (i >= 0) reminders.splice(i, 1); return { ok: true } },
+    'contacts.search': ({ query }: { query: string }) => [{ name: 'Amma', numbers: [{ number: '+91 98400 11111', type: 'mobile' }] }, { name: 'Ammu (cousin)', numbers: [{ number: '+91 98400 22222', type: 'mobile' }, { number: '044 2222 3333', type: 'home' }] }].filter(c => c.name.toLowerCase().includes(query.toLowerCase())),
+    'flashlight.set': () => ({ ok: true }),
+    'intent.dial': () => ({ ok: true }), 'intent.sms': () => ({ ok: true }), 'intent.maps': () => ({ ok: true }), 'intent.camera': () => ({ ok: true }), 'intent.timer': () => ({ ok: true }),
+    'ui.home': () => ({ ok: true }), 'app.openSelf': () => ({ ok: true }),
+    'screenshot': () => ({ ok: true, mime: 'image/jpeg', base64: '', w: 540, h: 1170, screenW: 1080, screenH: 2340 }),
+    'perm.status': () => ({ permissions: { mic: true, microphone: true, notifications: true, overlay: false, accessibility: false, 'notification-listener': true, notification_listener: true, 'battery-optimisation-exempt': false, battery: false, live_updates: false } }),
+    'perm.request': () => ({ ok: true, granted: false, opened: true }),
+    'clipboard.read': () => ({ text: 'Pull up last quarter’s numbers' }),
+    'system.openSettings': () => ({ ok: true }),
+    'island.update': (p: unknown) => { const a = ((window as unknown as { __islandUpdates?: unknown[] }).__islandUpdates ??= []); a.push(p); if (a.length > 30) a.shift(); return { ok: true } },
+    'island.setEnabled': (p: unknown) => { (window as unknown as { __islandEnabled?: unknown }).__islandEnabled = p; return { ok: true } },
+    'diag.status': () => ({ ok: true, serviceRunning: true, serviceMic: true, overlayShown: false, overlayReason: 'Lokey is in front', overlayGranted: false, systemIsland: true, appForeground: true, jsHeartbeatAgeMs: 4200, lastIslandUpdateAgeMs: 9000, wakeListening: true, wakeEnabled: true, wakePaused: false, wakeError: null, wakeLastEventAt: Date.now() - 600_000, wakeLastDecision: 'ignored: too quiet', linkPaired: true, linkConnected: true, linkLastEventAt: Date.now() - 20_000, batteryExempt: false, sdk: 36, manufacturer: 'vivo', brand: 'vivo' }),
+    'wake.set': () => ({ ok: true }),
+    'island.vivoProbe': ({ kind }: { kind: string }) => ({ ok: true, kind, posted: true, extrasKept: false, scene: kind === 'voice' ? 'voice_assistant' : 'timer', template: 'superx_1', canPromote: true }),
+    'island.status': () => ({ ok: true, vivoSuperx: { vivoDevice: true, scenes: ['timer', 'voice_assistant'], sceneStatus: 'not approved' }, overlayPermission: false, liveUpdatesPermission: true, cutout: true, sdk: 36, overlayShown: false }),
+  }
+
   return {
     kind: 'mock',
     async call(method, params) {
-      const h = handlers[method] as ((p: unknown) => unknown) | undefined
+      const h = (handlers[method] ?? extra[method as string]) as ((p: unknown) => unknown) | undefined
       if (!h) return {} as never
       return (await h(params)) as never
     },
@@ -162,9 +204,40 @@ export function createMockBridge(): Bridge {
       onChange: cb => { settingsCbs.add(cb); return () => { settingsCbs.delete(cb) } },
     },
     onApp: cb => { appCbs.add(cb); return () => { appCbs.delete(cb) } },
-    app: { openSettings() {}, quit() {}, log: m => console.log('[lokey]', m), openExternal: u => { window.open(u, '_blank') }, pickFolder: async () => null, openMain() {} },
+    app: { openSettings() {}, quit() {}, log: m => console.log('[lokey]', m), openExternal: u => { window.open(u, '_blank') }, pickFolder: async () => null, openMain() {}, onNav: () => () => undefined },
+    link: {
+      state: async () => ({ enabled: paired, running: paired, port: 47831, url: 'http://192.168.1.20:47831', pairing: false, devices: [] }),
+      setEnabled: async (on: boolean) => { paired = on; return {} },
+      newCode: async () => ({ code: '123456', expiresAt: Date.now() + 120000 }),
+      revoke: async () => true,
+      // the Android side of the link (phone UI testing in a browser): ?pc=1 starts paired
+      pair: async ({ code }: { address: string; code: string }) => { if (code !== '123456') throw new Error('Wrong code'); paired = true; return { ok: true as const } },
+      sync: async () => ({ pulled: 3, pushed: 5 }),
+      pcStatus: async () => (paired ? { pc: 'LOKEY-PC', agent: 'idle', battery: { pct: 64, charging: true }, nowPlaying: { app: 'Spotify', title: 'Night Drive', artist: 'Kavinsky', playing: true }, jobs: ['Organise Downloads'] } : null),
+      approve: async () => true,
+      say: async () => ({ ok: paired, error: paired ? undefined : 'Not paired' }),
+      onEvent: (cb: (e: { type: string; data?: unknown }) => void) => { linkCbs.add(cb); return () => { linkCbs.delete(cb) } },
+    },
+    wake: { status: async () => ({ listening: false, speech: false, claps: false, recogniser: null, error: null, available: true }) },
+    memory: {
+      list: async () => [], search: async () => [], graph: async () => ({ nodes: [], edges: [] }), lessons: async () => [], journal: async () => [],
+      stats: async () => ({ facts: 0, entities: 0, relations: 0, episodes: 0, lessons: 0, paused: false, embedded: 0, lastLearned: null, queued: 0 }),
+      add: async () => false, edit: async () => false, remove: async () => undefined, pin: async () => undefined, exportJson: async () => '{}', clear: async () => undefined, onChange: () => () => undefined,
+    },
+    agents: { list: async () => [], stop() {}, onChange: () => () => undefined },
+    brain: { usage: async () => ({}), test: async () => ({ ok: false, ms: 0, error: 'demo' }), hasSecret: async () => false, setSecret: async () => false, clearSecret: async () => undefined, cli: async () => ({ claude: false, codex: false }), prompts() {} },
+    place: { get: async () => ({ edge: ((window.lokeyFlags?.edge as 'top' | undefined) ?? 'top'), along: window.lokeyFlags?.along ?? Math.round(innerWidth / 2), editing: false as const }), onChange: () => () => undefined, onCursor: () => () => undefined, start() {}, commit() {}, cancel() {} },
+    lyrics: {
+      get: async () => ({
+        key: 'mock', state: 'ready' as const, source: 'cache' as const, offsetMs: 0,
+        lines: ['Sample lyrics for', 'a song that is not real,', 'drifting past like', 'lines of light', 'one word at a time', 'in time with the beat'].map((text, i) => ({ t: 4000 + i * 3500, text })),
+      }),
+      setOffset: async () => undefined,
+      openWindow() {},
+      win: { close() {}, setPinned() {} },
+    },
     hotkeyStatus: async () => ({}),
     effects: { revealWallpaper: async () => undefined, glow() {} },
-    voice: { info: async () => ({ hasKey: false, state: 'idle' as const, tasks: [] }), onEvent: () => () => undefined, setKey: async () => false, clearKey: async () => undefined, say() {}, hold() {}, cancelTask: async () => [], runTaskNow: async () => [], onTasks: () => () => undefined, memory: async () => [], forget: async () => [] },
+    voice: { info: async () => ({ hasKey: false, state: 'idle' as const, tasks: [] }), onEvent: () => () => undefined, setKey: async () => false, clearKey: async () => undefined, say() {}, hold() {}, cancelTask: async () => [], runTaskNow: async () => [], onTasks: () => () => undefined, memory: async () => [], forget: async () => [], toggleConversation() {}, clearConversation: async () => undefined, actions: async () => [], clearActions: async () => undefined, trustRules: async () => [], trustRevoke: async () => undefined, undoList: async () => [], undoRun: async () => '', loops: async () => [], loopSet: async () => true, mcpStatus: async () => [] },
   }
 }

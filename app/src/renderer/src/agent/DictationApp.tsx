@@ -4,7 +4,7 @@ import type { DictationEvent } from '@shared/voice'
 // #dictation page (whole display, transparent, click-through): a black pill with five blue bars sitting on the bottom
 // edge of the focused field, and a white bubble above it that streams the raw transcript, rewrites itself into the clean
 // sentence on release (dropped words collapse, corrections appear) and then the pill turns into a check.
-type Phase = 'listening' | 'cleaning' | 'done' | 'error'
+type Phase = 'listening' | 'working' | 'cleaning' | 'done' | 'error'
 const norm = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
 
 const CSS = `
@@ -41,7 +41,8 @@ export function DictationApp() {
   useEffect(() => {
     window.lokeyOverlay?.on('dictation', (d: DictationEvent) => {
       if (d.type === 'start') { setRect(d.rect ?? { x: 0, y: 0, w: 300, h: 40 }); setRaw(''); setClean(''); setMsg(''); setCollapse(false); setFinal(false); setPhase('listening') }
-      else if (d.type === 'raw') setRaw(d.text ?? '')
+      else if (d.type === 'raw' || d.type === 'partial') setRaw(d.text ?? '')
+      else if (d.type === 'working') { setRaw(''); setPhase('working') }
       else if (d.type === 'level') level.current = d.v ?? 0
       else if (d.type === 'clean') {
         setClean(d.text ?? ''); setPhase('cleaning'); setCollapse(false); setFinal(false)
@@ -83,7 +84,7 @@ export function DictationApp() {
   const showBubble = phase !== 'done' && (raw || clean || msg)
 
   return (
-    <div style={{ position: 'fixed', inset: 0, fontFamily: '"Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif' }}>
+    <div style={{ position: 'fixed', inset: 0, fontFamily: '"Segoe UI Variable Text", "Segoe UI", "Nirmala UI", Inter, system-ui, sans-serif' }}>
       <style>{CSS}</style>
       {showBubble && (
         <div style={{ position: 'absolute', left: cx, transform: 'translateX(-50%)', maxWidth: Math.min(400, vw - 40), width: 'max-content', ...(below ? { top: rect.y + rect.h + 24 } : { bottom: window.innerHeight - rect.y + 14 }) }}>
@@ -96,6 +97,7 @@ export function DictationApp() {
         >
           {phase === 'error' ? msg
             : phase === 'cleaning' && final ? cleanWords.map((w, i) => <span key={'c' + i} className="lk-w" style={{ transition: 'none' }}>{w}{' '}</span>)
+            : phase === 'working' ? rawWords.map((w, i) => <span key={i + ':' + w} className="lk-w fresh">{w}{' '}</span>)
             : phase === 'cleaning' ? rawWords.map((w, i) => <span key={'r' + i + w} className={`lk-w${collapse && !keep[i] ? ' gone' : ''}`}>{w}{' '}</span>)
             : rawWords.map((w, i) => <span key={i + ':' + w} className="lk-w fresh">{w}{' '}</span>)}
         </div>
@@ -112,7 +114,7 @@ export function DictationApp() {
         >
           {phase === 'done' ? (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7" /></svg>
-          ) : phase === 'cleaning' ? (
+          ) : phase === 'cleaning' || phase === 'working' ? (
             [0, 1, 2].map(i => <span key={i} style={{ width: 4, height: 4, borderRadius: 2, background: '#7cc4ff', opacity: 0.4 + 0.6 * ((i + 1) / 3) }} />)
           ) : (
             [0, 1, 2, 3, 4].map(i => <span key={i} ref={el => { bars.current[i] = el }} style={{ width: 2.6, height: 3.5, borderRadius: 2, background: '#62b6ff' }} />)

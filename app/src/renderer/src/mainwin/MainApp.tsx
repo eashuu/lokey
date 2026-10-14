@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Droplet, House, Link2, Monitor, Settings2, type LucideIcon } from 'lucide-react'
 import type { MainPage } from '@shared/bridge'
+import { bridge } from '@/bridge'
 import { initData } from '@/lib/data'
 import { dur } from '@/lib/motion'
 import { Mascot } from '@/island/Mascot'
@@ -19,22 +20,27 @@ const NAV: { id: MainPage; label: string; icon: LucideIcon }[] = [
   { id: 'settings', label: 'Settings', icon: Settings2 },
 ]
 
+const queryOf = () => new URLSearchParams(location.hash.split('?')[1] ?? '')
 const pageFromHash = (): MainPage => {
-  const p = new URLSearchParams(location.hash.split('?')[1] ?? '').get('page')
+  const p = queryOf().get('page')
   return NAV.some(n => n.id === p) ? (p as MainPage) : 'soul'
 }
 
 let booted = false
 
 export function MainApp() {
-  const [page, setPage] = useState<MainPage>(pageFromHash)
+  const [page, setPageState] = useState<MainPage>(pageFromHash)
+  const [section, setSection] = useState<string | undefined>(() => queryOf().get('section') ?? undefined)
+  const setPage = (p: MainPage) => { setPageState(p); setSection(undefined) }
   const accent = useThemeBoot()
 
   useEffect(() => {
     if (!booted) { booted = true; void initData() }
-    const f = () => setPage(pageFromHash())
+    const f = () => { setPageState(pageFromHash()); setSection(queryOf().get('section') ?? undefined) }
     window.addEventListener('hashchange', f)
-    return () => window.removeEventListener('hashchange', f)
+    // asked to go somewhere while already open (tray, Bond key button, voice): by message, so it works even when the hash is unchanged
+    const off = bridge.app.onNav(n => { if (NAV.some(x => x.id === n.page)) { setPageState(n.page); setSection(n.section) } })
+    return () => { window.removeEventListener('hashchange', f); off() }
   }, [])
 
   return (
@@ -48,7 +54,7 @@ export function MainApp() {
           <motion.div key={page} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur(0.15) }}
             style={{ position: 'absolute', inset: '0 0 64px 0' }}>
             {page === 'soul' && <Loadout />}
-            {page === 'settings' && <SettingsPage />}
+            {page === 'settings' && <SettingsPage section={section} />}
             {page === 'home' && <Home />}
             {page === 'bond' && <Bond />}
             {page === 'desk' && <Desk />}
