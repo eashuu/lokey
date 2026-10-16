@@ -1,6 +1,6 @@
 {
   "name": "lokey",
-  "version": "0.5.1",
+  "version": "0.9.0",
   "private": true,
   "description": "Voice-first AI island for Windows",
   "main": "./out/main/index.js",
@@ -11,6 +11,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check:gateway": "node scripts/check-gateway.mjs",
     "package": "node scripts/package.mjs",
     "sidecar": "dotnet build ../native/Lokey.Host -c Release",
     "mobile:web": "vite build -c vite.mobile.config.ts",

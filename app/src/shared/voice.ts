@@ -20,6 +20,10 @@ export type VoiceEvent =
   | { type: 'clear' }
   /** hands-free conversation mode started or ended */
   | { type: 'convo'; on: boolean }
+  /** the internet is unreachable: only local models answer and web tools are off */
+  | { type: 'offline'; on: boolean }
+  /** the assistant is driving the mouse and keyboard (the screen operator is running) */
+  | { type: 'control'; on: boolean }
 
 export interface ScheduledTask {
   id: string
@@ -77,7 +81,13 @@ export interface ActionRecord {
 /** What the confirm card shows; the user answers Allow or Deny. */
 export interface ConfirmRequest { id: string; title: string; detail: string; tool: string; timeoutMs: number
   /** a base64 JPEG of what the action is about to touch (second-screen steps show the frame) */
-  image?: string }
+  image?: string
+  /** the kind of card (send, buy, publish, delete, share-personal, credential, run) when the policy engine typed it */
+  cls?: string
+  /** 'handoff': the person has to do something themselves (log in, pay). Answer true = "I'm done", false = "Skip". Default: an ordinary Allow / Deny ask. */
+  kind?: 'ask' | 'handoff'
+  /** where the data in this request came from when it was not the person (a web page, a file, a mail) */
+  src?: string }
 
 /** A background job: a task the assistant took on, a helper agent, a delegated coding agent, or a computer-control run. */
 export interface AgentTask {
@@ -85,7 +95,9 @@ export interface AgentTask {
   kind: 'task' | 'agent' | 'operator' | 'cli'
   role: string
   title: string
-  status: 'running' | 'done' | 'failed' | 'stopped'
+  /** the full request (what Retry starts again) */
+  goal?: string
+  status: 'running' | 'done' | 'failed' | 'stopped' | 'parked'
   backend: 'api' | 'claude' | 'codex'
   startedAt: number
   endedAt?: number
@@ -93,4 +105,8 @@ export interface AgentTask {
   /** what it is doing now / what it finished with */
   line: string
   result?: string
+  /** parked: the job is waiting for a model (limit, outage) and carries on by itself at this time (epoch ms) */
+  until?: number
+  /** parked: why (RATE_MINUTE, QUOTA_DAY, OVERLOADED, TIMEOUT, NETWORK, STREAM_DROP, AUTH) */
+  waitKind?: string
 }

@@ -4,7 +4,10 @@ import type { DictationEvent } from '@shared/voice'
 import type { Sidecar } from '../sidecar'
 import { settings } from '../settings'
 import type { AgentAudio } from './audio'
-import { getKey, hasKey } from './keystore'
+import { hasKey } from './keystore'
+import { ai } from '../ai/gateway'
+import { isAi, userMessage } from '../ai/errors'
+import { sseText } from '../ai/adapters/gemini'
 import { logAction } from './permissions'
 import { dictationBar } from './overlays'
 import { recordStyle } from '../brain/style'
@@ -13,7 +16,6 @@ import { recordStyle } from '../brain/style'
 // On release ONE streaming Gemini call hears the whole recording and returns the final, cleaned-up text: speech-to-text and
 // cleanup in a single round trip, with the model listening to the audio itself (far better for Tamil and Tamil+English than
 // a live transcript). The words appear in the bubble as they stream and are typed into the field when the call ends.
-const GEN = 'https://generativelanguage.googleapis.com/v1beta/models/'
 const TAIL_MS = 180             // keep recording a moment after release so the last syllable is not clipped
 const MIN_MS = 450              // shorter than this is an accidental tap
 const MAX_MS = 120_000
@@ -44,18 +46,7 @@ export function wav(pcm: Buffer): Buffer {
   return Buffer.concat([h, pcm])
 }
 
-/** the text inside the `data:` lines of an SSE chunk from streamGenerateContent */
-export function sseText(block: string): string {
-  let out = ''
-  for (const line of block.split('\n')) {
-    if (!line.startsWith('data:')) continue
-    try {
-      const j = JSON.parse(line.slice(5)) as { candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[] }
-      for (const p of j.candidates?.[0]?.content?.parts ?? []) if (!p.thought && typeof p.text === 'string') out += p.text
-    } catch { /* partial line: the next chunk completes it */ }
-  }
-  return out
-}
+export { sseText }
 
 /** model output -> the text to type ('' = nothing was said) */
 export function finalText(raw: string): string {
@@ -63,48 +54,18 @@ export function finalText(raw: string): string {
   return !t || /^<none>$/i.test(t) || /^(no (intelligible )?speech)/i.test(t) ? '' : t
 }
 
-/** one streaming call: audio in, text out. `onText` gets the text so far. Throws with the HTTP status in the message. */
+/** one streaming call through the gateway's transcribe role: audio in, text out. `onText` gets the text so far. Throws an AiError. */
 async function transcribe(pcm: Buffer, onText: (t: string) => void): Promise<string> {
-  const key = getKey()
-  if (!key) throw new Error('no key')
-  const model = settings.value.voice.cleanupModel || 'gemini-flash-latest'
-  const body = (thinkingOff: boolean) => JSON.stringify({
-    systemInstruction: { parts: [{ text: buildPrompt(settings.value.voice.dictationScript) }] },
-    contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: wav(pcm).toString('base64') } }, { text: 'Transcribe this recording.' }] }],
-    generationConfig: { temperature: 0, maxOutputTokens: 4096, ...(thinkingOff ? { thinkingConfig: { thinkingBudget: 0 } } : {}) },
-  })
-  const call = async (thinkingOff: boolean) => {
-    const r = await fetch(`${GEN}${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: body(thinkingOff), signal: AbortSignal.timeout(30_000),
-    })
-    if (!r.ok || !r.body) throw new Error(`${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`)
-    const dec = new TextDecoder()
-    let buf = '', text = ''
-    for await (const chunk of r.body as unknown as AsyncIterable<Uint8Array>) {
-      buf += dec.decode(chunk, { stream: true })
-      let i: number
-      while ((i = buf.indexOf('\n\n')) >= 0) {
-        text += sseText(buf.slice(0, i))
-        buf = buf.slice(i + 2)
-        onText(text)
-      }
-    }
-    text += sseText(buf)
-    return text
-  }
-  try { return await call(true) } catch (e) {
-    // some models reject a thinking budget of 0: same call without it
-    if (/^400/.test(e instanceof Error ? e.message : '')) return call(false)
-    throw e
-  }
+  const r = await ai.call('transcribe', {
+    system: buildPrompt(settings.value.voice.dictationScript),
+    messages: [{ role: 'user', text: 'Transcribe this recording.', audio: wav(pcm).toString('base64') }],
+    temperature: 0, maxTokens: 4096, onText,
+  }, { op: 'dictation', allowEmpty: true })
+  return r.text
 }
 
-/** open the connection to Google while the user is still talking, so the real request skips the TLS handshake */
-function warmUp() {
-  const key = getKey()
-  if (!key) return
-  void fetch(`${GEN}${encodeURIComponent(settings.value.voice.cleanupModel || 'gemini-flash-latest')}`, { headers: { 'x-goog-api-key': key }, signal: AbortSignal.timeout(8000) }).then(r => r.arrayBuffer()).catch(() => undefined)
-}
+/** open the connection while the user is still talking, so the real request skips the TLS handshake */
+const warmUp = () => ai.warm('transcribe')
 
 export class Dictation extends EventEmitter {
   active = false
@@ -172,8 +133,8 @@ export class Dictation extends EventEmitter {
     try {
       text = finalText(await transcribe(pcm, t => this.send({ type: 'partial', text: finalText(t) })))
     } catch (e) {
-      const m = e instanceof Error ? e.message : String(e)
-      await this.abort(turn, /^40[13]/.test(m) ? 'Google rejected that API key.' : /^429/.test(m) ? 'Out of Gemini quota for now.' : /abort|timeout/i.test(m) ? 'That took too long. Try again.' : `Dictation failed: ${m.slice(0, 80)}`)
+      const k = isAi(e) ? e.kind : ''
+      await this.abort(turn, k === 'AUTH' ? 'Google rejected that API key.' : k === 'QUOTA_DAY' || k === 'RATE_MINUTE' ? 'Out of Gemini quota for now.' : k === 'TIMEOUT' ? 'That took too long. Try again.' : `Dictation failed: ${userMessage(e).slice(0, 80)}`)
       return
     }
     if (turn !== this.turn) return

@@ -1,0 +1,22 @@
+[
+ {
+  "a": "Prefers dark mode in every app",
+  "b": "Likes the dark theme everywhere",
+  "related": true
+ },
+ {
+  "a": "Her sister Priya lives in Chennai",
+  "b": "Priya, the sister, is based in Chennai",
+  "related": true
+ },
+ {
+  "a": "Drinks filter coffee every morning",
+  "b": "The quarterly tax filing is due in March",
+  "related": false
+ },
+ {
+  "a": "Works on the lokey project",
+  "b": "Plays the piano in the evening",
+  "related": false
+ }
+]

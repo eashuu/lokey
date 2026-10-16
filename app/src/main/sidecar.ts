@@ -112,8 +112,13 @@ export class Sidecar extends EventEmitter {
     })
   }
 
+  /** a reason to refuse a call before it is sent (keeps the assistant's mouse and keyboard off while a request waits for an answer) */
+  gate?: (method: string) => string | null
+
   call<M extends MethodName>(method: M, params: Methods[M][0], timeoutMs = 15000): Promise<Methods[M][1]> {
     if (!this.sock || !this.ready) return Promise.reject(new Error('sidecar not connected'))
+    const held = this.gate?.(method)
+    if (held) return Promise.resolve({ ok: false, reason: held } as Methods[M][1])
     if (method === 'stats.subscribe') this.statsSub = params
     else if (method === 'stats.unsubscribe') this.statsSub = null
     const id = this.nextId++

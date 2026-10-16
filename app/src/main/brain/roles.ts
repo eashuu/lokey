@@ -9,6 +9,8 @@ export const GROUPS: Record<string, string[]> = {
   files: ['read_file', 'write_file', 'list_dir', 'make_folder', 'move_file', 'copy_file', 'delete_file', 'run_command', 'clipboard_set'],
   web: ['web_fetch', 'web_research', 'download_file'],
   screen: ['see_screen', 'list_processes', 'close_app', 'kill_process', 'notify', 'computer_task'],
+  // other agents: helpers, and coding agents (Claude Code, Codex) when one is installed. A worker asks for it with use_tools; the voice reaches it through do_task(role).
+  agents: ['spawn_agent', 'agent_status', 'agent_stop', 'delegate_coding'],
 }
 export const GROUP_HELP: Record<string, string> = {
   core: 'basic actions: open apps and links, schedule, media, volume, memory',
@@ -16,6 +18,15 @@ export const GROUP_HELP: Record<string, string> = {
   files: 'read, write, move, copy, delete files; run PowerShell commands; clipboard',
   web: 'fetch pages, research with Google search, download files',
   screen: 'look at the screen, running programs, notifications, take over the mouse and keyboard',
+  agents: 'hand work to other agents: helpers, and Claude Code or Codex for programming jobs in a project folder (when installed); see and stop them',
+}
+
+/** which coding agents are installed on this PC (kept fresh by the app; unknown = none). delegate_coding is only offered when one is. */
+export const installedCli = { claude: false, codex: false, at: 0 }
+/** the tools of a group as they are offered right now */
+export function groupTools(g: string): string[] {
+  const list = GROUPS[g] ?? []
+  return g === 'agents' && !installedCli.claude && !installedCli.codex ? list.filter(n => n !== 'delegate_coding') : list
 }
 
 export interface RoleDef { label: string; model: BrainRole; groups: string[]; prompt: string }
@@ -35,7 +46,7 @@ export const ROLES: Record<string, RoleDef> = {
 export function startTools(role: string, extra: string[] = []): Set<string> {
   const r = ROLES[role] ?? ROLES.general
   const out = new Set<string>(['use_tools'])
-  for (const g of [...r.groups, ...extra]) for (const n of GROUPS[g] ?? []) out.add(n)
+  for (const g of [...r.groups, ...extra]) for (const n of groupTools(g)) out.add(n)
   return out
 }
 
@@ -46,6 +57,7 @@ export function groupsForGoal(goal: string): string[] {
   if (/\b(search|news|price|latest|look ?up|research|find out|website|web|google|weather|compare)\b|https?:\/\//i.test(goal)) g.push('web')
   if (/\b(screen|window|click|app|process|close|notification)\b/i.test(goal)) g.push('screen')
   if (/\b(shortcut|settings|wifi|bluetooth|volume|type)\b/i.test(goal)) g.push('desktop')
+  if (/\b(claude code|codex|coding agent|delegate|helper agent)\b/i.test(goal)) g.push('agents')
   return g
 }
 

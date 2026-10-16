@@ -1,0 +1,27 @@
+[
+ {
+  "goal": "Save the file",
+  "expectId": 10,
+  "tree": "uia/notepad-save-as.tree.json"
+ },
+ {
+  "goal": "Cancel this dialog",
+  "expectId": 11,
+  "tree": "uia/notepad-save-as.tree.json"
+ },
+ {
+  "goal": "Open the File menu",
+  "expectId": 3,
+  "tree": "uia/notepad-save-as.tree.json"
+ },
+ {
+  "goal": "Tick the Always on top box",
+  "expectId": 9,
+  "tree": "uia/notepad-save-as.tree.json"
+ },
+ {
+  "goal": "Close the window",
+  "expectId": 2,
+  "tree": "uia/notepad-save-as.tree.json"
+ }
+]

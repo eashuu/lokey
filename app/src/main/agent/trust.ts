@@ -5,7 +5,7 @@ import { dataDir } from '../settings'
 // Earned trust: an action the user keeps approving (same tool + same target) can become a "do not ask again" rule.
 // 5 approvals, 0 denials, inside 30 days. A denial wipes the history and revokes the rule. Dangerous kinds never qualify.
 const DAY = 86_400_000, NEED = 5, WINDOW = 30 * DAY
-const NEVER_TOOL = /^(run_command|power|type_text)$|delete|remove|send|mail|message|sms|whatsapp|^mcp_|^ui_|^screen|^second_screen/i
+const NEVER_TOOL = /^(run_command|power|type_text|watch_start|routine_run|routine_delete|draft_reply)$|delete|remove|send|mail|message|sms|whatsapp|^mcp_|^ui_|^screen|^second_screen/i
 const BAD_ORIGIN = new Set(['screen', 'web', 'mcp', 'remote'])
 const TARGET_KEYS = ['name', 'query', 'path', 'url', 'what', 'app', 'title', 'key']
 

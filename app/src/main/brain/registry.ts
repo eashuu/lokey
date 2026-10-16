@@ -52,6 +52,8 @@ export const ENTRIES: Entry[] = [
   { path: 'voice.enabled', label: 'Voice assistant', type: 'bool', risk: 'ask', words: 'voice assistant off on' },
   { path: 'agent.context', label: 'Look at the app in front when asked about "this"', type: 'bool', risk: 'safe', words: 'context screen aware' },
   { path: 'agent.confirmMode', label: 'When to ask before acting', type: 'enum', options: ['risky', 'always'], risk: 'safe', words: 'ask confirm permission careful', note: 'only the safer two; full control can only be given in Settings' },
+  { path: 'agent.confirmIn', label: 'Where requests for you appear', type: 'enum', options: ['island', 'window'], risk: 'ask', words: 'confirm card allow deny island window popup', note: 'island = inside the island, window = the separate always-on-top card' },
+  { path: 'agent.askSound', label: 'Soft sound when Lokey asks you something', type: 'bool', risk: 'safe', words: 'sound chime ask request' },
   { path: 'brain.maxSteps', label: 'Most steps per background job', type: 'number', min: 4, max: 30, risk: 'safe', words: 'job steps limit' },
   { path: 'brain.learn', label: 'Learn from conversations', type: 'bool', risk: 'safe', words: 'memory learn remember pause privacy' },
   { path: 'wake.enabled', label: 'Wake-up listening (claps and phrases)', type: 'bool', risk: 'ask', words: 'wake word clap hey lokey listening always on microphone' },

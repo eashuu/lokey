@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { dataDir } from '../../settings'
@@ -7,7 +8,9 @@ export interface Promise_ { id: string; what: string; who?: string; due?: string
 const file = join(dataDir, 'promises.json')
 let items: Promise_[] | null = null
 const all = () => items ??= (() => { try { return JSON.parse(readFileSync(file, 'utf8')) as Promise_[] } catch { return [] } })()
-const save = () => { try { mkdirSync(dataDir, { recursive: true }); writeFileSync(file, JSON.stringify(all().slice(-200))) } catch { /* in-memory only */ } }
+/** emits 'changed' whenever the list is saved (the Agents tab listens) */
+export const loopsChanged = new EventEmitter()
+const save = () => { try { mkdirSync(dataDir, { recursive: true }); writeFileSync(file, JSON.stringify(all().slice(-200))) } catch { /* in-memory only */ } loopsChanged.emit('changed') }
 
 /** adds a commitment unless an open one with the same words exists; due must parse as a date or it is dropped */
 export function addPromise(what: string, who?: string, due?: string): Promise_ | null {

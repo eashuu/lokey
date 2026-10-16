@@ -7,10 +7,11 @@ import { join } from 'node:path'
 import type { ToolCtx } from '../agent/tools'
 import { runComputerTool } from './computer'
 import { runLoop } from './loop'
-import { Router } from './router'
-import { parseOpenAi, toOpenAiMessages } from './providers/openai'
-import { parseResponse, toContents } from './providers/gemini'
-import { ProviderError, toJsonSchema, type ChatMessage } from './types'
+import { Gateway as Router } from '../ai/gateway'
+import { AiError } from '../ai/errors'
+import { parseOpenAi, toOpenAiMessages } from '../ai/adapters/openai'
+import { parseResponse, toContents } from '../ai/adapters/gemini'
+import { toJsonSchema, type ChatMessage } from './types'
 
 // `--selfcheck` for the model layer: the wire formats, the router's fallback and the agent loop, against a throw-away HTTP server on
 // 127.0.0.1 that plays an OpenAI-compatible provider. No network, no key, no model.
@@ -65,7 +66,7 @@ export async function brainSelfCheck(): Promise<string> {
   need(u.A.errors === 1 && u.B.requests === 1 && u.B.in === 100, 'usage is counted')
   bad.close()
   let none = false
-  try { await new Router(() => [], () => null, false).chat('main', { system: '', messages: [] }) } catch (e) { none = e instanceof ProviderError }
+  try { await new Router(() => [], () => null, false).chat('main', { system: '', messages: [] }) } catch (e) { none = e instanceof AiError }
   need(none, 'no provider gives a clear error')
 
   // ---- the loop: model asks for a tool, gets the result, answers; a tool that is not switched on is refused; repeats are cut

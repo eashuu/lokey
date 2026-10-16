@@ -1,6 +1,6 @@
 import type { FunctionDecl } from '../agent/session'
 import type { ToolCtx, ToolResult } from '../agent/tools'
-import { router } from './router'
+import { ai } from '../ai/gateway'
 import { draftAsMe } from './style'
 import { weeklyReview } from './weekly'
 
@@ -15,6 +15,6 @@ export const EXTRA_READ_ONLY = EXTRA_NAMES
 
 export async function runExtraTool(name: string, a: Record<string, unknown>, _ctx?: ToolCtx): Promise<ToolResult> {
   if (name === 'weekly_review') return { result: { ok: true, ...weeklyReview() } }
-  const r = await draftAsMe(String(a.context ?? ''), a.recipient ? String(a.recipient) : undefined, async (system, user) => (await router.chat('fast', { system, messages: [{ role: 'user', text: user }], temperature: 0.7, maxTokens: 400 })).text)
+  const r = await draftAsMe(String(a.context ?? ''), a.recipient ? String(a.recipient) : undefined, async (system, user) => (await ai.call('fast', { system, messages: [{ role: 'user', text: user }], temperature: 0.7, maxTokens: 400 }, { op: 'draft' })).text)
   return { result: { ...r, note: 'draft only: nothing was sent or typed' } }
 }

@@ -1,0 +1,134 @@
+[
+ {
+  "request": "open chrome",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "open Spotify",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "launch Visual Studio Code",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "open Notepad",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "open Netflix",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "open youtube.com",
+  "expectedTools": [
+   "open_url"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "go to github.com",
+  "expectedTools": [
+   "open_url"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "search the web for best budget phones",
+  "expectedTools": [
+   "web_search"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "search amazon for a USB-C cable",
+  "expectedTools": [
+   "web_search"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "set the volume to 30 percent",
+  "expectedTools": [
+   "set_volume"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "mute the sound",
+  "expectedTools": [
+   "set_volume"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ },
+ {
+  "request": "turn the brightness down to 40",
+  "expectedTools": [
+   "set_brightness"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ]
+ }
+]

@@ -9,6 +9,8 @@ export interface ChatMessage {
   text?: string
   /** base64 JPEG pictures attached to a user message */
   images?: string[]
+  /** base64 WAV recording attached to a user message (transcription) */
+  audio?: string
   /** assistant: the tool calls it made */
   toolCalls?: ToolCall[]
   /** tool: which call this answers */
@@ -26,7 +28,14 @@ export interface ChatRequest {
   /** ask for a JSON object as the answer */
   json?: boolean
   signal?: AbortSignal
+  /** receives the text so far while the answer streams (only some adapters stream; the rest call it once at the end) */
+  onText?: (t: string) => void
+  /** tool names that exist even if they are not offered in `tools` (the loop refuses those itself); anything else the model calls is invented */
+  knownTools?: string[]
 }
+
+/** why the model stopped, as far as the adapter could tell */
+export type Finish = 'stop' | 'length' | 'safety' | 'recitation' | 'malformed' | 'other'
 
 export interface Usage { in: number; out: number; cached: number }
 
@@ -37,18 +46,21 @@ export interface ChatResponse {
   provider: string
   model: string
   raw?: ChatMessage['raw']
+  finish?: Finish
+  /** the adapter saw a tool call it could not use (bad JSON arguments, a rejected function call): the gateway repairs or moves on */
+  malformed?: string
 }
 
+/** One model behind one provider. Adapters throw AiError (ai/errors.ts); they never retry or fall back, that is the gateway's job. */
 export interface LlmProvider {
   readonly id: string
   readonly name: string
   readonly model: string
   chat(req: ChatRequest): Promise<ChatResponse>
-}
-
-/** A backend refused or failed. `retryable`: another provider may do better right now (rate limit, outage, no network). */
-export class ProviderError extends Error {
-  constructor(message: string, readonly status: number, readonly retryable: boolean) { super(message) }
+  embed?(texts: string[], kind: 'doc' | 'query', dims: number, signal?: AbortSignal): Promise<{ vectors: number[][]; usage: Usage }>
+  search?(question: string, signal?: AbortSignal): Promise<{ text: string; sources: { title: string; url: string }[]; usage: Usage }>
+  /** open the connection early so the real request skips the handshake */
+  warm?(): void
 }
 
 /** Gemini declares schema types in capitals ("OBJECT"), OpenAI-style APIs want JSON Schema: lower-case them, recursively. */

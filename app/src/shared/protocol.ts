@@ -86,6 +86,9 @@ export interface WallpaperItem { path: string; name: string; thumb: string | nul
 export interface DesktopsState { count: number; current: number; occupied: boolean[] }
 
 export interface ForegroundInfo { title: string; exe: string; pid: number }
+/** one numbered interactive element of the window in front (physical screen pixels) */
+export interface UiNode { id: number; role: string; name: string; automationId: string; x: number; y: number; w: number; h: number; enabled: boolean; password: boolean; canInvoke: boolean; canType: boolean }
+export interface UiTree { snapshot: string; app: string; title: string; hwnd: number; count: number; truncated: boolean; nodes: UiNode[] }
 
 export interface WifiNetwork { ssid: string; signal: number; secured: boolean; connected: boolean; known: boolean }   // signal 0..100
 export interface WifiState {
@@ -176,6 +179,10 @@ export interface Methods {
 
   'power.do': [{ action: PowerAction }, {}]
   'foreground.get': [{}, ForegroundInfo]
+
+  // computer use: the numbered interactive elements of the window in front, and acting on one by its number (UI Automation patterns, no cursor)
+  'ui.tree': [{ fixture?: unknown[] }, UiTree]
+  'ui.act': [{ snapshot: string; id: number; action: 'invoke' | 'focus' | 'setValue'; value?: string }, { ok: boolean; reason?: string }]
 
   // dictation: where the focused text field is (physical screen px), and typing into it
   'text.focusRect': [{}, { x: number; y: number; w: number; h: number; source: 'uia' | 'focus' | 'caret' | 'window' | 'screen'; password: boolean; hwnd: number }]

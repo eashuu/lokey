@@ -13,7 +13,7 @@ function load(win: BrowserWindow, hash: string) {
 /** Settings live inside the one main window (its Settings page); there is no separate settings window any more. */
 export function openSettings(section?: string) { openMain('settings', section) }
 
-export function createTray(handlers: { toggleIsland: () => void; quit: () => void; conversation?: () => void; moveIsland?: () => void; stopAll?: () => void; wake?: { enabled: () => boolean; toggle: () => void } }) {
+export function createTray(handlers: { toggleIsland: () => void; quit: () => void; conversation?: () => void; moveIsland?: () => void; stopAll?: () => void; wake?: { enabled: () => boolean; toggle: () => void }; watch?: { active: () => boolean; stop: () => void } }) {
   const icon = nativeImage.createFromPath(join(app.getAppPath(), 'resources', 'tray.png'))
   const tray = new Tray(icon)
   const build = () => Menu.buildFromTemplate([
@@ -21,6 +21,7 @@ export function createTray(handlers: { toggleIsland: () => void; quit: () => voi
     { label: 'Open lokey', click: () => openMain() },
     ...(handlers.conversation ? [{ label: 'Start / stop conversation', click: handlers.conversation }] : []),
     ...(handlers.wake ? [{ label: 'Wake-up listening (claps, "hey lokey")', type: 'checkbox' as const, checked: handlers.wake.enabled(), click: handlers.wake.toggle }] : []),
+    ...(handlers.watch?.active() ? [{ label: 'Stop watching (learning a routine)', click: handlers.watch.stop }] : []),
     ...(handlers.stopAll ? [{ label: 'Stop all agents', click: handlers.stopAll }] : []),
     { label: 'Lyrics window', click: () => toggleLyrics() },
     ...(handlers.moveIsland ? [{ label: 'Move island…', click: handlers.moveIsland }] : []),
@@ -28,7 +29,7 @@ export function createTray(handlers: { toggleIsland: () => void; quit: () => voi
     { type: 'separator' },
     { label: 'Quit', click: handlers.quit },
   ])
-  const refresh = () => { tray.setContextMenu(build()); tray.setToolTip(handlers.wake?.enabled() ? 'lokey · listening for wake-up' : 'lokey') }
+  const refresh = () => { tray.setContextMenu(build()); tray.setToolTip(handlers.watch?.active() ? 'lokey · WATCHING which apps you open' : handlers.wake?.enabled() ? 'lokey · listening for wake-up' : 'lokey') }
   refresh()
   tray.on('click', handlers.toggleIsland)
   return { tray, refresh }

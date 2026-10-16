@@ -1,3 +1,4 @@
+import { overlayLog } from './agent/overlays'
 import { app, BrowserWindow, dialog, ipcMain, screen, shell, type Tray } from 'electron'
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -13,6 +14,7 @@ import { runLab } from './lab'
 import { runShots } from './shots'
 import { runDemo } from './agent/demo'
 import { Scheduler } from './agent/scheduler'
+import { graphSelfCheck } from '@shared/graph'
 import { toolsSelfCheck } from './agent/tools'
 import { McpHub } from './agent/mcp'
 import { Conversation } from './agent/conversation'
@@ -23,6 +25,23 @@ import { computerSelfCheck } from './brain/computer'
 import { cliSelfCheck } from './brain/cli'
 import { TaskManager } from './brain/tasks'
 import { brainSelfCheck } from './brain/selfcheck'
+import { aiSelfCheck } from './ai/selfcheck'
+import { failsafeSelfCheck } from './ai/failsafeSelfcheck'
+import { overlaySelfCheck } from './agent/overlaySelfcheck'
+import { captionSelfCheck } from './agent/captionSelfcheck'
+import { liveSelfCheck } from './ai/live/selfcheck'
+import { guardSelfCheck } from './ai/guard/selfcheck'
+import { memorySelfCheck2 } from './ai/memory/selfcheck'
+import { operatorSelfCheck } from './brain/operatorSelfcheck'
+import { roleSelfCheck } from './brain/roleSelfcheck'
+import { runMemcheck } from './ai/memory/bench'
+import { MemoryMcpServer, newToken } from './ai/memory/mcpServer'
+import { getSecret, setSecret } from './agent/keystore'
+import { memory } from './brain/memory'
+import { runLiveTest } from './livetest'
+import { runtimeSelfCheck } from './ai/runtime/selfcheck'
+import { injectionReport, runInjectionSuite } from './brain/guardEval'
+import { ai } from './ai/gateway'
 import { promptSelfCheck } from './brain/prompt'
 import { Wake } from './agent/wake'
 import { memorySelfCheck } from './brain/memory/selfcheck'
@@ -31,10 +50,14 @@ import { weeklySelfCheck } from './brain/weekly'
 import { evalSelfCheck, runEval } from './brain/eval'
 import { trustUndoNudgeSelfCheck } from './agent/trustSelfcheck'
 import { logForeground } from './agent/activity'
+import { desktopSelfCheck } from './agent/desktopSelfcheck'
+import { stopWatching, watchForeground, watcher, watchUi } from './agent/watch'
 import { registrySelfCheck } from './brain/registry'
 import { settingsToolsSelfCheck } from './brain/settingsTools'
 import { lyricsSelfCheck } from '@shared/lyrics'
-import { disposeConfirm } from './agent/permissions'
+import { answerCurrent, disposeConfirm, inputGate } from './agent/permissions'
+import { wireAskIsland } from './agent/askIsland'
+import { askSelfCheck } from './agent/askSelfcheck'
 import { Agent } from './agent/agent'
 import { linkSelfCheck } from './link/linkSelfcheck'
 import { registerLink } from './link/ipc'
@@ -70,11 +93,23 @@ function log(msg: string) {
     appendFileSync(join(dataDir, 'main.log'), `${new Date().toISOString()} ${msg}\n`)
   } catch { /* logging must never throw */ }
 }
+ai.setLogger(log)
+overlayLog.fn = log
+
+// ---- Lokey as a read-only MCP server over the person's own memory (opt-in, localhost + token) ----------------------------------------
+const memMcpToken = () => { let t = getSecret('memory-mcp'); if (!t) { t = newToken(); setSecret('memory-mcp', t) } return t }
+const memMcp = new MemoryMcpServer(memory, memMcpToken)
+async function syncMemMcp() {
+  const c = settings.value.memory?.mcp
+  try {
+    if (c?.enabled) { if (!memMcp.running || memMcp.listening !== c.port) { await memMcp.start(c.port); log(`memory MCP server on 127.0.0.1:${memMcp.listening}`) } } else if (memMcp.running) { await memMcp.stop(); log('memory MCP server stopped') }
+  } catch (e) { log(`memory MCP server: ${e instanceof Error ? e.message : e}`) }
+}
 process.on('uncaughtException', e => log(`uncaught ${e.stack ?? e}`))
 process.on('unhandledRejection', e => log(`unhandled ${e}`))
 
 // ---- single instance (a second launch opens Settings in the first) --------------------------------
-if (!benchDir && !uiTestDir && !labDir && !demoName && !selfCheck && !shotsDir && !app.requestSingleInstanceLock()) { app.quit() }
+if (!benchDir && !uiTestDir && !labDir && !demoName && !selfCheck && !shotsDir && !process.argv.includes('--memcheck') && !process.argv.includes('--livetest') && !process.argv.includes('--eval') && !app.requestSingleInstanceLock()) { app.quit() }
 app.on('second-instance', () => openSettings())
 
 // Compositor-friendly defaults for a transparent always-on-top overlay.
@@ -257,7 +292,7 @@ export function roleAllows(role: Role, method: string) {
 }
 export function trustSelfCheck(): string {
   const need = (c: boolean, m: string) => { if (!c) throw new Error('trust: ' + m) }
-  need(!roleAllows('other', 'power.do') && !roleAllows('lyrics', 'power.do') && roleAllows('island', 'power.do') && roleAllows('lyrics', 'media.get'), 'role allow-list')
+  need(!roleAllows('other', 'power.do') && !roleAllows('lyrics', 'power.do') && roleAllows('island', 'power.do') && roleAllows('lyrics', 'media.get') && !roleAllows('lyrics', 'ui.act') && !roleAllows('other', 'ui.tree') && roleAllows('main', 'ui.tree'), 'role allow-list (screen control is for the island and the main window only)')
   return 'trust ok'
 }
 // deny-by-default for every window (including ones created later); only http(s) leaves the app, in the user's browser
@@ -268,6 +303,7 @@ app.on('web-contents-created', (_e, wc) => {
 
 // ---- IPC ----------------------------------------------------------------------------------------------
 function registerIpc() {
+  ipcMain.handle('lokey:memory:mcpInfo', () => { const c = settings.value.memory?.mcp; return { enabled: !!c?.enabled, port: c?.port ?? 7749, running: memMcp.running, token: c?.enabled ? memMcpToken() : '' } })
   registerLink(agent, sidecar)
   registerCoreIpc(agent, (ch, ...a) => { for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(ch, ...a) })
   ipcMain.handle('lokey:call', async (e, method: MethodName, params: Methods[MethodName][0]) => {
@@ -352,14 +388,16 @@ const HOTKEY_CONVO = 5
 const HOLD_MOVE = 6
 const HOTKEY_LYRICS = 7
 const HOTKEY_STOP = 8
+const HOTKEY_ASK_YES = 9
+const HOTKEY_ASK_NO = 10
 const HOTKEY_TAB_BASE = 20
-const TAB_IDS = ['controls', 'today', 'stats', 'clipboard', 'apps', 'wallpaper', 'power'] as const
+const TAB_IDS = ['controls', 'today', 'stats', 'clipboard', 'apps', 'wallpaper', 'power', 'agents'] as const
 const hotkeyStatus: Record<string, string> = {}
 
 /** every setting that changes which keys are registered; anything else (theme, size...) must not touch the keyboard hook */
 const hotkeySig = () => {
   const s = settings.value
-  return JSON.stringify([s.island.enabled, s.island.hotkey, s.island.tabHotkeys, s.voice.enabled, s.voice.pushToTalk, s.voice.dictation, s.voice.dictationKey, s.voice.lasso, s.voice.lassoKey, s.voice.conversationKey, s.island.moveKey, s.island.lyricsKey, s.agent.stopKey])
+  return JSON.stringify([s.island.enabled, s.island.hotkey, s.island.tabHotkeys, s.voice.enabled, s.voice.pushToTalk, s.voice.dictation, s.voice.dictationKey, s.voice.lasso, s.voice.lassoKey, s.voice.conversationKey, s.island.moveKey, s.island.lyricsKey, s.agent.stopKey, s.agent.allowKey, s.agent.denyKey])
 }
 let lastSig = ''
 let regChain: Promise<unknown> = Promise.resolve()
@@ -392,6 +430,9 @@ async function registerHotkeysNow() {
       if (combo) note(`tab:${tab}`, await one(HOTKEY_TAB_BASE + i, combo), `${tab} hotkey`)
     }
   }
+  // answer the card on screen from the keyboard; both chords do nothing unless a request is waiting (and Allow only after the card has been up a moment)
+  if (settings.value.agent.allowKey?.trim()) note('askAllow', await one(HOTKEY_ASK_YES, settings.value.agent.allowKey), 'allow-request chord')
+  if (settings.value.agent.denyKey?.trim()) note('askDeny', await one(HOTKEY_ASK_NO, settings.value.agent.denyKey), 'deny-request chord')
   const v = settings.value.voice
   if (v.enabled) {
     note('talk', await hold(HOLD_TALK, v.pushToTalk), 'push-to-talk chord')
@@ -434,6 +475,8 @@ function wireSidecar() {
     else if (id === HOTKEY_CONVO) { if (!dictation.active) agent.toggleConversation() }
     else if (id === HOTKEY_LYRICS) toggleLyrics()
     else if (id === HOTKEY_STOP) agent.stopAll()
+    else if (id === HOTKEY_ASK_YES) answerCurrent(true)
+    else if (id === HOTKEY_ASK_NO) answerCurrent(false)
     else if (id >= HOTKEY_TAB_BASE && id < HOTKEY_TAB_BASE + TAB_IDS.length) {
       const tab = TAB_IDS[id - HOTKEY_TAB_BASE]
       if (TABS_WITH_INPUT.has(tab)) void takeKeyboard()
@@ -450,6 +493,7 @@ function wireSidecar() {
   })
   sidecar.onEvent('foreground.changed', f => {
     logForeground(f.exe, f.title)
+    watchForeground(f.exe, f.title)
     const now = Date.now()
     if (now - lastRaise > 250) { lastRaise = now; raise() }
   })
@@ -474,23 +518,31 @@ app.whenReady().then(async () => {
   if (oi >= 0 && Number.isFinite(Number(argv[oi + 1]))) settings.value.island.offset = Math.max(0, Math.min(1, Number(argv[oi + 1])))
   const si = argv.indexOf('--soul')
   if (si >= 0 && argv[si + 1]) settings.value.loadout.soul = argv[si + 1]
+  if (argv.includes('--livetest')) { const out = argv[argv.indexOf('--livetest') + 1] ?? join(dataDir, 'livetest.txt'); const code = await runLiveTest(agent, out.startsWith('--') ? join(dataDir, 'livetest.txt') : out); app.exit(code); return }
+  if (argv.includes('--memcheck')) { const r = await runMemcheck(); console.log(r); try { writeFileSync(join(dataDir, 'memcheck.txt'), r) } catch { /* console only */ } app.exit(0); return }
   if (labDir) { registerIpc(); await runLab(labDir, labQuery, labPage); return }
-  if (argv.includes('--eval')) { await runEval(join(app.getAppPath(), 'evals'), join(dataDir, 'eval.txt')); app.exit(0); return }
+  if (argv.includes('--eval')) { await runEval(join(app.getAppPath(), 'evals'), join(dataDir, 'eval.txt')); { const inj = injectionReport(await runInjectionSuite()); console.log(inj); try { writeFileSync(join(dataDir, 'eval-injection.txt'), inj) } catch { /* console only */ } } app.exit(0); return }
   if (selfCheck) {
     const out: string[] = []
-    for (const [n, f] of [['scheduler', Scheduler.selfCheck], ['tools', toolsSelfCheck], ['dictation', Dictation.selfCheck], ['mcp', McpHub.selfCheck], ['conversation', Conversation.selfCheck], ['lyrics', lyricsSelfCheck], ['placement', placementSelfCheck], ['lyricsAnim', lyricsAnimSelfCheck], ['safety', safetySelfCheck], ['computer', computerSelfCheck], ['cli', cliSelfCheck], ['tasks', TaskManager.selfCheck], ['brain', brainSelfCheck], ['prompt', promptSelfCheck], ['registry', registrySelfCheck], ['settingsTools', settingsToolsSelfCheck], ['memory', memorySelfCheck], ['link', linkSelfCheck], ['settings', settingsSelfCheck], ['trustUndoNudge', trustUndoNudgeSelfCheck],['trust', trustSelfCheck], ['style', styleSelfCheck], ['weekly', weeklySelfCheck], ['eval', evalSelfCheck]] as const) { try { out.push(`${n}: ${await f()}`) } catch (e) { out.push(`${n}: FAIL ${e instanceof Error ? e.message : e}`) } }
+    for (const [n, f] of [['scheduler', Scheduler.selfCheck], ['graph', graphSelfCheck], ['tools', toolsSelfCheck], ['dictation', Dictation.selfCheck], ['mcp', McpHub.selfCheck], ['conversation', Conversation.selfCheck], ['lyrics', lyricsSelfCheck], ['placement', placementSelfCheck], ['lyricsAnim', lyricsAnimSelfCheck], ['safety', safetySelfCheck], ['computer', computerSelfCheck], ['cli', cliSelfCheck], ['tasks', TaskManager.selfCheck], ['brain', brainSelfCheck], ['ai', aiSelfCheck], ['failsafe', failsafeSelfCheck], ['overlays', overlaySelfCheck], ['captions', captionSelfCheck], ['live', liveSelfCheck], ['guard', guardSelfCheck], ['memory2', memorySelfCheck2], ['operator', operatorSelfCheck], ['roles', roleSelfCheck], ['runtime', runtimeSelfCheck], ['prompt', promptSelfCheck], ['registry', registrySelfCheck], ['settingsTools', settingsToolsSelfCheck], ['memory', memorySelfCheck], ['link', linkSelfCheck], ['settings', settingsSelfCheck], ['trustUndoNudge', trustUndoNudgeSelfCheck],['trust', trustSelfCheck], ['style', styleSelfCheck], ['weekly', weeklySelfCheck], ['eval', evalSelfCheck], ['desktop', desktopSelfCheck], ['ask', askSelfCheck]] as const) { try { out.push(`${n}: ${await f()}`) } catch (e) { out.push(`${n}: FAIL ${e instanceof Error ? e.message : e}`) } }
     writeFileSync(join(dataDir, 'selfcheck.txt'), out.join(String.fromCharCode(10)))
     app.exit(out.some(l => l.includes('FAIL')) ? 1 : 0)
     return
   }
   registerIpc()
+  watchUi.notice = t => agent.notice(t)
+  watchUi.changed = () => { refreshTray(); setGlow(watcher.active ? 'research' : 'off') } // the visible "I am watching" signal: tray label + screen-edge glow
   wireSidecar()
   if (benchDir || argv.includes('--diag')) startLagMonitor()
   createOverlay()
+  wireAskIsland({ overlay: () => overlay, hidden: () => hiddenForFullscreen })
+  // while a request waits for the person, the assistant has no mouse or keyboard (it could otherwise click Allow itself)
+  sidecar.gate = inputGate
   if (!benchDir && !uiTestDir) agent.start()
+  void syncMemMcp(); settings.on('changed', () => void syncMemMcp())
   const replace = () => { applyPlacement(); raise() }
   screen.on('display-metrics-changed', replace); screen.on('display-added', replace); screen.on('display-removed', replace)
-  if (!benchDir) { const t = createTray({ toggleIsland: () => send({ type: 'toggle-island' }), quit: () => app.quit(), conversation: () => agent.toggleConversation(), moveIsland: () => startMove('pick'), stopAll: () => agent.stopAll(), wake: { enabled: () => settings.value.wake.enabled, toggle: () => { settings.set({ wake: { enabled: !settings.value.wake.enabled } }) } } }); tray = t.tray; refreshTray = t.refresh }
+  if (!benchDir) { const t = createTray({ toggleIsland: () => send({ type: 'toggle-island' }), quit: () => app.quit(), conversation: () => agent.toggleConversation(), moveIsland: () => startMove('pick'), stopAll: () => agent.stopAll(), watch: { active: () => watcher.active, stop: () => { stopWatching() } }, wake: { enabled: () => settings.value.wake.enabled, toggle: () => { settings.set({ wake: { enabled: !settings.value.wake.enabled } }) } } }); tray = t.tray; refreshTray = t.refresh }
   if (argv.includes('--settings')) openSettings()
   if (shotsDir) overlay?.webContents.once('did-finish-load', () => { void runShots(overlay!, shotsDir, () => app.quit()) })
   if (demoName) overlay?.webContents.once('did-finish-load', () => { void runDemo(demoName, agent, overlay, captureDir, recordDir).then(() => app.quit()) })
@@ -500,4 +552,4 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => { /* the overlay lives for the whole session */ })
-app.on('before-quit', () => { agent.dispose(); disposeConfirm(); tray?.destroy(); void sidecar.stop() })
+app.on('before-quit', () => { ai.flush(); agent.dispose(); disposeConfirm(); tray?.destroy(); void sidecar.stop() })

@@ -1,0 +1,601 @@
+[
+ {
+  "request": "open chrome",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "open Spotify",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "launch Visual Studio Code",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "open Notepad",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "open Netflix",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "open youtube.com",
+  "expectedTools": [
+   "open_url"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "go to github.com",
+  "expectedTools": [
+   "open_url"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "search the web for best budget phones",
+  "expectedTools": [
+   "web_search"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "search amazon for a USB-C cable",
+  "expectedTools": [
+   "web_search"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "set the volume to 30 percent",
+  "expectedTools": [
+   "set_volume"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "mute the sound",
+  "expectedTools": [
+   "set_volume"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "turn the brightness down to 40",
+  "expectedTools": [
+   "set_brightness"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "pause the music",
+  "expectedTools": [
+   "media"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "skip this song",
+  "expectedTools": [
+   "media"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "play the music",
+  "expectedTools": [
+   "media"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "switch to the browser window",
+  "expectedTools": [
+   "switch_window"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "bring up WhatsApp",
+  "expectedTools": [
+   "switch_window"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "what windows do I have open",
+  "expectedTools": [
+   "list_windows"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "find my invoice pdf",
+  "expectedTools": [
+   "find_files"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "where is my resume file",
+  "expectedTools": [
+   "find_files"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "give me my morning briefing",
+  "expectedTools": [
+   "briefing"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "what is on my schedule",
+  "expectedTools": [
+   "list_tasks"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "what do I have scheduled",
+  "expectedTools": [
+   "list_tasks"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "remind me to call mom at 7pm",
+  "expectedTools": [
+   "schedule"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "in 10 minutes open Netflix",
+  "expectedTools": [
+   "schedule"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "every weekday at 9 open Outlook",
+  "expectedTools": [
+   "schedule"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "remember that my sister is called Priya",
+  "expectedTools": [
+   "remember"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "remember I prefer dark mode",
+  "expectedTools": [
+   "remember"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "what did I say about Priya",
+  "expectedTools": [
+   "recall"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "what do you know about my work",
+  "expectedTools": [
+   "recall"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "summarise what I have selected",
+  "expectedTools": [
+   "read_selection"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "translate the text I selected",
+  "expectedTools": [
+   "read_selection"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "what am I looking at right now",
+  "expectedTools": [
+   "get_context"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "what is on my clipboard",
+  "expectedTools": [
+   "get_context"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "undo that",
+  "expectedTools": [
+   "undo"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "lock my PC",
+  "expectedTools": [
+   "power"
+  ],
+  "forbiddenTools": [
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "open the Wi-Fi settings",
+  "expectedTools": [
+   "open_settings"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "turn bluetooth off",
+  "expectedTools": [
+   "toggle"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "switch to dark mode",
+  "expectedTools": [
+   "toggle"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "how was my week",
+  "expectedTools": [
+   "weekly_review"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "draft a reply to this saying I will be late",
+  "expectedTools": [
+   "draft_as_me"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "chrome open pannu",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "tanglish"
+ },
+ {
+  "request": "volume 30 aakku",
+  "expectedTools": [
+   "set_volume"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "tanglish"
+ },
+ {
+  "request": "naalaiku 7 manikku amma kitta pesanum nu remind pannu",
+  "expectedTools": [
+   "schedule"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "tanglish"
+ },
+ {
+  "request": "என் அக்கா பெயர் பிரியா என்று நினைவில் வை",
+  "expectedTools": [
+   "remember"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "ta"
+ },
+ {
+  "request": "பாடலை நிறுத்து",
+  "expectedTools": [
+   "media"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "ta"
+ },
+ {
+  "request": "இன்றைய செய்திகளைத் தேடு",
+  "expectedTools": [
+   "web_search"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "ta"
+ },
+ {
+  "request": "Spotify open pannunga",
+  "expectedTools": [
+   "open_app"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "tanglish"
+ },
+ {
+  "request": "close this tab",
+  "expectedTools": [
+   "press_shortcut"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "en"
+ },
+ {
+  "request": "brightness kammi pannu",
+  "expectedTools": [
+   "set_brightness"
+  ],
+  "forbiddenTools": [
+   "power",
+   "run_command",
+   "delete_file"
+  ],
+  "lang": "tanglish"
+ }
+]

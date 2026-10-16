@@ -89,6 +89,13 @@ export class AgentAudio extends EventEmitter {
     this.touch()
   }
 
+  /** speak a sentence with the system voice (the page's speechSynthesis); `drained` fires when it ends, like for Live audio */
+  async say(text: string, lang = '') {
+    await this.ensure()
+    this.cmd({ cmd: 'say', text, lang })
+    this.touch()
+  }
+
   flush() { this.cmd({ cmd: 'flush' }) }
 
   destroy() {

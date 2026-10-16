@@ -5,7 +5,7 @@ const STOP = new Set('a an the and or but of to in on at for with from by is are
 
 /** lower-case word tokens; keeps any script (Tamil included), drops filler words */
 export function tokens(text: string): string[] {
-  return (text.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) ?? []).map(t => t.replace(/['’]s$/, '')).filter(t => t.length > 1 && !STOP.has(t))
+  return (text.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}\p{M}'’-]*/gu) ?? []).map(t => t.replace(/['’]s$/, '')).filter(t => t.length > 1 && !STOP.has(t))
 }
 
 export interface Doc { id: string; text: string; extra?: string; emb?: number[] | null; importance: number; at: number; pinned?: boolean }
@@ -38,7 +38,7 @@ export function jaccardMax(a: string, b: string): number {
 export interface Hit { id: string; score: number }
 
 /** rank documents for a query. `boost`: ids to lift (graph neighbours). Scores are 0..~1. */
-export function rank(query: string, docs: Doc[], opts: { qemb?: number[] | null; boost?: Map<string, number>; now?: number; k?: number } = {}): Hit[] {
+export function rank(query: string, docs: Doc[], opts: { qemb?: number[] | null; boost?: Map<string, number>; now?: number; k?: number; lex?: Map<string, number> } = {}): Hit[] {
   const now = opts.now ?? Date.now()
   const qt = tokens(query)
   const df = new Map<string, number>()
@@ -60,7 +60,7 @@ export function rank(query: string, docs: Doc[], opts: { qemb?: number[] | null;
   })
   const out: Hit[] = []
   docs.forEach((d, i) => {
-    const kw = max > 0 ? raw[i] / max : 0
+    const kw = opts.lex ? (opts.lex.get(d.id) ?? 0) : max > 0 ? raw[i] / max : 0
     const sem = opts.qemb && d.emb ? Math.max(0, cosine(opts.qemb, d.emb)) : 0
     const days = Math.max(0, (now - d.at) / 86_400_000)
     const recency = Math.exp(-days / 45)

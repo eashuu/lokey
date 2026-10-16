@@ -1,7 +1,7 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { settings, dataDir } from '../settings'
-import { getKey } from './keystore'
+import { dataDir } from '../settings'
+import { ai } from '../ai/gateway'
+import { readDoc, writeDoc } from '../ai/db'
 
 // The conversation as data, outside any one WebSocket: the last turns plus a rolling summary. A Gemini Live connection
 // only remembers what was said on that connection, and connections end (idle, server go-away, errors, restarts). Every new
@@ -26,14 +26,15 @@ export class Conversation {
 
   load() {
     try {
-      const j = JSON.parse(readFileSync(file, 'utf8')) as Store
+      const j = readDoc<Store>('conversation', file)
+      if (!j) throw new Error('none')
       this.d = { summary: typeof j.summary === 'string' ? j.summary : '', turns: Array.isArray(j.turns) ? j.turns.filter(t => t && typeof t.user === 'string').slice(-MAX_TURNS * 2) : [] }
     } catch { this.d = { summary: '', turns: [] } }
     return this
   }
 
   private save() {
-    try { mkdirSync(dataDir, { recursive: true }); writeFileSync(file + '.tmp', JSON.stringify(this.d)); renameSync(file + '.tmp', file) } catch { /* in memory only */ }
+    writeDoc('conversation', this.d, file)
   }
 
   get size() { return this.d.turns.length }
@@ -73,25 +74,22 @@ export class Conversation {
   /** fold the oldest turns into the summary with one cheap call; never blocks a turn and never throws */
   async compact() {
     if (this.summarising || this.d.turns.length <= MAX_TURNS) return
-    const key = getKey()
-    if (!key) { this.d.turns = this.d.turns.slice(-MAX_TURNS); this.save(); return }
+    if (!ai.candidates('fast').length) { this.d.turns = this.d.turns.slice(-MAX_TURNS); this.save(); return }
     this.summarising = true
     const old = this.d.turns.slice(0, this.d.turns.length - KEEP_AFTER_SUMMARY)
     try {
       const text = old.map(t => `User: ${t.user}\nAssistant: ${t.assistant}`).join('\n')
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.value.voice.cleanupModel || 'gemini-flash-latest')}:generateContent`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, signal: AbortSignal.timeout(20_000),
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: `Update a running summary of a user's conversation with their PC assistant. Keep names, preferences, open tasks and decisions; drop chit-chat. At most ${SUMMARY_CHARS} characters, plain text, same language mix as the conversation. Output only the summary.` }] },
-          contents: [{ role: 'user', parts: [{ text: `Current summary:\n${this.d.summary || '(none)'}\n\nNew exchanges to fold in:\n${text}` }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 600 },
-        }),
-      })
-      if (r.ok) {
-        const j = (await r.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-        const s = j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('').trim()
-        if (s) { this.d.summary = clip(s, SUMMARY_CHARS); this.d.turns = this.d.turns.slice(old.length) }
-      }
+      const r = await ai.call('fast', {
+        system: `Update a running summary of a user's conversation with their PC assistant. Keep names, preferences, open tasks and decisions; drop chit-chat. At most ${SUMMARY_CHARS} characters, plain text, same language mix as the conversation. Output only the summary.`,
+        messages: [{ role: 'user', text: `Current summary:
+${this.d.summary || '(none)'}
+
+New exchanges to fold in:
+${text}` }],
+        temperature: 0.2, maxTokens: 600,
+      }, { background: true, op: 'summary' }).catch(() => null)
+      const s = r?.text.trim()
+      if (s) { this.d.summary = clip(s, SUMMARY_CHARS); this.d.turns = this.d.turns.slice(old.length) }
       if (this.d.turns.length > MAX_TURNS * 2) this.d.turns = this.d.turns.slice(-MAX_TURNS) // the summary call failed for good: just cap
       this.save()
     } catch { if (this.d.turns.length > MAX_TURNS * 2) { this.d.turns = this.d.turns.slice(-MAX_TURNS); this.save() } } finally { this.summarising = false }
