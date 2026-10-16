@@ -106,9 +106,12 @@ function VivoTest({ st }: { st: Status }) {
   const [notes, setNotes] = useState(loadNotes)
   const [busy, setBusy] = useState(false)
   const sx = (st?.vivoSuperx ?? null) as Record<string, unknown> | null
-  const probe = async (kind: 'timer' | 'voice') => { setBusy(true); const r = await native('island.vivoProbe', { kind }); setRes({ kind, r: r && typeof r === 'object' ? r : {} }); setBusy(false) }
+  const probe = async (kind: 'subset' | 'full' | 'both') => { setBusy(true); const r = await native('island.vivoProbe', { kind: 'approval', route: kind }); setRes({ kind, r: r && typeof r === 'object' ? r : {} }); setBusy(false) }
+  const set = (k: string, v: unknown) => { void native('island.setEnabled', { [k]: v }) }
+  const route = String(sx?.route ?? 'subset'); const style = String(sx?.style ?? 'overlay')
   const answer = (saw: boolean) => {
     if (!res) return
+    set('vivoShowed', saw)
     const note = `${new Date().toLocaleString()}: ${res.kind} probe, posted ${yn(res.r.posted)}, extras kept ${yn(res.r.extrasKept)}, promotable ${yn(res.r.canPromote)}, island appeared: ${saw ? 'yes' : 'no'}`
     const next = [note, ...notes].slice(0, 8)
     setNotes(next); try { localStorage.setItem(NOTE_KEY, JSON.stringify(next)) } catch { /* private mode */ }
@@ -122,12 +125,15 @@ function VivoTest({ st }: { st: Status }) {
         <Row title="vivo device" hint={sx ? `Scenes: ${Array.isArray(sx.scenes) ? (sx.scenes as unknown[]).join(', ') || 'none' : String(sx.scenes ?? 'unknown')}. Scene status: ${String(sx.sceneStatus ?? 'unknown')}.` : 'No answer from the plugin yet.'}>
           <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: sx?.vivoDevice ? 'var(--ok)' : 'var(--muted)' }}>{sx ? (sx.vivoDevice ? 'Yes' : 'No') : '—'}</span>
         </Row>
-        <Row title="Test vivo Origin Island" hint="Posts a timer the vivo way."><button className="ph-pill" disabled={busy} onClick={() => void probe('timer')}>Test</button></Row>
-        <Row title="Test voice island" hint="Posts a voice-assistant card the vivo way."><button className="ph-pill" disabled={busy} onClick={() => void probe('voice')}>Test</button></Row>
+        <Row title="Test full island" hint="Posts the full vivo schema (route vivo-full)."><button className="ph-pill" disabled={busy} onClick={() => void probe('full')}>Test</button></Row>
+        <Row title="Test documented subset" hint="Posts only vivo's publicly documented fields."><button className="ph-pill" disabled={busy} onClick={() => void probe('subset')}>Test</button></Row>
+        <Row title="Test both" hint="Subset now, the full one about 22 s later."><button className="ph-pill" disabled={busy} onClick={() => void probe('both')}>Test</button></Row>
+        <Row title="Send with" hint="Which route real activities use."><button className="ph-pill" onClick={() => set('vivoRoute', route === 'full' ? 'subset' : 'full')}>{route === 'full' ? 'Full schema' : 'Documented subset'}</button></Row>
+        <Row title="Island style" hint="System hides Lokey's own pill only after you answer Yes below."><button className="ph-pill" onClick={() => set('vivoStyle', style === 'overlay' ? 'system' : style === 'system' ? 'both' : 'overlay')}>{style === 'system' ? 'System (vivo)' : style === 'both' ? 'Both' : 'Overlay pill'}</button></Row>
       </Group>
       {r && (
         <div role="status" style={{ padding: '0.75rem 1rem', borderRadius: 20, background: 'var(--fill-2)', fontSize: '0.8125rem', lineHeight: 1.5, marginBottom: '0.75rem', display: 'grid', gap: '0.5rem' }}>
-          <div>{r.ok === false ? `Could not post: ${String(r.reason ?? 'unknown reason')}.` : `${r.posted === false ? 'Not posted.' : 'Posted.'} System kept vivo's data: ${yn(r.extrasKept)}. Promotable: ${yn(r.canPromote)}.${r.scene ? ` Scene: ${String(r.scene)}.` : ''}${r.template ? ` Template: ${String(r.template)}.` : ''} Look at the top of the screen now: did the island appear?`}</div>
+          <div>{r.ok === false ? `Could not post: ${String(r.reason ?? 'unknown reason')}.` : `${r.posted === false ? 'Not posted.' : 'Posted.'} System kept vivo's data: ${yn(r.extrasKept)}. Promotable: ${yn(r.canPromote)}.${r.scene ? ` Scene: ${String(r.scene)}.` : ''}${r.template ? ` Template: ${String(r.template)}.` : ''} Look at the top of the screen now: did the system island appear?`}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}><button className="ph-pill pri" onClick={() => answer(true)}>Yes</button><button className="ph-pill" onClick={() => answer(false)}>No</button></div>
         </div>
       )}

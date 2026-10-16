@@ -1,4 +1,5 @@
-import { useRef, useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
+import { useSlider } from '@/lib/useSlider'
 import { Music, MicVocal, Pause, Play, SkipBack, SkipForward } from 'lucide-react'
 import { bridge } from '@/bridge'
 import { clamp, mmss } from '@/lib/format'
@@ -28,10 +29,10 @@ function Icon({ cx, cy, label, onClick, disabled, children }: { cx: number; cy: 
 export function MusicView() {
   const { media, playing, pos, dur } = useMediaPosition()
   const has = !!media?.hasSession
-  const bar = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<number | null>(null)
   const frac = clamp(drag ?? (dur ? pos / dur : 0), 0, 1)
-  const at = (e: React.PointerEvent) => { const r = bar.current!.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) }
+  // a cancelled drag (touch cancel, focus loss) abandons the seek; keys seek straight away
+  const seekBar = useSlider({ value: frac, disabled: !has || !dur, onChange: setDrag, onCommit: (v, cancelled) => { if (!cancelled) mediaSeek(v * dur); setDrag(null) } })
 
   return (
     <div style={{ position: 'absolute', left: 18, top: 24, width: 344, height: 118 }}>
@@ -46,13 +47,8 @@ export function MusicView() {
       </div>
       <span style={{ ...time, left: 0 }}>{mmss(drag != null ? drag * dur : pos)}</span>
       <div
-        ref={bar}
-        role="slider"
+        {...seekBar}
         aria-label="Seek"
-        onPointerDown={e => { if (!has || !dur) return; e.currentTarget.setPointerCapture(e.pointerId); setDrag(at(e)) }}
-        onPointerMove={e => { if (drag != null && e.currentTarget.hasPointerCapture(e.pointerId)) setDrag(at(e)) }}
-        onPointerUp={e => { if (drag == null) return; e.currentTarget.releasePointerCapture(e.pointerId); mediaSeek(at(e) * dur); setDrag(null) }}
-        onPointerCancel={() => setDrag(null)}
         style={{ position: 'absolute', left: 40, top: 52, width: 264, height: 19, cursor: has && dur ? 'pointer' : 'default', touchAction: 'none' }}
       >
         <div style={{ position: 'absolute', left: 0, top: 8.5, width: 264, height: 3, borderRadius: 1.5, background: 'var(--fill-4)', overflow: 'hidden' }}>

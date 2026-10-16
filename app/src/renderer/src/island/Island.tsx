@@ -10,6 +10,9 @@ import { MENU_BASE, MORPH, NOTCH_BASE, morphKind, paramsFor, peekParams, type Sh
 import { MenuContent } from './Panel'
 import { Caption } from './Caption'
 import { Held } from './Held'
+import { AskCard } from './AskCard'
+import { useAsk } from './ask'
+import { askHeight, askView } from '@shared/ask'
 import { PeekRow } from './Peek'
 import { Soul } from './Soul'
 import { skinPalette } from './skins'
@@ -39,6 +42,10 @@ export function Island() {
   const peek = useIsland(s => s.peek)
   const soulMode = useIsland(s => s.soul)
   const heldPhase = useIsland(s => s.heldPhase)
+  const askCur = useAsk(s => s.cur)
+  const lastAsk = useRef(askCur)
+  if (askCur) lastAsk.current = askCur
+  const askH = lastAsk.current ? askHeight(askView(lastAsk.current)) : 150
   const isl = useData(s => s.settings.island)
   const skin = useData(s => s.settings.loadout?.soul)
   const scale = useData(s => s.settings.appearance.scale)
@@ -70,7 +77,7 @@ export function Island() {
 
   const hair = isl.sleepLook === 'hairline'
   const peeking = !!peek && shape !== 'menu'
-  const target = frameOf(peeking ? peekParams(k) : paramsFor(shape, view, k, hair), peeking ? 'awake' : shape)
+  const target = frameOf(peeking ? peekParams(k) : paramsFor(shape, view, k, hair, askH), peeking ? 'awake' : shape)
   const start = frameOf(paramsFor(isl.rest, view, k, hair), isl.rest)
   const depth = useMotionValue(start.depth)
   const width = useMotionValue(start.width)
@@ -99,7 +106,7 @@ export function Island() {
     const ctl = ([[depth, p.depth], [width, p.width], [corner, p.corner], [rampW, p.rampW], [rampH, p.rampH], [alongMV, clampAlong(p)]] as const)
       .map(([mv, to]) => animate(mv, to, { duration, ease: m.ease }))
     return () => ctl.forEach(c => c.stop())
-  }, [shape, view, peeking, k, hair, edge, depth, width, corner, rampW, rampH]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shape, view, peeking, k, hair, edge, askH, depth, width, corner, rampW, rampH]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- window region: the overlay is shaped to the island so the rest of the screen belongs to other apps ----
   const caption = useIsland(s => s.caption)
@@ -114,7 +121,7 @@ export function Island() {
     const more = caption && edge === 'top' ? [{ x: along - 320 * k, y: 0, w: 640 * k, h: (NOTCH_BASE * 75 + 26 + 90) * k }] : []
     const kind = peeking ? 'notch' : morphKind(prev.current, { shape, view })
     setRegion(rect, (MORPH[kind].duration / Math.max(0.1, animSpeed() || 1)) * 1000, more)
-  }, [shape, view, peeking, k, caption, hair, edge, place.along, place.editing, size.w, size.h, atStart, atEnd]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shape, view, peeking, k, caption, hair, edge, askH, place.along, place.editing, size.w, size.h, atStart, atEnd]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- mounted menu content (kept alive while the shape closes) -------------------------------------
   const [mount, setMount] = useState(shape === 'menu')
@@ -212,6 +219,7 @@ export function Island() {
   const peekRect = upright(peekParams(k), 'awake')
   const heldRect = upright(paramsFor('held', view, k), 'held')
   const menuRect = upright(paramsFor('menu', shown, k), 'menu')
+  const askRect = upright(paramsFor('ask', view, k, false, askH), 'ask')
   const shadow = edge === 'top' ? '0 4px 9px' : edge === 'bottom' ? '0 -4px 9px' : edge === 'left' ? '4px 0 9px' : '-4px 0 9px'
   const slide = { top: { x: 0, y: -26 }, bottom: { x: 0, y: 26 }, left: { x: -26, y: 0 }, right: { x: 26, y: 0 } }[edge]
 
@@ -219,7 +227,7 @@ export function Island() {
 
   return (
     <motion.div key={edge} initial={{ opacity: 0, ...slide }} animate={{ opacity: 1, x: 0, y: 0 }} transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-      <svg width={size.w + 8} height={size.h + 8} viewBox={`-4 -4 ${size.w + 8} ${size.h + 8}`} style={{ position: 'absolute', left: -4, top: -4, overflow: 'visible', filter: inMenu ? 'none' : `drop-shadow(${shadow} rgba(0,0,0,.30))` }} aria-hidden>
+      <svg width={size.w + 8} height={size.h + 8} viewBox={`-4 -4 ${size.w + 8} ${size.h + 8}`} style={{ position: 'absolute', left: -4, top: -4, overflow: 'visible', filter: inMenu || shape === 'ask' ? 'none' : `drop-shadow(${shadow} rgba(0,0,0,.30))` }} aria-hidden>
         <defs>
           <linearGradient id="lk-glass" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#101012" />
@@ -227,7 +235,7 @@ export function Island() {
           </linearGradient>
         </defs>
         <motion.path d={path} fill="url(#lk-glass)" />
-        <motion.path d={path} className={inMenu ? 'lk-panel-path on' : 'lk-panel-path'} strokeWidth={1} />
+        <motion.path d={path} className={inMenu || shape === 'ask' ? 'lk-panel-path on' : 'lk-panel-path'} strokeWidth={1} />
       </svg>
 
       <motion.div
@@ -244,6 +252,7 @@ export function Island() {
             <PeekRow peek={peek} />
           </div>
         )}
+        {shape === 'ask' && <AskCard left={askRect.x} top={askRect.y} scale={NOTCH_BASE * k} />}
         {shape === 'held' && (
           <div style={{ position: 'absolute', left: heldRect.x, top: heldRect.y, width: heldRect.w, height: heldRect.h }}>
             <Held width={heldRect.w} height={heldRect.h} phase={heldPhase} />

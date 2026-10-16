@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 // #caption page: the speech pills at the bottom of the screen. White "YOU" pill = what you said (streams in word by
 // word), black pill = what the assistant says or did. Fades out on `clear`. Transparent page; main owns the window.
-type Msg = { kind: 'said' | 'reply' | 'notice' | 'clear'; text?: string; label?: string; tone?: 'info' | 'error' }
+type Msg = { kind: 'said' | 'reply' | 'notice' | 'hold' | 'clear'; text?: string; label?: string; tone?: 'info' | 'error' }
 
 const CSS = `
 html, body, #root { background: transparent !important; margin: 0; overflow: hidden; }
@@ -12,7 +12,7 @@ html, body, #root { background: transparent !important; margin: 0; overflow: hid
 `
 
 export function CaptionApp() {
-  const [m, setM] = useState<{ kind: 'said' | 'reply' | 'notice'; text: string; label: string; tone: string } | null>(null)
+  const [m, setM] = useState<{ kind: 'said' | 'reply' | 'notice' | 'hold'; text: string; label: string; tone: string } | null>(null)
   const [show, setShow] = useState(false)
   useEffect(() => {
     window.lokeyOverlay?.on('caption', (d: Msg) => {
@@ -35,7 +35,7 @@ export function CaptionApp() {
             maxWidth: 560, padding: '10px 20px 11px', borderRadius: 22, fontSize: 13.5, lineHeight: 1.4, textAlign: 'left', opacity: show ? 1 : 0, transform: show ? 'none' : 'translateY(8px) scale(.98)',
             background: light ? 'rgba(255,255,255,.97)' : '#0a0a0b', color: light ? '#16181d' : '#fff', fontWeight: light ? 400 : 500,
             boxShadow: light ? '0 10px 24px -8px rgba(15,23,42,.32), 0 1px 2px rgba(15,23,42,.16), inset 0 1.2px 0 #fff' : '0 10px 24px -8px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.08)',
-            animation: 'lk-pill-in .4s cubic-bezier(.22,1,.36,1) both',
+            animation: 'lk-pill-in .4s cubic-bezier(.22,1,.36,1) backwards',   // not "both": a forwards fill would hold opacity 1 and the pill could never fade out on clear
           }}
         >
           <span style={{ marginRight: 9, fontSize: 9, letterSpacing: '.14em', textTransform: 'uppercase', fontWeight: 500, color: m.tone === 'error' && !light ? '#ffb86b' : 'currentColor', opacity: m.tone === 'error' ? 0.9 : 0.5, verticalAlign: 1 }}>{m.label}</span>

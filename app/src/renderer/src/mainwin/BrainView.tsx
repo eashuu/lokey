@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Download, Pause, Pencil, Pin, Play, Search, Trash2, X } from 'lucide-react'
-import type { FactView, GraphView, JournalView, LessonView, MemoryStats } from '@shared/memory'
+import type { FactView, GraphView, JournalView, LessonView, MemoryStats, ProposalView, QuarantineView } from '@shared/memory'
 import { bridge } from '@/bridge'
 import { useData } from '@/lib/data'
 import { isPhone } from '@/lib/platform'
@@ -106,7 +106,11 @@ export function BrainView() {
   const [edit, setEdit] = useState<{ id: string; text: string } | null>(null)
   const [adding, setAdding] = useState('')
   const [confirmClear, setConfirmClear] = useState(false)
+  const [quar, setQuar] = useState<QuarantineView[]>([])
+  const [core, setCore] = useState<{ text: string; proposals: ProposalView[] }>({ text: '', proposals: [] })
+  const [coreDraft, setCoreDraft] = useState<string | null>(null)
   const load = () => {
+    void bridge.memory.quarantine?.().then(setQuar).catch(() => undefined); void bridge.memory.core?.().then(setCore).catch(() => undefined)
     void bridge.memory.list().then(setFacts); void bridge.memory.graph().then(setGraph); void bridge.memory.lessons().then(setLessons)
     void bridge.memory.journal().then(setJournal); void bridge.memory.stats().then(setStats)
   }
@@ -129,11 +133,41 @@ export function BrainView() {
     <>
       <Label>{`Memory · ${stats?.facts ?? facts.length} things${stats && stats.embedded ? ' (searchable by meaning)' : ''}`}</Label>
       <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 12, color: 'var(--muted)' }}>
-        <span style={{ flex: 1, minWidth: 180 }}>{learn ? `Learning from our conversations (on this ${isPhone ? 'phone' : 'PC'}; passwords and codes are never kept).` : 'Learning is paused: I only remember what you tell me to.'}{stats?.queued ? ` ${stats.queued} to process.` : ''}</span>
+        <span style={{ flex: 1, minWidth: 180 }}>{learn ? `Learning from our conversations (on this ${isPhone ? 'phone' : 'PC'}; passwords and codes are never kept).` : 'Learning is paused: I only remember what you tell me to.'}{stats?.queued ? ` ${stats.queued} to process.` : ''}{stats?.db ? (stats.encrypted ? ' Stored encrypted on this PC.' : ' Stored on this PC (not encrypted).') : ''}</span>
         <button style={btn} onClick={() => bridge.settings.set({ brain: { learn: !learn } })}>{learn ? <><Pause size={11} />Pause learning</> : <><Play size={11} />Resume learning</>}</button>
         <button style={btn} onClick={() => void exportIt()}><Download size={11} />Export</button>
         {confirmClear ? <><button style={{ ...btn, background: '#e06c6c', color: '#fff' }} onClick={() => { void bridge.memory.clear(); setConfirmClear(false) }}>Yes, forget everything</button><button style={btn} onClick={() => setConfirmClear(false)}>Keep</button></> : <button style={btn} onClick={() => setConfirmClear(true)}><Trash2 size={11} />Clear</button>}
       </div>
+
+      {quar.length > 0 && (
+        <>
+          <Label>{`To review · ${quar.length}`}</Label>
+          <div style={{ ...card, fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 6 }}>I picked these up right after reading something from outside (a web page, mail, the screen). I do not use them until you say they are true.</div>
+          <div style={{ display: 'grid', gap: 6 }}>
+            {quar.map(f => (
+              <div key={f.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px' }}>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 13 }}>{f.text}<span style={{ color: 'var(--dim)', fontSize: 11 }}>  · from {f.taint || f.origin}</span></span>
+                <button style={btn} onClick={() => void bridge.memory.approve?.(f.id).then(load)}>It is true</button>
+                <button style={btn} onClick={() => void bridge.memory.reject?.(f.id).then(load)}>Discard</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {bridge.memory.core && (
+        <>
+          <Label>About you (always in my mind)</Label>
+          {core.proposals.map(p => (
+            <div key={p.id} style={{ ...card, marginBottom: 6, fontSize: 12, lineHeight: 1.5 }}>
+              <div style={{ color: 'var(--muted)', marginBottom: 4 }}>I suggest this update ({p.why}):</div>
+              <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text)' }}>{p.text}</div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><button style={btn} onClick={() => void bridge.memory.proposal?.(p.id, true).then(load)}>Use it</button><button style={btn} onClick={() => void bridge.memory.proposal?.(p.id, false).then(load)}>No thanks</button></div>
+            </div>
+          ))}
+          <textarea value={coreDraft ?? core.text} onChange={e => setCoreDraft(e.target.value)} onBlur={() => { if (coreDraft !== null && coreDraft !== core.text) void bridge.memory.setCore?.(coreDraft).then(() => { setCoreDraft(null); load() }) }} placeholder="A few lines about you: who you are, how you like things done. Only you (or an update you approve) can change this." rows={4} maxLength={1200} style={{ ...input, width: '100%', height: 'auto', resize: 'vertical', lineHeight: 1.45, padding: 10, boxSizing: 'border-box' }} spellCheck={false} />
+        </>
+      )}
 
       <Label>Who and what I know about</Label>
       <Graph g={graph} selected={sel} onSelect={setSel} />
@@ -153,7 +187,7 @@ export function BrainView() {
               {edit?.id === f.id ? (
                 <input autoFocus value={edit.text} onChange={e => setEdit({ id: f.id, text: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') { void bridge.memory.edit(f.id, edit.text).then(load); setEdit(null) } else if (e.key === 'Escape') setEdit(null) }} style={input} />
               ) : (
-                <span style={{ flex: 1, minWidth: 0, fontSize: 13 }}>{f.text}{f.entities.length > 0 && <span style={{ color: 'var(--dim)', fontSize: 11 }}>  · {f.entities.join(', ')}</span>}</span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 13 }}>{f.text}{f.entities.length > 0 && <span style={{ color: 'var(--dim)', fontSize: 11 }}>  · {f.entities.join(', ')}</span>}<span title={`${f.trust ?? 'inferred'}, ${f.origin ?? ''}`} style={{ color: 'var(--dim)', fontSize: 10.5 }}>  · {f.origin === 'user-said' || f.trust === 'confirmed' ? 'you said' : f.origin === 'phone' ? 'from your phone' : f.origin === 'import' ? 'imported' : 'I worked it out'}{f.validFrom ? `, ${new Date(f.validFrom).toLocaleDateString([], { day: 'numeric', month: 'short' })}` : ''}</span></span>
               )}
               <button style={{ ...btn, padding: '0 8px', background: f.pinned ? 'color-mix(in srgb, var(--accent) 35%, transparent)' : undefined }} aria-label={f.pinned ? 'Unpin' : 'Pin'} onClick={() => void bridge.memory.pin(f.id, !f.pinned).then(load)}><Pin size={12} /></button>
               <button style={{ ...btn, padding: '0 8px' }} aria-label="Edit" onClick={() => setEdit({ id: f.id, text: f.text })}><Pencil size={12} /></button>

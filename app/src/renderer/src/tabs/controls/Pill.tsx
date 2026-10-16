@@ -1,29 +1,18 @@
-import { useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { useSlider } from '@/lib/useSlider'
 
 /** 604x38 pill slider (volume, brightness): accent fill, icon at left, value at right. `onIcon` makes the icon a button. */
 export function Pill({ value, onChange, onCommit, label, icon, onIcon, iconLabel, text, dim, width = 604, height = 38 }: {
   value: number; onChange: (v: number) => void; onCommit?: (v: number) => void; label: string
   icon: ReactNode; onIcon?: () => void; iconLabel?: string; text: string; dim?: boolean; width?: number; height?: number
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const at = (e: PointerEvent) => {
-    const r = ref.current!.getBoundingClientRect()
-    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))
-  }
+  const s = useSlider({ value, onChange, onCommit })
   const W = width
   const ink = (x: number): CSSProperties => ({ color: value * W > x ? 'var(--accent-ink)' : 'var(--text)' })
   return (
     <div
-      ref={ref}
-      role="slider"
+      {...s}
       aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(value * 100)}
-      onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); onChange(at(e)) }}
-      onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(at(e)) }}
-      onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit?.(at(e)) }}
-      onPointerCancel={e => onCommit?.(at(e))} // a cancelled drag (touch, pen, focus loss) still ends where it was
       style={{ position: 'relative', width: W, height, borderRadius: height / 2, background: 'var(--fill-1)', overflow: 'hidden', touchAction: 'none', cursor: 'pointer' }}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: Math.max(50, value * W), borderRadius: height / 2, background: 'var(--accent)', opacity: dim ? 0.5 : 1, transition: 'opacity .14s linear' }} />

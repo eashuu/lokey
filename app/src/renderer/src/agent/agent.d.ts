@@ -1,7 +1,7 @@
 interface Window {
   /** Preload helper for the hidden audio page (#agent). */
   lokeyAgent?: {
-    onCmd(cb: (c: { cmd: 'mic'; on: boolean; hard?: boolean } | { cmd: 'play'; data: Uint8Array } | { cmd: 'flush' }) => void): void
+    onCmd(cb: (c: { cmd: 'mic'; on: boolean; hard?: boolean } | { cmd: 'play'; data: Uint8Array } | { cmd: 'say'; text: string; lang: string } | { cmd: 'flush' }) => void): void
     mic(b: ArrayBuffer): void
     level(kind: 'mic' | 'out', v: number): void
     ready(): void
@@ -16,6 +16,13 @@ interface Window {
   lokeyConfirm?: {
     onRequest(cb: (r: { id: string; title: string; detail: string; tool: string; timeoutMs: number }) => void): void
     ready(): void
+    answer(id: string, ok: boolean): void
+  }
+  /** Preload helper for the island's request card (asks inside the island). */
+  lokeyAsk?: {
+    onState(cb: (s: import('@shared/ask').AskState) => void): void
+    ready(): void
+    shown(id: string): void
     answer(id: string, ok: boolean): void
   }
   /** Preload helper for the lasso page: report a finished stroke or a cancel. */

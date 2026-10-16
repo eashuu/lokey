@@ -89,7 +89,20 @@ export function AgentApp() {
         if (sources.length === 0) A.level('out', -1) // drained
       }
     }
+    // spoken output when Live cannot speak (voice ladder): the page's own speechSynthesis (Chromium uses the system voices; on Android the WebView uses TextToSpeech)
+    const say = (text: string, lang: string) => {
+      const ss = window.speechSynthesis
+      if (!ss) { A.level('out', -1); return }
+      ss.cancel()
+      const u = new SpeechSynthesisUtterance(text)
+      if (lang) u.lang = lang
+      u.onboundary = () => A.level('out', 0.3 + Math.random() * 0.35)   // the mouth moves with each word
+      u.onend = () => A.level('out', -1)
+      u.onerror = () => A.level('out', -1)
+      ss.speak(u)
+    }
     const flush = () => {
+      try { window.speechSynthesis?.cancel() } catch { /* no speech engine */ }
       const old = sources
       sources = []
       nextAt = 0
@@ -100,6 +113,7 @@ export function AgentApp() {
     A.onCmd(c => {
       if (c.cmd === 'mic') { if (c.on) void startMic(); else stopMic(!!c.hard) }
       else if (c.cmd === 'play') play(c.data)
+      else if (c.cmd === 'say') say(c.text, c.lang)
       else if (c.cmd === 'flush') flush()
     })
     A.ready()

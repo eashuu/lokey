@@ -1,7 +1,8 @@
 import type { TabId } from '@shared/bridge'
 import type { ShapeParams } from './shapePath'
+import { ASK_W } from '@shared/ask'
 
-export type Shape = 'sleep' | 'awake' | 'held' | 'menu'
+export type Shape = 'sleep' | 'awake' | 'held' | 'menu' | 'ask'
 export type Flyout = 'wifi' | 'bluetooth' | 'audio'
 export type View = 'music' | TabId | Flyout
 
@@ -15,6 +16,7 @@ export const MENU_SIZE: Record<View, { w: number; h: number }> = {
   apps: { w: 720, h: 638 },
   wallpaper: { w: 1040, h: 314 },
   power: { w: 640, h: 166 },
+  agents: { w: 880, h: 442 },
   wifi: { w: 400, h: 440 },
   bluetooth: { w: 400, h: 440 },
   audio: { w: 400, h: 330 },
@@ -34,13 +36,20 @@ const MENU = { corner: 25.5, rampW: 30.6, rampH: 28.9 }
 export const MENU_BASE = 0.9
 export const NOTCH_BASE = 0.8
 
-export function paramsFor(shape: Shape, view: View, k: number, hairline = false): ShapeParams {
+/** a request for the person: ASK_W wide, as tall as the text needs (shared/ask.ts askHeight), drawn like a notch that has grown */
+export const ASK = { corner: 22, rampW: 18, rampH: 22 }
+
+export function paramsFor(shape: Shape, view: View, k: number, hairline = false, askH = 150): ShapeParams {
+  if (shape === 'ask') {
+    const s = NOTCH_BASE * k
+    return { depth: askH * s, width: ASK_W * s, corner: ASK.corner * s, rampW: ASK.rampW * s, rampH: ASK.rampH * s }
+  }
   if (shape === 'menu') {
     const m = MENU_SIZE[view]
     const s = MENU_BASE * k
     return { depth: m.h * s, width: m.w * s, corner: MENU.corner * s, rampW: MENU.rampW * s, rampH: MENU.rampH * s }
   }
-  const n = shape === 'sleep' && hairline ? HAIRLINE : NOTCH[shape]
+  const n = shape === 'sleep' && hairline ? HAIRLINE : NOTCH[shape as 'sleep' | 'awake' | 'held']
   const s = NOTCH_BASE * k
   return { depth: n.depth * s, width: n.width * s, corner: n.corner * s, rampW: n.rampW * s, rampH: n.rampH * s }
 }
@@ -65,7 +74,7 @@ export const MORPH: Record<MorphKind, { duration: number; ease: [number, number,
 }
 
 /** Tab bar widths from the reference, design px. */
-export const TAB_WIDTH: Record<TabId, number> = { controls: 83, today: 64, stats: 60, clipboard: 90, apps: 58, wallpaper: 94, power: 67 }
+export const TAB_WIDTH: Record<TabId, number> = { controls: 83, today: 64, stats: 60, clipboard: 90, apps: 58, wallpaper: 94, power: 67, agents: 50 }
 
 /** Brief widening used for volume/brightness peeks. */
 export function peekParams(k: number): ShapeParams {

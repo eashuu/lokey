@@ -7,6 +7,7 @@ import { ClipboardTab } from './ClipboardTab'
 import { AppsTab } from './AppsTab'
 import { WallpaperTab } from './WallpaperTab'
 import { PowerTab } from './PowerTab'
+import { AgentsTab } from './AgentsTab'
 
 export const tabs: Record<TabId, { label: string; Component: ComponentType }> = {
   controls: { label: 'Controls', Component: ControlsTab },
@@ -16,4 +17,5 @@ export const tabs: Record<TabId, { label: string; Component: ComponentType }> = 
   apps: { label: 'Apps', Component: AppsTab },
   wallpaper: { label: 'Wallpaper', Component: WallpaperTab },
   power: { label: 'Power', Component: PowerTab },
+  agents: { label: 'Flow', Component: AgentsTab },
 }

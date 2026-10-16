@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useSlider } from '@/lib/useSlider'
 import { Music, Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react'
 import { bridge } from '@/bridge'
 import { useData, useBandsStream } from '@/lib/data'
@@ -35,23 +36,11 @@ function Visualiser() {
 
 /** 488x3 progress bar with a taller invisible hit area; drag to seek. */
 function Seek({ frac, onChange, onCommit }: { frac: number; onChange: (v: number) => void; onCommit: (v: number) => void }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const at = (e: React.PointerEvent) => {
-    const r = ref.current!.getBoundingClientRect()
-    return clamp((e.clientX - r.left) / r.width, 0, 1)
-  }
+  const s = useSlider({ value: frac, onChange, onCommit })
   return (
     <div
-      ref={ref}
-      role="slider"
+      {...s}
       aria-label="Seek"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(frac * 100)}
-      onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); onChange(at(e)) }}
-      onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(at(e)) }}
-      onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit(at(e)) }}
-      onPointerCancel={e => onCommit(at(e))} // a cancelled drag (touch, pen, focus loss) still ends where it was
       style={{ position: 'absolute', left: 58, top: 100, width: 488, height: 19, cursor: 'pointer', touchAction: 'none' }}
     >
       <div style={{ position: 'absolute', left: 0, top: 8.5, width: 488, height: 3, borderRadius: 1.5, background: 'var(--fill-3)', overflow: 'hidden' }}>

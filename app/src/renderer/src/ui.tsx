@@ -1,6 +1,7 @@
 // Shared UI primitives for the island tabs. Keep tabs built from these so the look stays consistent.
 // Rules: only animate transform/opacity (and short colour transitions); no looping animations; no blur/box-shadow animation.
-import { useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { useSlider } from '@/lib/useSlider'
 import { cn } from '@/lib/format'
 
 export function Card({ children, className, style, onClick }: { children: ReactNode; className?: string; style?: CSSProperties; onClick?: () => void }) {
@@ -58,23 +59,11 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boo
 
 /** Horizontal slider, 0..1. Pointer-capture drag; calls onChange continuously and onCommit on release. */
 export function Slider({ value, onChange, onCommit, label }: { value: number; onChange: (v: number) => void; onCommit?: (v: number) => void; label?: string }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const set = (e: PointerEvent) => {
-    const r = ref.current!.getBoundingClientRect()
-    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))
-  }
+  const s = useSlider({ value, onChange, onCommit })
   return (
     <div
-      ref={ref}
-      role="slider"
+      {...s}
       aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(value * 100)}
-      onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); onChange(set(e)) }}
-      onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(set(e)) }}
-      onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit?.(set(e)) }}
-      onPointerCancel={e => onCommit?.(set(e))} // a cancelled drag (touch, pen, focus loss) still ends where it was
       style={{ position: 'relative', height: '1.25rem', display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
     >
       <div style={{ position: 'absolute', left: 0, right: 0, height: '0.3125rem', borderRadius: 999, background: 'var(--s3)' }} />
@@ -133,23 +122,11 @@ export function Tile({ icon, title, sub, on, disabled, onClick, style }: { icon:
 
 /** 38px pill slider with the accent fill and value text at the right (volume, brightness). */
 export function PillSlider({ value, onChange, onCommit, label, icon, text }: { value: number; onChange: (v: number) => void; onCommit?: (v: number) => void; label?: string; icon?: ReactNode; text?: string }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const at = (e: PointerEvent) => {
-    const r = ref.current!.getBoundingClientRect()
-    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))
-  }
+  const s = useSlider({ value, onChange, onCommit })
   return (
     <div
-      ref={ref}
-      role="slider"
+      {...s}
       aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(value * 100)}
-      onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); onChange(at(e)) }}
-      onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(at(e)) }}
-      onPointerUp={e => { e.currentTarget.releasePointerCapture(e.pointerId); onCommit?.(at(e)) }}
-      onPointerCancel={e => onCommit?.(at(e))} // a cancelled drag (touch, pen, focus loss) still ends where it was
       style={{ position: 'relative', height: 38, borderRadius: 19, background: 'rgb(var(--ov) / .063)', overflow: 'hidden', touchAction: 'none', cursor: 'pointer' }}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${value * 100}%`, borderRadius: 19, background: 'var(--accent)' }} />

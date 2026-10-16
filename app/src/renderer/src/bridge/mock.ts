@@ -2,6 +2,8 @@
 // Realistic fixtures so every tab renders; stats/visualiser/media tick only while subscribed.
 import type { Bridge, AppEvent, Settings } from '@shared/bridge'
 import { defaultSettings } from '@shared/bridge'
+import { createGraphMock } from './graphMock'
+import { createModelsMock } from './modelsMock'
 import type { AppEntry, ClipItem, EventName, Events, MethodName, Methods, MediaState, StatsTick, WallpaperItem } from '@shared/protocol'
 
 function gradient(a: string, b: string, size = 160, angle = 135): string {
@@ -224,7 +226,8 @@ export function createMockBridge(): Bridge {
       stats: async () => ({ facts: 0, entities: 0, relations: 0, episodes: 0, lessons: 0, paused: false, embedded: 0, lastLearned: null, queued: 0 }),
       add: async () => false, edit: async () => false, remove: async () => undefined, pin: async () => undefined, exportJson: async () => '{}', clear: async () => undefined, onChange: () => () => undefined,
     },
-    agents: { list: async () => [], stop() {}, onChange: () => () => undefined },
+    agents: { list: async () => [], stop() {}, onChange: () => () => undefined, ...createGraphMock() },
+    models: createModelsMock(),
     brain: { usage: async () => ({}), test: async () => ({ ok: false, ms: 0, error: 'demo' }), hasSecret: async () => false, setSecret: async () => false, clearSecret: async () => undefined, cli: async () => ({ claude: false, codex: false }), prompts() {} },
     place: { get: async () => ({ edge: ((window.lokeyFlags?.edge as 'top' | undefined) ?? 'top'), along: window.lokeyFlags?.along ?? Math.round(innerWidth / 2), editing: false as const }), onChange: () => () => undefined, onCursor: () => () => undefined, start() {}, commit() {}, cancel() {} },
     lyrics: {
@@ -238,6 +241,6 @@ export function createMockBridge(): Bridge {
     },
     hotkeyStatus: async () => ({}),
     effects: { revealWallpaper: async () => undefined, glow() {} },
-    voice: { info: async () => ({ hasKey: false, state: 'idle' as const, tasks: [] }), onEvent: () => () => undefined, setKey: async () => false, clearKey: async () => undefined, say() {}, hold() {}, cancelTask: async () => [], runTaskNow: async () => [], onTasks: () => () => undefined, memory: async () => [], forget: async () => [], toggleConversation() {}, clearConversation: async () => undefined, actions: async () => [], clearActions: async () => undefined, trustRules: async () => [], trustRevoke: async () => undefined, undoList: async () => [], undoRun: async () => '', loops: async () => [], loopSet: async () => true, mcpStatus: async () => [] },
+    voice: { info: async () => ({ hasKey: false, state: 'idle' as const, tasks: [] }), onEvent: () => () => undefined, setKey: async () => false, clearKey: async () => undefined, say() {}, hold() {}, cancelTask: async () => [], runTaskNow: async () => [], onTasks: () => () => undefined, memory: async () => [], forget: async () => [], toggleConversation() {}, clearConversation: async () => undefined, actions: async () => [], clearActions: async () => undefined, trustRules: async () => [], trustRevoke: async () => undefined, undoList: async () => [], undoRun: async () => '', loops: async () => [], loopSet: async () => true, routines: async () => [], routineSave: async () => true, routineDelete: async () => true, watchStatus: async () => ({ active: false, steps: 0 }), watchStart: async () => true, watchStop: async () => null, mcpStatus: async () => [] },
   }
 }

@@ -182,7 +182,7 @@ export function TimerCard() {
 export function ApprovalCard() {
   const confirms = useChat(s => s.confirms)
   const pcAsks = useIsl(s => s.pcAsks)
-  const all = [...confirms.map(c => ({ id: c.id, title: c.title, detail: c.detail, pc: false, image: c.image })), ...pcAsks.map(c => ({ id: c.id, title: c.title, detail: c.detail, pc: true, image: undefined as string | undefined }))]
+  const all = [...confirms.map(c => ({ id: c.id, title: c.title, detail: c.detail, pc: false, image: c.image, handoff: c.kind === 'handoff' })), ...pcAsks.map(c => ({ id: c.id, title: c.title, detail: c.detail, pc: true, image: undefined as string | undefined, handoff: false }))]
   const c = all[0]
   if (!c) return <div style={{ ...pad, color: soft, fontSize: 14 }}>Nothing to approve.</div>
   const answer = async (ok: boolean) => {
@@ -200,8 +200,8 @@ export function ApprovalCard() {
       {c.detail && <div style={{ fontSize: 13, lineHeight: 1.45, color: soft, maxHeight: 96, overflow: 'hidden', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{c.detail}</div>}
       {c.image && <img src={`data:image/jpeg;base64,${c.image}`} alt="What the second screen shows now" style={{ display: 'block', maxHeight: 200, maxWidth: '100%', borderRadius: 14, background: '#111', justifySelf: 'center' }} />}
       <div data-nogest style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <Btn onClick={() => void answer(false)}>Deny</Btn>
-        <Btn kind="warn" onClick={() => void answer(true)}><Check size={16} />Allow</Btn>
+        <Btn onClick={() => void answer(false)}>{c.handoff ? 'Skip' : 'Deny'}</Btn>
+        <Btn kind="warn" onClick={() => void answer(true)}><Check size={16} />{c.handoff ? "I'm done" : 'Allow'}</Btn>
       </div>
     </div>
   )

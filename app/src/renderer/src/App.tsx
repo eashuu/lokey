@@ -9,6 +9,7 @@ import { runBench } from '@/bench'
 import { initVoiceBridge } from '@/island/voice'
 import { initReactions } from '@/island/reactions'
 import { initPlace } from '@/island/place'
+import { initAsk } from '@/island/ask'
 import { initInputLog } from '@/lib/inputlog'
 import { isPhone, prefersReducedMotion } from '@/lib/platform'
 
@@ -21,6 +22,7 @@ export function App() {
 
   useEffect(() => initVoiceBridge(), [])
   useEffect(() => initReactions(), [])
+  useEffect(() => (isPhone ? () => undefined : initAsk()), [])
   useEffect(() => (isPhone ? () => undefined : initPlace()), []) // the phone island always hangs from the top centre
   useEffect(() => initInputLog(), [])
 

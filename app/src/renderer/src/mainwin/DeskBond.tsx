@@ -1,4 +1,5 @@
 import { OpenLoops } from './OpenLoops'
+import { LearnedRoutines } from './LearnedRoutines'
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { Clock, KeyRound, Play, Trash2, X } from 'lucide-react'
 import type { ActionRecord, AgentTask, ScheduledTask } from '@shared/voice'
@@ -85,6 +86,7 @@ export function Desk() {
       )}
       <Agents />
       <OpenLoops />
+      <LearnedRoutines />
       <Activity />
       <Ask placeholder="Ask for something, e.g. open Netflix in an hour" />
     </div>
@@ -95,9 +97,23 @@ export function Desk() {
 function Agents() {
   const [jobs, setJobs] = useState<AgentTask[]>([])
   useEffect(() => { void bridge.agents.list().then(setJobs); return bridge.agents.onChange(setJobs) }, [])
+  const [cut, setCut] = useState<{ id: string; goal: string }[]>([])
+  const loadCut = () => { void bridge.agents.interrupted?.().then(setCut).catch(() => undefined) }
+  useEffect(() => { loadCut() }, [jobs.length]) // eslint-disable-line react-hooks/exhaustive-deps
   const running = jobs.filter(j => j.status === 'running')
   return (
     <Section title={`Jobs · ${running.length} running`}>
+      {cut.map(c => (
+        <div key={c.id} style={{ ...card, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 4, flex: 'none', background: '#e8a04a' }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.goal}</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>interrupted when Lokey closed. Continuing picks up after the last finished step and never repeats a step that was done.</div>
+          </div>
+          <button style={btn} onClick={() => void bridge.agents.resume?.(c.id).then(loadCut)}>Continue</button>
+          <button style={btn} onClick={() => void bridge.agents.discard?.(c.id).then(loadCut)}>Discard</button>
+        </div>
+      ))}
       {jobs.length === 0 ? (
         <div style={{ ...card, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>No jobs. Ask for something bigger (“research…”, “fix…”, “organise my Downloads”) and a worker takes it on in the background while you keep talking.</div>
       ) : (

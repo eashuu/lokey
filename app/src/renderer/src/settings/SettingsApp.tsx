@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, BrainCircuit, FolderOpen, Info, Keyboard, LayoutPanelTop, Mic, Palette, Settings2, Smartphone, Image as ImageIcon } from 'lucide-react'
-import type { BrainRole, DeepPartial, ProviderConfig, Settings, TabId } from '@shared/bridge'
+import type { BrainRole, BrainStatus, DeepPartial, ProviderConfig, Settings, TabId, TraceRow } from '@shared/bridge'
 import { bridge } from '@/bridge'
 import { applyTheme, accentFromHex, FALLBACK_ACCENT } from '@/lib/theme'
 import { cn } from '@/lib/format'
@@ -13,6 +13,7 @@ import { PermissionsSection } from './PermissionsSection'
 const ALL_TABS: { id: TabId; label: string }[] = [
   { id: 'controls', label: 'Controls' }, { id: 'today', label: 'Today' }, { id: 'stats', label: 'Stats' },
   { id: 'clipboard', label: 'Clipboard' }, { id: 'apps', label: 'Apps' }, { id: 'wallpaper', label: 'Wallpaper' }, { id: 'power', label: 'Power' },
+  { id: 'agents', label: 'Flow' },
 ]
 const SECTIONS = [
   { id: 'general', label: 'General', icon: Settings2 },
@@ -223,8 +224,74 @@ function Island({ s, set }: P) {
 export const textField: React.CSSProperties = { background: 'var(--s2)', color: 'var(--text)', border: '1px solid var(--line)', borderRadius: '0.5rem', padding: '0.375rem 0.625rem', fontSize: '0.8125rem', width: '15rem', userSelect: 'text' }
 export const smallBtn: React.CSSProperties = { padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 600, background: 'var(--s2)', border: '1px solid var(--line)' }
 
-const ROLE_LABEL: Record<BrainRole, string> = { fast: 'fast', main: 'main', heavy: 'heavy' }
-const ROLE_HINT: Record<BrainRole, string> = { fast: 'cheap jobs: summaries, quick questions', main: 'the agent loop that does multi-step work', heavy: 'hard problems' }
+const ROLES_SHOWN: BrainRole[] = ['fast', 'main', 'heavy', 'vision', 'ground', 'transcribe', 'search', 'embed']
+const ROLE_LABEL: Record<BrainRole, string> = { fast: 'fast', main: 'main', heavy: 'heavy', vision: 'vision', ground: 'screen', transcribe: 'dictation', search: 'web search', embed: 'memory search', live: 'live voice' }
+const ROLE_HINT: Record<BrainRole, string> = { fast: 'cheap jobs: summaries, quick questions, learning', main: 'the agent loop that does multi-step work', heavy: 'hard problems', vision: 'looking at a picture of the screen', ground: 'the screen operator (finding what to click)', transcribe: 'dictation: hears the recording (needs a model that takes audio)', search: 'web answers grounded in Google search (Gemini)', embed: 'meaning-based memory search', live: 'realtime voice (Gemini Live; not routed here yet)' }
+
+/** Lokey as a read-only MCP server over your memory, for Claude Code / Codex (off by default; localhost and a token only) */
+function MemoryServerRow({ s, set }: P) {
+  const [info, setInfo] = useState<{ enabled: boolean; port: number; running: boolean; token: string } | null>(null)
+  useEffect(() => { void bridge.memory.mcpInfo?.().then(setInfo); const t = setTimeout(() => void bridge.memory.mcpInfo?.().then(setInfo), 800); return () => clearTimeout(t) }, [s.memory.mcp.enabled, s.memory.mcp.port])
+  const cmd = info?.token ? `claude mcp add --transport http lokey http://127.0.0.1:${info.port}/mcp --header "Authorization: Bearer ${info.token}"` : ''
+  return (
+    <Row title="Let my other AI tools read my memory" hint={s.memory.mcp.enabled ? (info?.running ? `Running on 127.0.0.1:${info.port} (this PC only). Read-only: they can search what I know about you, never change it. Anything waiting for your review is never shared.` : 'Starting…') : 'Off. When on, tools like Claude Code can ask what you prefer. Read-only, this PC only, needs a secret token.'}>
+      <Toggle on={s.memory.mcp.enabled} onChange={v => set({ memory: { mcp: { enabled: v } } })} />
+      {s.memory.mcp.enabled && cmd && <button onClick={() => void navigator.clipboard?.writeText(cmd)} style={smallBtn}>Copy the claude command</button>}
+    </Row>
+  )
+}
+
+/** the audit log's integrity: every action the assistant took or was refused is chained; an edited or deleted row shows here */
+function AuditRow() {
+  const [a, setA] = useState<{ ok: boolean; count: number; brokenAt?: number } | null>(null)
+  useEffect(() => { void bridge.brain.audit?.().then(setA) }, [])
+  if (!a) return null
+  return <Group><Row title="Audit log" hint="Every action Lokey took, asked about or refused, with where its inputs came from, chained so a later edit shows up."><span style={{ fontSize: '0.75rem', color: a.ok ? 'var(--dim)' : '#e8a04a' }}>{a.ok ? `${a.count} entries, chain intact` : `chain broken at entry ${a.brokenAt}`}</span></Row></Group>
+}
+
+/** Settings > Brain > Model calls: every attempt the gateway made, newest first, and why a fallback happened */
+function ModelCalls({ status }: { status: BrainStatus | null }) {
+  const [rows, setRows] = useState<TraceRow[]>([])
+  const [failed, setFailed] = useState(false)
+  const [role, setRole] = useState('')
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!open || !bridge.brain.traces) return
+    const go = () => { void bridge.brain.traces!({ failed, role: role || undefined, limit: 80 }).then(setRows) }
+    go(); const t = setInterval(go, 5000); return () => clearInterval(t)
+  }, [open, failed, role])
+  return (
+    <Group>
+      <div style={{ padding: '0.75rem 1rem 0.25rem', fontSize: '0.8125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+        Model calls
+        <button onClick={() => setOpen(o => !o)} style={smallBtn}>{open ? 'Hide' : 'Show'}</button>
+        {status?.offline && <span style={{ fontSize: '0.6875rem', color: '#e8a04a' }}>offline: no model could be reached</span>}
+        {status && !status.db && <span style={{ fontSize: '0.6875rem', color: 'var(--dim)' }}>history is kept for this session only</span>}
+      </div>
+      <div style={{ padding: '0 1rem 0.5rem', fontSize: '0.6875rem', color: 'var(--dim)', lineHeight: 1.5 }}>Every model call Lokey makes, with the reason whenever it had to retry or switch to another model. Only timings, token counts and error types are kept on this PC, never what was said.</div>
+      {open && (
+        <div style={{ padding: '0 1rem 0.75rem', display: 'grid', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: '0.6875rem' }}>
+            <label style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}><input type="checkbox" checked={failed} onChange={e => setFailed(e.target.checked)} />only problems</label>
+            <select value={role} onChange={e => setRole(e.target.value)} style={textField}><option value="">all roles</option>{ROLES_SHOWN.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select>
+          </div>
+          <div style={{ maxHeight: '16rem', overflow: 'auto', fontSize: '0.6875rem', fontFamily: 'var(--mono, ui-monospace, monospace)' }}>
+            {rows.length === 0 && <div style={{ color: 'var(--dim)' }}>Nothing yet.</div>}
+            {rows.map(r => (
+              <div key={r.id} title={r.note} style={{ display: 'grid', gridTemplateColumns: '4.5rem 5rem 1fr 4rem 5rem', gap: 6, padding: '0.125rem 0', color: r.ok ? 'var(--muted)' : '#e8a04a' }}>
+                <span>{new Date(r.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                <span>{ROLE_LABEL[r.role as BrainRole] ?? r.role}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.provider} {r.ok ? '' : `${r.kind} (try ${r.attempt})`}{r.chain ? ` after ${r.chain}` : ''}</span>
+                <span>{r.ms} ms</span>
+                <span>{r.tin + r.tout} tok</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Group>
+  )
+}
 
 /** Language-model backends, autonomy, coding agents, and today's usage */
 function BrainSettings({ s, set }: P) {
@@ -237,13 +304,14 @@ function BrainSettings({ s, set }: P) {
   const [adding, setAdding] = useState({ name: '', url: '', model: '' })
   const [now, setNow] = useState(Date.now())
   const refs = [...new Set(list.map(p => p.keyRef))]
-  const load = () => { void bridge.brain.usage().then(setUsage); for (const r of refs) void bridge.brain.hasSecret(r).then(h => setKeys(k => ({ ...k, [r]: h }))) }
+  const [status, setStatus] = useState<BrainStatus | null>(null)
+  const load = () => { void bridge.brain.usage().then(setUsage); void bridge.brain.status?.().then(setStatus);  for (const r of refs) void bridge.brain.hasSecret(r).then(h => setKeys(k => ({ ...k, [r]: h }))) }
   useEffect(() => { load(); void bridge.brain.cli().then(setCli); const t = setInterval(() => setNow(Date.now()), 15_000); return () => clearInterval(t) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const patch = (id: string, p: Partial<ProviderConfig>) => set({ brain: { providers: list.map(x => (x.id === id ? { ...x, ...p } : x)) } })
   const move = (i: number, d: number) => { const n = [...list]; const j = i + d; if (j < 0 || j >= n.length) return; [n[i], n[j]] = [n[j], n[i]]; set({ brain: { providers: n } }) }
   const toggleRole = (p: ProviderConfig, r: BrainRole) => patch(p.id, { roles: p.roles.includes(r) ? p.roles.filter(x => x !== r) : [...p.roles, r] })
   const saveKey = async (ref: string) => { const ok = await bridge.brain.setSecret(ref, typed[ref] ?? ''); setTest(t => ({ ...t, [ref]: ok ? 'Key saved (encrypted on this PC).' : 'That key was not accepted.' })); if (ok) { setTyped(t => ({ ...t, [ref]: '' })); load() } }
-  const runTest = async (id: string) => { setTest(t => ({ ...t, [id]: 'Testing…' })); const r = await bridge.brain.test(id); setTest(t => ({ ...t, [id]: r.ok ? `Working (${r.ms} ms)` : `Failed: ${r.error}` })); load() }
+  const runTest = async (id: string) => { setTest(t => ({ ...t, [id]: 'Testing…' })); const r = await bridge.brain.test(id); setTest(t => ({ ...t, [id]: r.ok ? `Working (${r.ms} ms)${r.tools === false ? ', but it does not call tools reliably' : ''}${(r.admission ?? []).filter(a => !a.skipped).map(a => `; ${a.role}: ${Math.round(a.score * 100)}% ${a.admitted ? 'admitted' : (a.role === 'main' || a.role === 'ground') ? 'NOT admitted (needs 80%)' : ''}`).join('')}` : `Failed: ${r.error}` })); load() }
   const add = () => {
     if (!adding.name.trim() || !adding.url.trim()) return
     const id = 'custom-' + Math.random().toString(36).slice(2, 7)
@@ -251,7 +319,7 @@ function BrainSettings({ s, set }: P) {
     setAdding({ name: '', url: '', model: '' })
   }
   const full = s.agent.fullUntil && s.agent.fullUntil > now ? Math.ceil((s.agent.fullUntil - now) / 60_000) : 0
-  const stock = new Set(['gemini-flash', 'gemini-lite', 'freellmapi', 'openrouter'])
+  const stock = new Set(['gemini-flash', 'gemini-lite', 'gemini-embed', 'ollama', 'ollama-ground', 'freellmapi', 'openrouter'])
   return (
     <>
       <Group>
@@ -263,7 +331,7 @@ function BrainSettings({ s, set }: P) {
               <Toggle on={p.enabled} onChange={v => patch(p.id, { enabled: v })} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{p.name}</div>
-                <div style={{ fontSize: '0.6875rem', color: 'var(--dim)' }}>{usage[p.id] ? `today: ${usage[p.id].requests} requests, ${usage[p.id].in + usage[p.id].out} tokens${usage[p.id].errors ? `, ${usage[p.id].errors} errors` : ''}` : 'not used today'}</div>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--dim)' }}>{usage[p.id] ? `today: ${usage[p.id].requests} requests, ${usage[p.id].in + usage[p.id].out} tokens${usage[p.id].errors ? `, ${usage[p.id].errors} errors` : ''}` : 'not used today'}{(() => { const st = status?.providers.find(x => x.id === p.id); return st ? `${st.limit ? ` (limit ${st.limit}/day)` : ''}${st.note ? ` · ${st.note}` : ''}` : '' })()}</div>
               </div>
               <button onClick={() => move(i, -1)} disabled={i === 0} style={{ ...smallBtn, opacity: i === 0 ? 0.3 : 1 }} aria-label="Try earlier"><ArrowUp size={12} /></button>
               <button onClick={() => move(i, 1)} disabled={i === list.length - 1} style={{ ...smallBtn, opacity: i === list.length - 1 ? 0.3 : 1 }} aria-label="Try later"><ArrowDown size={12} /></button>
@@ -283,7 +351,7 @@ function BrainSettings({ s, set }: P) {
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.6875rem', color: 'var(--muted)' }}>
               used for:
-              {(['fast', 'main', 'heavy'] as BrainRole[]).map(r => (
+              {ROLES_SHOWN.map(r => (
                 <label key={r} title={ROLE_HINT[r]} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0.125rem 0.5rem', borderRadius: '0.75rem', background: p.roles.includes(r) ? 'color-mix(in srgb, var(--accent) 22%, transparent)' : 'var(--s2)', cursor: 'pointer' }}>
                   <input type="checkbox" checked={p.roles.includes(r)} onChange={() => toggleRole(p, r)} style={{ display: 'none' }} />{ROLE_LABEL[r]}
                 </label>
@@ -305,9 +373,13 @@ function BrainSettings({ s, set }: P) {
         </Row>
         <Row title="Learn from conversations" hint="Lokey writes down what matters (preferences, people, projects) and what you correct, on this PC. See and edit it on the Bond page."><Toggle on={s.brain.learn} onChange={v => set({ brain: { learn: v } })} /></Row>
         <Row title="Search memory by meaning" hint="Uses Google's free embedding model to find related memories even with different words. Off = word matching only."><Toggle on={s.brain.embed} onChange={v => set({ brain: { embed: v } })} /></Row>
+        <Row title="Encrypt memory on this PC" hint="Seals what I remember inside my database with a key Windows protects for your account. Other Windows users, or a copy of the file, cannot read it. (Programs running as you still can.) Windows Hello for the Brain page is not built yet."><Toggle on={s.memory.encrypt} onChange={v => set({ memory: { encrypt: v } })} /></Row>
+        <MemoryServerRow s={s} set={set} />
         <Row title="Never learn from these apps" hint="Comma separated, part of the program name."><input value={s.brain.excludeApps.join(', ')} onChange={e => set({ brain: { excludeApps: e.target.value.split(',').map(x => x.trim()).filter(Boolean) } })} style={{ ...textField, width: '16rem' }} spellCheck={false} /></Row>
         <Row title="Most steps per job" hint="How many model calls one background job may make."><NumberSlider value={s.brain.maxSteps} min={4} max={30} step={1} onChange={v => set({ brain: { maxSteps: v } })} format={v => String(v)} /></Row>
       </Group>
+      <ModelCalls status={status} />
+      <AuditRow />
 
       <Group>
         <div style={{ padding: '0.75rem 1rem 0.25rem', fontSize: '0.8125rem', fontWeight: 600 }}>What Lokey may do on its own</div>
@@ -318,6 +390,12 @@ function BrainSettings({ s, set }: P) {
           {full > 0 ? <button onClick={() => set({ agent: { fullUntil: null } })} style={smallBtn}>Turn off now</button> : [15, 60, 180].map(m => <button key={m} onClick={() => set({ agent: { fullUntil: Date.now() + m * 60_000 } })} style={smallBtn}>{m < 60 ? `${m} min` : `${m / 60} h`}</button>)}
         </Row>
         <Row desktop title="Stop everything" hint="Ends every job, helper, conversation and full-control grant at once. Also in the tray menu."><HotkeyInput value={s.agent.stopKey || 'None'} onChange={v => set({ agent: { stopKey: v } })} /></Row>
+        <Row desktop title="Where requests appear" hint="Inside the island (calm card, Allow / Deny, a countdown that ends in Deny), or in a separate window. The window is also used on its own when the island is hidden, off, or the screens changed.">
+          <Select value={s.agent.confirmIn} options={[{ v: 'island', l: 'In the island' }, { v: 'window', l: 'Separate window' }]} onChange={x => set({ agent: { confirmIn: x } })} />
+        </Row>
+        <Row desktop title="Soft sound for requests" hint="A quiet two-note tone when Lokey needs an answer. Off by default."><Toggle on={s.agent.askSound} onChange={v => set({ agent: { askSound: v } })} /></Row>
+        <Row desktop title="Answer a request: allow" hint="Works from any app while a request is showing (and does nothing otherwise). Allow only counts after the card has been up for a moment."><HotkeyInput value={s.agent.allowKey || 'None'} onChange={v => set({ agent: { allowKey: v } })} /></Row>
+        <Row desktop title="Answer a request: deny"><HotkeyInput value={s.agent.denyKey || 'None'} onChange={v => set({ agent: { denyKey: v } })} /></Row>
       </Group>
 
       {!isPhone && <Group>
@@ -436,7 +514,7 @@ function Voice({ s, set }: P) {
         <Row title="Dictation writing" hint="How speech is typed when you mix Tamil and English.">
           <Select value={v.dictationScript} options={[{ v: 'mixed', l: 'Tamil letters + English' }, { v: 'roman', l: 'Tanglish (English letters)' }, { v: 'english', l: 'Translate to English' }]} onChange={x => set({ voice: { dictationScript: x } })} />
         </Row>
-        <Row title="Dictation model" hint="Plain Gemini model that listens to the recording."><input value={v.cleanupModel} onChange={e => set({ voice: { cleanupModel: e.target.value.trim() } })} style={textField} spellCheck={false} /></Row>
+        <Row title="Dictation model" hint="Chosen under Settings > Brain (the Dictation role), so it can fall back to another model when Gemini is busy."><span style={{ fontSize: '0.75rem', color: 'var(--dim)' }}>see Brain</span></Row>
       </Group>
       <Group>
         <Row title="Ask before acting" hint="Risky = typing for you, closing windows, unknown links, power, unknown tools. Always = every action.">
@@ -519,7 +597,7 @@ function Shortcuts({ s, set }: P) {
       <Group>
         <Row title="Reset shortcuts" hint="Back to the defaults.">
           <button style={smallBtn} onClick={() => set({
-            island: { hotkey: 'Ctrl+Alt+Space', tabHotkeys: { controls: '', today: '', stats: '', clipboard: 'Ctrl+Alt+C', apps: 'Ctrl+Alt+A', wallpaper: '', power: '' } },
+            island: { hotkey: 'Ctrl+Alt+Space', tabHotkeys: { controls: '', today: '', stats: '', clipboard: 'Ctrl+Alt+C', apps: 'Ctrl+Alt+A', wallpaper: '', power: '', agents: '' } },
             voice: { pushToTalk: 'Ctrl+Alt+V', dictationKey: 'Ctrl+Win', lassoKey: 'Ctrl+Alt+L' },
           })}>Reset</button>
         </Row>
