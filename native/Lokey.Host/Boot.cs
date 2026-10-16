@@ -26,6 +26,7 @@ internal static class Boot
         Desktops.Register();
         Foreground.Register();
         TextInput.Register();
+        Uia.Register();
         Control.Register();
         Listener.Register();
     }
