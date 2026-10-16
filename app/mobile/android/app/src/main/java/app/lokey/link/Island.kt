@@ -121,11 +121,18 @@ object Island {
         if (!manual || ordered.none { it.id == currentId }) currentId = (ordered.firstOrNull { it.id == primary } ?: ordered.firstOrNull())?.id
     }
 
+    private var liveTickOn = false
+    /** keeps the notifications honest when no overlay (and so no overlay ticker) runs: faces that expired are noticed within 5 s, music is refreshed */
+    private val liveTick = Runnable { liveTickOn = false; refreshMusic(); recompute(); syncLive() }
+
     /** posts the Live Update notifications for the activity faces and auto-opens a new approval */
     private fun syncLive() {
         val live = ordered.filter { it.kind in IslandModel.LIVE_KINDS }
+        val pill = ordered.filter { it.kind != "idle" }   // the vivo pill also shows music and charging
         val s = live.hashCode()
-        if (s != liveSig) { liveSig = s; LiveUpdates.sync(ctx, live); atomic.publish(live) }
+        if (s != liveSig) { liveSig = s; LiveUpdates.sync(ctx, live) }
+        VivoSuperX.publish(ctx, pill)   // cheap when nothing changed: the coalescer compares what would go on the wire
+        if (pill.isNotEmpty() && !liveTickOn) { liveTickOn = true; App.ui.postDelayed(liveTick, 5000) }
         val ap = live.filter { it.kind == "approval" }.map { it.id }.toSet()
         (ap - approvals).firstOrNull()?.let { currentId = it; manualAt = 0; expand(true) }
         approvals = ap
@@ -134,7 +141,7 @@ object Island {
     /** a native source changed (link card, reminder, wake): recompute, update notifications and the overlay */
     fun nativeChanged() { App.ui.post { restore(); recompute(); syncLive(); evalMain() } }
 
-    fun wakeListening(ms: Long) { wakeUntil = System.currentTimeMillis() + ms; nativeChanged() }
+    fun wakeListening(ms: Long) { wakeUntil = System.currentTimeMillis() + ms; nativeChanged(); App.ui.postDelayed({ nativeChanged() }, ms + 300) }
 
     /** the page faces survive process death (they still expire by IslandPolicy.alive) */
     private fun restore() {
@@ -170,7 +177,7 @@ object Island {
     }
 
     /**
-     * Settings, kept natively: `systemIsland` (the user switch), `liveUpdates`, `vivo`, `vivoScenes`, `alwaysVisible`. The legacy `overlay` flag
+     * Settings, kept natively: `vivoRoute` ('subset'|'full'), `vivoStyle` ('overlay'|'system'|'both'), `vivoShowed` (the user's answer), `systemIsland` (the user switch), `liveUpdates`, `vivo`, `vivoScenes`, `alwaysVisible`. The legacy `overlay` flag
      * is only a hint from the page visibility handling: `true` switches the island on, `false` is ignored (the native lifecycle decides when to hide).
      */
     fun setEnabled(p: JSONObject): JSONObject {
@@ -181,6 +188,7 @@ object Island {
         if (p.has("vivo")) e.putBoolean("vivo_island", p.bool("vivo"))
         e.apply()
         p.optJSONObject("vivoScenes")?.let { VivoIsland.setScenes(it) }
+        VivoSuperX.setPrefs(p)   // vivoRoute, vivoStyle, vivoShowed
         liveSig = 0
         if (!LiveUpdates.enabled()) LiveUpdates.clear(ctx)
         LokeyService.sync(ctx)
@@ -207,7 +215,7 @@ object Island {
             "atomicIsland" to atomic.available(), "vivoSuperx" to VivoIsland.status(ctx))
     }
 
-    fun onMedia() { App.ui.post { refreshMusic(true); recompute(); evalMain() } }
+    fun onMedia() { App.ui.post { refreshMusic(true); recompute(); syncLive(); evalMain() } }
     fun refresh() { App.ui.post { restore(); recompute(); evalMain() } }
     fun apply(c: Context) { App.init(c); nativeChanged() }
     fun remove() { App.ui.post { removeView() } }
@@ -237,6 +245,7 @@ object Island {
         val locked = runCatching { ctx.getSystemService(KeyguardManager::class.java).isKeyguardLocked || !ctx.getSystemService(PowerManager::class.java).isInteractive }.getOrDefault(false)
         val dec = IslandPolicy.decide(enabled(), Perms.granted("overlay"), f != null, App.foreground, portrait, locked, ordered.any { it.kind == "approval" })
         lastReason = dec.reason
+        if (VivoSuperX.hideOverlay(VivoSuperX.style(), VivoSuperX.showed())) { lastReason = "hidden: island style is System and you said the vivo pill showed"; removeView(); return }
         if (!dec.show || f == null) { removeView(); return }
         val v = ensureView() ?: run { lastReason = "off: Android refused the overlay window"; return }
         v.visibility = View.VISIBLE

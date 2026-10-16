@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+def nativeShell = (project.findProperty('nativeShell') ?: 'false').toString().toBoolean()   // -PnativeShell=true: LokeyActivity (Compose) becomes the launcher
 
 android {
     namespace "app.lokey.link"
@@ -10,6 +13,19 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 73
         versionName "0.7.3"
+        buildConfigField "boolean", "NATIVE_SHELL", "$nativeShell"
+        manifestPlaceholders = [
+            legacyLauncherCategory: nativeShell ? "android.intent.category.DEFAULT" : "android.intent.category.LAUNCHER",
+            nativeLauncherCategory: nativeShell ? "android.intent.category.LAUNCHER" : "android.intent.category.DEFAULT",
+            nativeExported: nativeShell ? "true" : "false",
+            // the intent filters follow the launcher: the inactive activity gets an action nothing sends
+            legacyAssist: nativeShell ? "app.lokey.link.INACTIVE_ASSIST" : "android.intent.action.ASSIST",
+            legacyVoice: nativeShell ? "app.lokey.link.INACTIVE_VOICE" : "android.intent.action.VOICE_COMMAND",
+            legacySend: nativeShell ? "app.lokey.link.INACTIVE_SEND" : "android.intent.action.SEND",
+            nativeAssist: nativeShell ? "android.intent.action.ASSIST" : "app.lokey.link.INACTIVE_ASSIST",
+            nativeVoice: nativeShell ? "android.intent.action.VOICE_COMMAND" : "app.lokey.link.INACTIVE_VOICE",
+            nativeSend: nativeShell ? "android.intent.action.SEND" : "app.lokey.link.INACTIVE_SEND",
+        ]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -18,7 +34,7 @@ android {
         }
     }
     kotlinOptions { jvmTarget = '21' }
-    buildFeatures { aidl true }                    // IBgService (the Shizuku user service)
+    buildFeatures { aidl true; compose true; buildConfig true }                    // IBgService (the Shizuku user service)
     testOptions { unitTests { includeAndroidResources = true } }
     buildTypes {
         release {
@@ -40,10 +56,27 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // native UI (phase N1): Compose BOM 2024.10.01 = Compose 1.7.4 / Material3 1.3.0 (used only as an a11y/ripple base)
+    implementation platform("androidx.compose:compose-bom:2024.10.01")
+    implementation "androidx.compose.ui:ui"
+    implementation "androidx.compose.foundation:foundation"
+    implementation "androidx.compose.material3:material3"
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.activity:activity-compose:1.9.3"
+    implementation "androidx.lifecycle:lifecycle-runtime-compose:2.8.7"
+    implementation "androidx.webkit:webkit:$androidxWebkitVersion"            // WebViewAssetLoader for the SpiritView page
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+    debugImplementation "androidx.compose.ui:ui-tooling"
     testImplementation "junit:junit:$junitVersion"
     testImplementation "org.json:json:20240303"
     testImplementation "org.robolectric:robolectric:4.14.1"
     testImplementation "androidx.test:core:1.6.1"
+    // screenshots of every screen on FakeCore (docs/NATIVE-APP.md): gradle recordScreens
+    testImplementation "io.github.takahirom.roborazzi:roborazzi:1.32.2"
+    testImplementation "io.github.takahirom.roborazzi:roborazzi-compose:1.32.2"
+    testImplementation platform("androidx.compose:compose-bom:2024.10.01")
+    testImplementation "androidx.compose.ui:ui-test-junit4"
+    debugImplementation "androidx.compose.ui:ui-test-manifest"
     testImplementation "androidx.test.ext:junit:1.2.1"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
@@ -51,6 +84,25 @@ dependencies {
     // the optional Shizuku power tier (second screen): docs/SHIZUKU-TIER.md
     implementation "dev.rikka.shizuku:api:13.1.5"
     implementation "dev.rikka.shizuku:provider:13.1.5"
+}
+
+// the screenshot tests only run for `recordScreens` (they write PNGs outside the repo); the normal unit tests skip them
+tasks.withType(Test).configureEach {
+    if (project.hasProperty('shots')) {
+        filter { includeTestsMatching 'app.lokey.link.shots.*' }
+        systemProperty 'roborazzi.test.record', 'true'
+        systemProperty 'lokey.shots', project.findProperty('shotsDir') ?: 'C:/lokey-android-tools/shots/native'
+        outputs.upToDateWhen { false }
+    } else {
+        filter { excludeTestsMatching 'app.lokey.link.shots.*' }
+    }
+}
+tasks.register('recordScreens', GradleBuild) {
+    group = 'verification'
+    description = 'Renders every screen and kit component on FakeCore to PNGs (dark and light) in C:/lokey-android-tools/shots/native'
+    dir = rootDir
+    tasks = [':app:testDebugUnitTest']
+    startParameter.projectProperties = [shots: 'true']
 }
 
 apply from: 'capacitor.build.gradle'

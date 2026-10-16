@@ -4,8 +4,11 @@
 import type { McpServerConfig } from '@shared/bridge'
 import type { FunctionDecl } from '../../main/agent/session'
 import { toGeminiSchema } from '../../main/agent/mcp'
+import { PinStore } from '../../main/agent/mcpWire'
 
 export { toGeminiSchema }
+/** tool-definition pins: in memory only on the phone (the desktop persists them to mcp-pins.json) */
+export const pins = new PinStore(() => undefined)
 const INIT_MS = 20_000
 const CALL_MS = 60_000
 const MAX_RESULT = 6000

@@ -11,14 +11,13 @@ type Step = { name: string; args: Record<string, unknown> }
 function scripted(steps: Step[]) {
   const seen: { text: string; images: number; system: string; tools: string[] }[] = []
   let i = 0
-  const router = {
-    chat: async (_role: string, req: { system: string; messages: { role: string; text?: string; images?: string[] }[]; tools?: { name: string }[] }) => {
+  const chat = async (_role: string, req: { system: string; messages: { role: string; text?: string; images?: string[] }[]; tools?: { name: string }[] }) => {
       const last = [...req.messages].reverse().find(m => m.role === 'user')
       seen.push({ text: last?.text ?? '', images: last?.images?.length ?? 0, system: req.system, tools: (req.tools ?? []).map(t => t.name) })
       const s = steps[Math.min(i++, steps.length - 1)]
       return { text: '', toolCalls: [{ id: 'c' + i, name: s.name, args: s.args }], usage: { in: 1, out: 1, cached: 0 }, provider: 'fake', model: 'fake' }
-    },
-  } as unknown as Router
+  }
+  const router = { chat, call: chat } as unknown as Router
   return { router, seen }
 }
 

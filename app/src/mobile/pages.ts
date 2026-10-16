@@ -87,14 +87,26 @@ function mountAgent() {
     setTimeout(() => { if (performance.now() - lastLevelAt > 25) { lastLevelAt = performance.now(); A.level('out', level) } }, Math.max(0, (at - out!.currentTime) * 1000))
     s.onended = () => { sources = sources.filter(x => x !== s); if (sources.length === 0) A.level('out', -1) } // -1 = drained
   }
+  // spoken output when Live cannot speak: the WebView's speechSynthesis (Android's TextToSpeech); a native TextToSpeech method stays a documented hook
+  const say = (text: string, lang: string) => {
+    const ss = window.speechSynthesis
+    if (!ss) { A.level('out', -1); return }
+    ss.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    if (lang) u.lang = lang
+    u.onboundary = () => A.level('out', 0.3 + Math.random() * 0.35)
+    u.onend = () => A.level('out', -1); u.onerror = () => A.level('out', -1)
+    ss.speak(u)
+  }
   const flush = () => {
+    try { window.speechSynthesis?.cancel() } catch { /* no speech engine */ }
     const old = sources
     sources = []; nextAt = 0
     for (const s of old) { s.onended = null; try { s.stop() } catch { /* already stopped */ } }
     A.level('out', -1)
   }
 
-  A.onCmd(c => { if (c.cmd === 'mic') { if (c.on) void startMic(); else stopMic(!!c.hard) } else if (c.cmd === 'play') play(c.data); else if (c.cmd === 'flush') flush() })
+  A.onCmd(c => { if (c.cmd === 'mic') { if (c.on) void startMic(); else stopMic(!!c.hard) } else if (c.cmd === 'play') play(c.data); else if (c.cmd === 'say') say(c.text, c.lang); else if (c.cmd === 'flush') flush() })
   A.ready()
 }
 

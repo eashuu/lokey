@@ -9,6 +9,9 @@ import { App } from '@capacitor/app'
 declare global { interface Window { __lokeyBootError?: string } }
 
 async function main() {
+  // the native shell's two helper pages (docs/NATIVE-APP.md): the core without a UI, and the spirit alone
+  if (/[?&]headless=1(&|$)/.test(location.search)) { await (await import('./headless')).runHeadless(); return }
+  if (/[?&]spirit=1(&|$)/.test(location.search)) { await import('./spiritPage'); return }
   if (Capacitor.isNativePlatform() || /[?&]mobile=1\b/.test(location.search)) {
     try {
       const { vfsLoad } = await import('./vfs')

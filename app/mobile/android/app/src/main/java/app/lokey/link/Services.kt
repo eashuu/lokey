@@ -52,12 +52,12 @@ class LokeyService : Service() {
         return START_STICKY
     }
 
-    override fun onDestroy() { running = false; voiceLock(false); Wake.stopCapture(); Island.remove(); LinkClient.stop(); super.onDestroy() }
+    override fun onDestroy() { if (!needed()) VivoSuperX.end(this, immediate = true); running = false; voiceLock(false); Wake.stopCapture(); Island.remove(); LinkClient.stop(); super.onDestroy() }
 
     /** swiped away from recents: ask Android to start this service again in a moment (the mic type may be refused from the background, then it runs without it) */
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        if (!needed()) return
+        if (!needed()) { VivoSuperX.end(this, immediate = true); return }
         runCatching {
             val pi = android.app.PendingIntent.getForegroundService(this, 77, Intent(this, LokeyService::class.java), android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
             getSystemService(android.app.AlarmManager::class.java).set(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 1500, pi)

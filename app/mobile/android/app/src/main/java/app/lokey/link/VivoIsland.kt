@@ -8,6 +8,7 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import app.lokey.link.core.NativeResult
 import org.json.JSONObject
 
 /** Pure helpers (JVM-tested): which scene / template a face kind uses. */
@@ -46,7 +47,7 @@ object VivoIsland : AtomicIslandAdapter {
     fun enabled() = App.prefs.getBoolean("vivo_island", true)
     fun isVivoDevice() = Build.MANUFACTURER.lowercase().let { it.contains("vivo") || it.contains("iqoo") } || Build.BRAND.lowercase().let { it.contains("vivo") || it.contains("iqoo") }
     override fun available() = enabled() && isVivoDevice()
-    override fun publish(faces: List<Face>) {}   // nothing to push: the extras ride on the Live Update notifications (LiveUpdates.build)
+    override fun publish(faces: List<Face>) { VivoSuperX.publish(App.ctx, faces) }   // subset route: the extras ride on the Live Update notifications (LiveUpdates.build); route "full": VivoSuperX posts its own pill
 
     fun scenes(): Map<String, String> = runCatching { JSONObject(App.prefs.getString("vivo_scenes", "{}")).let { j -> j.keys().asSequence().associateWith { j.getString(it) } } }.getOrDefault(emptyMap())
 
@@ -75,7 +76,7 @@ object VivoIsland : AtomicIslandAdapter {
     }
 
     fun decorate(b: Notification.Builder, c: Context, f: Face, op: Int, click: PendingIntent) {
-        if (!enabled()) return
+        if (!enabled() || (VivoSuperX.routeFull() && f.id != VivoSuperX.PROBE_ID)) return   // route "full" sends its own notification instead
         attempted = true
         b.addExtras(extras(c, f, op, click))
         if (VivoMap.template(f.kind) != 1) Log.i(TAG, "template ${VivoMap.template(f.kind)} for ${f.kind}: vivo documents no local schema for progressInfo/subInfo, sending baseInfos only")
@@ -90,27 +91,57 @@ object VivoIsland : AtomicIslandAdapter {
 
     fun status(c: Context): JSONObject = obj("attempted" to attempted, "enabled" to enabled(), "vivoDevice" to isVivoDevice(), "sceneStatus" to sceneStatus(c, VivoMap.scene("approval", scenes())),
         "sceneStatusNote" to "needs vivo's push SDK (getSceneStatus); not bundled, so null", "scenes" to JSONObject(VivoMap.DEFAULT_SCENES.mapValues { VivoMap.scene(it.key, scenes()) }.toMap()),
-        "manufacturer" to Build.MANUFACTURER, "brand" to Build.BRAND)
+        "manufacturer" to Build.MANUFACTURER, "brand" to Build.BRAND,
+        "route" to VivoSuperX.route(), "style" to VivoSuperX.style(), "showed" to VivoSuperX.showed(), "needCheck" to VivoSuperX.needsCheck(), "lastFullProbe" to VivoSuperX.lastProbe)
 
-    /** island.vivoProbe {kind?:'approval', end?:bool}: posts one island notification with the extras and reads back what the system kept */
-    fun probe(c: Context, p: JSONObject): JSONObject {
-        val face = Face("vivo-probe", p.str("kind", "approval").let { if (it in IslandModel.LIVE_KINDS) it else "approval" }, "Lokey island test", "If this is on the island, vivo accepted it")
+    @Volatile private var subsetEnd: Runnable? = null
+
+    private fun subsetFace(kind: String) = Face(VivoSuperX.PROBE_ID, kind, "Lokey island test", "If this is on the island, vivo accepted it")
+    private fun fullFace(kind: String) = Face("vivo-probe-full", kind, if (kind == "voice") "Thinking..." else "Lokey island test", "If this is on the island, vivo accepted it", progress = if (kind == "timer" || kind == "job") 0.4 else null)
+
+    private fun endSubset(c: Context, f: Face) {
+        subsetEnd?.let { App.ui.removeCallbacks(it) }; subsetEnd = null
+        runCatching { LiveUpdates.endNow(c, f) }
+    }
+
+    private fun probeSubset(c: Context, face: Face): JSONObject {
         val nm = c.getSystemService(NotificationManager::class.java)
-        if (p.bool("end")) { LiveUpdates.endNow(c, face); return ok("ended" to true) }
-        if (!Perms.granted("notifications")) return fail("notifications are off (perm.request notifications)")
-        if (!enabled()) return fail("vivo island is switched off (island.setEnabled {vivo:true})")
         LiveUpdates.channels(c)
         val n = LiveUpdates.build(c, face, op = 0)
         nm.notify(LiveUpdates.id(face.id), n)
         attempted = true
-        App.ui.postDelayed({ runCatching { LiveUpdates.endNow(c, face) } }, 30_000)   // the test ends itself after 30 s
+        subsetEnd?.let { App.ui.removeCallbacks(it) }
+        subsetEnd = Runnable { endSubset(c, face) }.also { App.ui.postDelayed(it, 30_000) }   // the test ends itself after 30 s
         val back = nm.activeNotifications.firstOrNull { it.id == LiveUpdates.id(face.id) }?.notification?.extras
         val keys = back?.keySet()?.filter { it.startsWith(P) }.orEmpty()
         val ch = nm.getNotificationChannel(n.channelId)
-        return ok("posted" to (back != null), "extrasReadBack" to keys, "extrasKept" to keys.isNotEmpty(), "scene" to VivoMap.scene(face.kind, scenes()), "template" to VivoMap.template(face.kind),
+        return ok("route" to "subset", "posted" to (back != null), "extrasReadBack" to keys, "extrasKept" to keys.isNotEmpty(), "scene" to VivoMap.scene(face.kind, scenes()), "template" to VivoMap.template(face.kind),
             "channelImportance" to ch?.importance, "canPromote" to LiveUpdates.canPromote(c),
-            "promotable" to (if (Build.VERSION.SDK_INT >= 36) runCatching { n.javaClass.getMethod("hasPromotableCharacteristics").invoke(n) as Boolean }.getOrNull() else null),
-            "vivoDevice" to isVivoDevice(), "sceneStatus" to sceneStatus(c, VivoMap.scene(face.kind, scenes())),
-            "note" to "extrasKept only proves the notification carries the extras; whether the island shows it is what you must look at on screen (needs vivo's approval for this package). Ends itself in 30 s.")
+            "promotable" to (if (Build.VERSION.SDK_INT >= 36) runCatching { n.javaClass.getMethod("hasPromotableCharacteristics").invoke(n) as Boolean }.getOrNull() else null))
+    }
+
+    /**
+     * island.vivoProbe {kind?:'approval', route?:'subset'|'full'|'both', end?:bool}: posts one island notification and reads back which extras the system kept.
+     * 'both' posts the documented subset now, ends it after 20 s and then posts the full schema (its read-back lands in island.status vivoSuperx.lastFullProbe).
+     * Whether anything shows on screen is for the user to say (island.setEnabled {vivoShowed}); never assumed.
+     */
+    fun probe(c: Context, p: JSONObject): JSONObject {
+        val kind = p.str("kind", "approval").let { if (it in IslandModel.LIVE_KINDS) it else "approval" }
+        val route = p.str("route", "subset").let { if (it in listOf("subset", "full", "both")) it else "subset" }
+        if (p.bool("end")) { if (subsetEnd != null) endSubset(c, subsetFace(kind)); VivoSuperX.end(c); return ok("ended" to true) }
+        if (!Perms.granted("notifications")) return fail("notifications are off (perm.request notifications)")
+        if (!enabled()) return fail("vivo island is switched off (island.setEnabled {vivo:true})")
+        val sf = subsetFace(kind)
+        val r = when (route) {
+            "full" -> VivoSuperX.probe(c, fullFace(kind))
+            "both" -> probeSubset(c, sf).also {
+                App.ui.postDelayed({ endSubset(c, sf); App.ui.postDelayed({ runCatching { VivoSuperX.probe(c, fullFace(kind)) } }, 1600) }, 20_000)
+                it.put("fullInSec", 22)
+            }
+            else -> probeSubset(c, sf)
+        }
+        if (NativeResult.failed(r)) return r
+        return r.put("vivoDevice", isVivoDevice()).put("sceneStatus", sceneStatus(c, VivoMap.scene(kind, scenes()))).put("style", VivoSuperX.style()).put("showed", VivoSuperX.showed())
+            .put("note", "extrasKept only proves the notification carries the extras; whether the island shows it is what you must look at on screen. Ends itself in 30 s.")
     }
 }

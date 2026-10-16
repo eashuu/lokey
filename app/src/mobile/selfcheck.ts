@@ -12,6 +12,7 @@ import { Scheduler } from '../main/agent/scheduler'
 import { toolsSelfCheck } from '../main/agent/tools'
 import { McpHub } from '../main/agent/mcp'
 import { Conversation } from '../main/agent/conversation'
+import { hostSelfCheck } from './hostProtocol'
 import { lyricsSelfCheck } from '@shared/lyrics'
 import { placementSelfCheck } from '@shared/placement'
 import { lyricsAnimSelfCheck } from '@shared/lyricsAnim'
@@ -381,7 +382,7 @@ export async function runAll(): Promise<string[]> {
     ['scheduler', Scheduler.selfCheck], ['tools', toolsSelfCheck], ['mcp', McpHub.selfCheck], ['conversation', Conversation.selfCheck], ['lyrics', lyricsSelfCheck], ['placement', placementSelfCheck],
     ['lyricsAnim', lyricsAnimSelfCheck], ['safety', safetySelfCheck], ['computer', computerSelfCheck], ['cli', cliSelfCheck], ['tasks', TaskManager.selfCheck], ['prompt', promptSelfCheck],
     ['registry', registrySelfCheck], ['settingsTools', settingsToolsSelfCheck], ['memory', memorySelfCheck], ['settings', settingsSelfCheck], ['trustUndoNudge', trustUndoNudgeSelfCheck],
-    ['style', styleSelfCheck], ['weekly', weeklySelfCheck], ['eval', evalSelfCheck], ['secondScreen', secondScreenSelfCheck], ['boot', bootCheck],
+    ['style', styleSelfCheck], ['weekly', weeklySelfCheck], ['eval', evalSelfCheck], ['secondScreen', secondScreenSelfCheck], ['boot', bootCheck], ['hostProtocol', hostSelfCheck],
   ]
   for (const [n, f] of list) { try { out.push(`${n}: ${await f()}`) } catch (e) { out.push(`${n}: FAIL ${e instanceof Error ? (e.stack ?? e.message) : e}`) } }
   return out

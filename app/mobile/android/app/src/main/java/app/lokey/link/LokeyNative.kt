@@ -110,7 +110,7 @@ object Launch {
     fun deliver() { val p = pending; if (p != null && jsReady) { pending = null; Events.emit("app.launch", p, true) } }
     fun take(): JSONObject? { jsReady = true; val p = pending; pending = null; return p }
 
-    fun intent(action: String): Intent = Intent(App.ctx, MainActivity::class.java).setAction(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+    fun intent(action: String): Intent = Intent(App.ctx, if (BuildConfig.NATIVE_SHELL) LokeyActivity::class.java else MainActivity::class.java).setAction(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
     fun start(action: String, extra: Map<String, String> = emptyMap()) {
         val i = intent(action); extra.forEach { (k, v) -> i.putExtra(k, v) }
         App.ctx.startActivity(i)

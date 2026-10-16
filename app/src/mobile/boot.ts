@@ -35,6 +35,7 @@ const HOTKEY_ISLAND = 1, HOLD_TALK = 2, HOLD_DICT = 3, HOTKEY_CONVO = 5, HOTKEY_
 export interface Core { agent: Agent; sidecar: NativeSidecar; wake: Wake; bridge: Bridge }
 
 const log = (m: string) => console.log('[lokey]', m)
+const headless = /[?&]headless=1(&|$)/.test(location.search)
 
 export async function bootCore(): Promise<Core> {
   settings.load()
@@ -165,7 +166,7 @@ export async function bootCore(): Promise<Core> {
     const label: Record<string, string> = { listening: 'Listening', thinking: 'Thinking', speaking: 'Speaking' }
     if (label[vstate]) f.push({ id: 'voice', kind: 'voice', title: label[vstate], subtitle: 'Lokey', priority: 90 })
     for (const t of agent.tasks.list()) if (t.status === 'running') f.push({ id: 'job-' + t.id, kind: 'job', title: t.title.slice(0, 40), subtitle: 'Working', priority: 50 })
-    native('island.update', { faces: f, primary: f.some(x => x.id === 'voice') ? 'voice' : null })
+    if (!headless) native('island.update', { faces: f, primary: f.some(x => x.id === 'voice') ? 'voice' : null }) // headless: the native app's IslandBridge publishes all faces
   }
   agent.on('state', (st: string) => {
     const was = vstate

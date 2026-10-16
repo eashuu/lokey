@@ -96,20 +96,47 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="${legacyLauncherCategory}" />
             </intent-filter>
             <!-- the assistant gesture (power-button hold / corner swipe) once Lokey is the chosen assistant -->
             <intent-filter>
-                <action android:name="android.intent.action.ASSIST" />
+                <action android:name="${legacyAssist}" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.intent.action.VOICE_COMMAND" />
+                <action android:name="${legacyVoice}" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <!-- Share > Lokey -->
             <intent-filter>
-                <action android:name="android.intent.action.SEND" />
+                <action android:name="${legacySend}" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <!-- the native Compose app (docs/NATIVE-APP.md); the launcher only with -PnativeShell=true, otherwise MainActivity is -->
+        <activity
+            android:name=".LokeyActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="${nativeExported}">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="${nativeLauncherCategory}" />
+            </intent-filter>
+            <!-- the assistant gesture, voice command and Share > Lokey move here with -PnativeShell=true (MainActivity keeps them otherwise) -->
+            <intent-filter>
+                <action android:name="${nativeAssist}" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="${nativeVoice}" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="${nativeSend}" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
