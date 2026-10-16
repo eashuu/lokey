@@ -36,6 +36,20 @@ jobs:
           node_modules/.bin/electron . --selfcheck || true
           cat "$LOCALAPPDATA/Lokey/selfcheck.txt"
           ! grep -q FAIL "$LOCALAPPDATA/Lokey/selfcheck.txt"
+      - name: Gateway guard (no provider call outside the gateway)
+        run: pnpm --dir app check:gateway
+      - name: Injection suite (mock model, headless, no key)
+        shell: bash
+        run: |
+          cd app
+          node_modules/.bin/electron . --eval || true
+          cat "$LOCALAPPDATA/Lokey/eval-injection.txt"
+          read stopped total < <(grep -Eo 'attacks stopped [0-9]+/[0-9]+' "$LOCALAPPDATA/Lokey/eval-injection.txt" | grep -Eo '[0-9]+' | tr '\n' ' ')
+          test -n "$total" && test "$stopped" = "$total"
+      - name: Phone bundle
+        run: |
+          pnpm --dir app mobile:web
+          pnpm --dir app mobile:check
 
   sidecar:
     name: Sidecar (.NET build)
@@ -49,3 +63,8 @@ jobs:
         run: dotnet build native/Lokey.Host -c Release
       - name: Self-test
         run: dotnet run --project native/Lokey.Host -c Release -- --selftest
+      - name: UI Automation fixture (pure, touches no window)
+        shell: bash
+        run: |
+          dotnet run --project native/Lokey.Host -c Release -- --uia-fixture app/evals/uia/notepad-save-as.raw.json > "$RUNNER_TEMP/tree.json"
+          node -e "const a=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8').replace(/^﻿/,''));const b=JSON.parse(require('fs').readFileSync('app/evals/uia/notepad-save-as.tree.json','utf8').replace(/^﻿/,''));if(JSON.stringify(a)!==JSON.stringify(b)){console.error('the recorded tree no longer matches the sidecar output');process.exit(1)}" "$RUNNER_TEMP/tree.json"

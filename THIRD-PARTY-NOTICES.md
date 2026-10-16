@@ -25,6 +25,15 @@ lokey is licensed under GPL-3.0. It uses the following open-source components un
 | [Rubik](https://github.com/googlefonts/rubik) | SIL OFL 1.1 |
 | [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) | SIL OFL 1.1 |
 
+## Android native UI (`app/mobile/android`)
+
+| Component | Licence |
+|---|---|
+| Jetpack Compose, Material3, Activity/Lifecycle (AndroidX) | Apache-2.0 |
+| [Inter](https://github.com/rsms/inter), [Rubik](https://github.com/googlefonts/rubik), [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) variable TTFs in `res/font` (copied from github.com/google/fonts `ofl/`) | SIL OFL 1.1 |
+
+Reference only (no code copied): the vivo full-schema island route (`VivoSuperX.kt`) uses the `notification.superx.*` key names and semantics documented by [OriginOS Toolkit](https://github.com/cameleonnbss/originos-toolkit) (MIT, (c) 2026 cameleonnbss) and the [CunnyPlayground](https://github.com/theVakhovskeIsTaken/CunnyPlayground) `originos-experimental` branch it ports (no licence file published; only facts were taken, the implementation is ours).
+
 ## Native sidecar (NuGet)
 
 | Component | Licence |

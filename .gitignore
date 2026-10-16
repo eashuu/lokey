@@ -22,3 +22,6 @@ app/out/
 
 # mobile web build output (rebuilt by pnpm mobile:web)
 app/mobile/www/
+
+# a person's own sample prompts for the evals (consented, never published)
+app/evals/private/
